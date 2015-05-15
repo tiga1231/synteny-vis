@@ -98,10 +98,10 @@ queue()
       }
     });
 
-  var svg = d3.select('body').append('svg')
+  var brushSel = d3.select('body').append('svg')
     .attr({width: width, height: height}).classed('main', true)
-    .call(zoom).on('mousedown.zoom', null) //disable panning
-    .call(brush).append('g');
+    .call(zoom).on('mousedown.zoom', null); //disable panning
+  var svg = brushSel.call(brush).append('g');
   
 
   var plotWidth = 600, plotHeight = 600;
@@ -137,6 +137,7 @@ queue()
     .attr('y2', function(d) { return yScale(d.adjustedStop2); });
 
   function zoom() {
+
     svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
 
     var modifiedXExtent = xScale.domain(); 
@@ -156,7 +157,8 @@ queue()
     d3.selectAll('.grid-horizontal', scaling).style('stroke-width', scaling);
     d3.selectAll('.grid-vertical', scaling).style('stroke-width', scaling);
 
-    updatePlot(brush.extent());
+    // now that's an ugly hack: redraw the brush with the new scale and old extent
+    brushSel.call(brush.x(xScale).y(yScale).extent(brush.extent()));
   }
 
   var numTicks = 20;
@@ -177,7 +179,7 @@ queue()
     var xPlotScale = d3.scale.linear()
       .range([margin, plotWidth - margin]);
     var yPlotScale = d3.scale.linear()
-      .domain([0, data.length/4])
+      .domain([0, d3.max(plotData, function(d) { return d.y; })]) // data.length/4])
       .range([plotHeight - margin, margin]);
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
