@@ -89,12 +89,13 @@ queue()
 
   var brush = d3.svg.brush().x(xScale).y(yScale)
     .on('brush', function() {
-      updatePlot(brush.extent());
+      updatePlot(brush.extent(), false);
     })
     .on('brushend', function() {
       if(brush.empty()) {
-        console.log('empty');
-        updatePlot([[0,0],[1e15,1e15]]);
+        updatePlot([[0,0],[1e15,1e15]], true);
+      } else {
+        updatePlot(brush.extent(), true);
       }
     });
 
@@ -164,7 +165,8 @@ queue()
   var numTicks = 20;
   plot.selectAll('rect').data(d3.range(numTicks)).enter().append('rect');
 
-  function updatePlot(extent) {
+  var lastYExtent = [0, data.length/4]; // Default--no reason why
+  function updatePlot(extent, shouldRescaleYAxis) {
     var e = extent;
     var field = 'Kn';
     var filteredData = _.chain(data).filter(function(d) { 
@@ -179,7 +181,7 @@ queue()
     var xPlotScale = d3.scale.linear()
       .range([margin, plotWidth - margin]);
     var yPlotScale = d3.scale.linear()
-      .domain([0, d3.max(plotData, function(d) { return d.y; })]) // data.length/4])
+      .domain(lastYExtent)
       .range([plotHeight - margin, margin]);
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
@@ -205,8 +207,23 @@ queue()
     plot.append('g')
       .attr('transform', 'translate(0,' + (plotHeight - 50) + ')') 
       .classed('xAxis', true).call(xAxis);
-    plot.append('g')
+    var yAxisSel = plot.append('g')
       .attr('transform', 'translate(50,0)') 
       .classed('yAxis', true).call(yAxis);
+
+    if(shouldRescaleYAxis) {
+      var transitionLength = 250;
+      lastYExtent = [0, 3/2*d3.max(_.pluck(plotData, 'y'))];
+      yPlotScale = d3.scale.linear()
+        .domain(lastYExtent)
+        .range([plotHeight - margin, margin]);
+      yAxis.scale(yPlotScale);
+      yAxisSel.transition().duration(transitionLength).call(yAxis);
+      plot.selectAll('rect').transition().duration(transitionLength)
+        .attr('x', function(d) { return xPlotScale(d.x); })
+        .attr('width', function(d) { return xPlotScale(d.dx) - margin; })
+        .attr('y', function(d) { return yPlotScale(d.y); })
+        .attr('height', function(d) { return plotHeight - margin - yPlotScale(d.y); });
+    } 
   }
 });
