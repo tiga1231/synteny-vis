@@ -137,6 +137,8 @@ queue()
     .attr('x2', function(d) { return xScale(d.adjustedStop1); })
     .attr('y2', function(d) { return yScale(d.adjustedStop2); });
 
+  var strokeWidth = 3;
+  var lastScale = strokeWidth
   function zoom() {
 
     svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
@@ -145,17 +147,35 @@ queue()
     var modifiedYExtent = yScale.domain(); 
     var screenWidth = modifiedXExtent[1] - modifiedXExtent[0]; // Ratio is same using x or y
     var original = xExtent[1] - xExtent[0];
-    var strokeWidth = 3;
     var scaling = strokeWidth * screenWidth / original;
+    var gridScaling = screenWidth / original;
 
-    var xMax = modifiedXExtent[1], xMin = modifiedXExtent[0];
-    var yMax = modifiedYExtent[1], yMin = modifiedYExtent[0];
-
-    dataSel
-      .filter(function(d) { return d.adjustedStart1 < xMax && d.adjustedStart1 > xMin && d.adjustedStart2 < yMax && d.adjustedStart2 > yMin; })
-      .style('stroke-width', scaling);
-    d3.selectAll('.grid-horizontal', scaling).style('stroke-width', scaling);
-    d3.selectAll('.grid-vertical', scaling).style('stroke-width', scaling);
+    /* 
+     * Two optimizations for semantic zooming:
+     *  - Only update the stroke-width if there is a large difference 
+     *    between current width and ideal width. 
+     *    This lowers the number of updates that are necessary at low 
+     *    magnification, which are the most expensive because...
+     *  - We only update the svg elements that are visible.
+     *
+     * The parameter k controls how extreme the first optimization is.
+     * k = 1 means that 'large' means roughly an integer difference,
+     * k = 2 means that 'large' means roughly a half integer difference, etc.
+     * Bigger k, smoother. Smaller k, faster.
+     */
+    var k = 3 
+    if(Math.round(k/scaling) !== Math.round(k/lastScale)) {
+      lastScale = scaling;
+      var xMax = modifiedXExtent[1], xMin = modifiedXExtent[0];
+      var yMax = modifiedYExtent[1], yMin = modifiedYExtent[0];
+      dataSel
+        .filter(function(d) { return d.adjustedStart1 < xMax && d.adjustedStart1 > xMin && d.adjustedStart2 < yMax && d.adjustedStart2 > yMin; })
+        .style('stroke-width', scaling);
+    }
+    // There are so few grid lines, we can afford to update all of them
+    // all of the time.
+    d3.selectAll('.grid-horizontal').style('stroke-width', gridScaling);
+    d3.selectAll('.grid-vertical').style('stroke-width', gridScaling);
 
     // now that's an ugly hack: redraw the brush with the new scale and old extent
     brushSel.call(brush.x(xScale).y(yScale).extent(brush.extent()));
