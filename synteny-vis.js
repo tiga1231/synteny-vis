@@ -145,7 +145,7 @@ queue()
     var modifiedYExtent = yScale.domain(); 
     var screenWidth = modifiedXExtent[1] - modifiedXExtent[0]; // Ratio is same using x or y
     var original = xExtent[1] - xExtent[0];
-    var strokeWidth = 2;
+    var strokeWidth = 3;
     var scaling = strokeWidth * screenWidth / original;
 
     var xMax = modifiedXExtent[1], xMin = modifiedXExtent[0];
@@ -162,13 +162,21 @@ queue()
     brushSel.call(brush.x(xScale).y(yScale).extent(brush.extent()));
   }
 
+  var field = 'Kn';
   var numTicks = 20;
-  plot.selectAll('rect').data(d3.range(numTicks)).enter().append('rect');
+  plot.selectAll('rect').data(d3.range(numTicks)).enter()
+    .append('rect').classed('dataBars', true);
+  plot.append('text')
+    .attr('x', 2 * plotHeight / 3)
+    .attr('width', plotHeight / 3)
+    .attr('y', 50)
+    .attr('height', 50)
+    .classed('textInPlot', true)
+    .text(field);
 
   var lastYExtent = [0, data.length/4]; // Default--no reason why
   function updatePlot(extent, shouldRescaleYAxis) {
     var e = extent;
-    var field = 'Kn';
     var filteredData = _.chain(data).filter(function(d) { 
         return d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
             d.adjustedStart2 > e[0][1] && d.adjustedStart2 < e[1][1];
@@ -186,23 +194,16 @@ queue()
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
-    plot.selectAll('rect').data(plotData)
+    plot.selectAll('.dataBars').data(plotData)
+      .classed('dataBars', true)
       .attr('x', function(d) { return xPlotScale(d.x); })
       .attr('width', function(d) { return xPlotScale(d.dx) - margin; })
       .attr('y', function(d) { return yPlotScale(d.y); })
       .attr('height', function(d) { return plotHeight - margin - yPlotScale(d.y); })
       .attr('fill', 'steelblue');
 
-    plot.select('text').remove();
     plot.selectAll('.xAxis').remove();
     plot.selectAll('.yAxis').remove();
-    plot.append('text')
-      .attr('x', 2 * plotHeight / 3)
-      .attr('width', plotHeight / 3)
-      .attr('y', 50)
-      .attr('height', 50)
-      .classed('textInPlot', true)
-      .text(field);
 
     plot.append('g')
       .attr('transform', 'translate(0,' + (plotHeight - 50) + ')') 
@@ -219,7 +220,7 @@ queue()
         .range([plotHeight - margin, margin]);
       yAxis.scale(yPlotScale);
       yAxisSel.transition().duration(transitionLength).call(yAxis);
-      plot.selectAll('rect').transition().duration(transitionLength)
+      plot.selectAll('.dataBars').transition().duration(transitionLength)
         .attr('x', function(d) { return xPlotScale(d.x); })
         .attr('width', function(d) { return xPlotScale(d.dx) - margin; })
         .attr('y', function(d) { return yPlotScale(d.y); })
