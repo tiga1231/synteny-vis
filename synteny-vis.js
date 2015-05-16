@@ -46,11 +46,12 @@ queue()
       return { name: d.name, length: Number(d.length) }; 
   });
 
-  xLengths.sort(function(a,b) { return a.length < b.length; });
-  yLengths.sort(function(a,b) { return a.length < b.length; });
+  xLengths.sort(function(a,b) { return a.length < b.length ? 1 : -1; });
+  yLengths.sort(function(a,b) { return a.length < b.length ? 1 : -1; });
 
   var xNames = _.pluck(xLengths, 'name');
   var yNames = _.pluck(yLengths, 'name');
+
   var xCumBPCount = cumulative_counts(_.pluck(xLengths, 'length'));
   var yCumBPCount = cumulative_counts(_.pluck(yLengths, 'length'));
 
@@ -278,4 +279,6 @@ queue()
         .attr('height', function(d) { return plotHeight - margin - yPlotScale(d.y); });
     } 
   }
+
+  updatePlot([[0,0],[1e15,1e15]], true); // Initialize histogram
 });
