@@ -85,7 +85,7 @@ queue()
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
-  var zoom = d3.behavior.zoom().x(xScale).y(yScale).on('zoom', zoom);
+  var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1,10000]).on('zoom', zoomed);
 
   var brush = d3.svg.brush().x(xScale).y(yScale)
     .on('brush', function() {
@@ -139,7 +139,7 @@ queue()
 
   var strokeWidth = 3;
   var lastScale = strokeWidth
-  function zoom() {
+  function zoomed() {
 
     svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
 
