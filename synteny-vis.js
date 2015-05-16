@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 function cumulative_counts(data) {
   var ret = [];
@@ -106,7 +106,7 @@ queue()
   
 
   var plotWidth = 600, plotHeight = 600;
-  var plot = d3.select('body').append('svg')
+  var plot = d3.select('body').append('svg').classed('plot', true)
     .attr({width: plotWidth, height: plotHeight});
 
   // Grid lines
@@ -150,8 +150,7 @@ queue()
 
     var xMax = modifiedXExtent[1], xMin = modifiedXExtent[0];
     var yMax = modifiedYExtent[1], yMin = modifiedYExtent[0];
-    console.log(xMax, xMin);
-    console.log(yMax, yMin);
+
     dataSel
       .filter(function(d) { return d.adjustedStart1 < xMax && d.adjustedStart1 > xMin && d.adjustedStart2 < yMax && d.adjustedStart2 > yMin; })
       .style('stroke-width', scaling);
@@ -162,10 +161,14 @@ queue()
     brushSel.call(brush.x(xScale).y(yScale).extent(brush.extent()));
   }
 
+
   var field = 'Kn';
   var numTicks = 20;
-  plot.selectAll('rect').data(d3.range(numTicks)).enter()
+  var margin = 50;
+
+  plot.selectAll('.dataBars').data(d3.range(numTicks)).enter()
     .append('rect').classed('dataBars', true);
+
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
     .attr('width', plotHeight / 3)
@@ -174,9 +177,34 @@ queue()
     .classed('textInPlot', true)
     .text(field);
 
+  function plotBrushBrush() { // This function name is great
+    var e = plotBrush.extent();
+    // Rounding to include entire histogram bars at once
+    var min = Math.floor(numTicks * e[0][0]) / numTicks;
+    var max = Math.ceil(numTicks * e[1][0]) / numTicks;
+    svg.selectAll('.synteny').classed('selected', function(d) {
+      return d[field] <= max && d[field] >= min;
+    });
+    plot.selectAll('.dataBars').attr('fill', function(d) {
+      return (d.x + d.dx <= max && d.x >= min) ? 'red' : 'steelblue';
+    });
+    // Force the brush to occupy the entire height of the plot
+    var newExtent =[[e[0][0], 0], [e[1][0], yPlotScale.invert(plotHeight - margin)]];
+    plotBrush.extent(newExtent);
+    plot.select('.extent')
+      .attr('x', xPlotScale(min))
+      .attr('width', xPlotScale(max - min) - margin)
+      .attr('y', margin)
+      .attr('height', plotHeight - 2*margin)
+  }
+
   var lastYExtent = [0, data.length/4]; // Default--no reason why
+  var plotBrush = d3.svg.brush().on('brush', plotBrushBrush);
+  var xPlotScale, yPlotScale;
+
   function updatePlot(extent, shouldRescaleYAxis) {
     var e = extent;
+
     var filteredData = _.chain(data).filter(function(d) { 
         return d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
             d.adjustedStart2 > e[0][1] && d.adjustedStart2 < e[1][1];
@@ -185,22 +213,25 @@ queue()
     var plotData = d3.layout.histogram()
       .bins(d3.scale.linear().ticks(numTicks))(filteredData);
 
-    var margin = 50;
-    var xPlotScale = d3.scale.linear()
+    xPlotScale = d3.scale.linear()
       .range([margin, plotWidth - margin]);
-    var yPlotScale = d3.scale.linear()
+    yPlotScale = d3.scale.linear()
       .domain(lastYExtent)
       .range([plotHeight - margin, margin]);
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
+    plotBrush.x(xPlotScale).y(yPlotScale);
+    plot.call(plotBrush);
+
     plot.selectAll('.dataBars').data(plotData)
-      .classed('dataBars', true)
       .attr('x', function(d) { return xPlotScale(d.x); })
       .attr('width', function(d) { return xPlotScale(d.dx) - margin; })
       .attr('y', function(d) { return yPlotScale(d.y); })
       .attr('height', function(d) { return plotHeight - margin - yPlotScale(d.y); })
       .attr('fill', 'steelblue');
+
+    plotBrushBrush();
 
     plot.selectAll('.xAxis').remove();
     plot.selectAll('.yAxis').remove();
