@@ -115,13 +115,14 @@ queue()
         }
       });
 
-    var brushSel = d3.select('body').append('svg')
-      .attr({
-        width: width,
-        height: height
-      }).classed('main', true)
-      .call(zoom).on('mousedown.zoom', null); //disable panning
-    var svg = brushSel.call(brush).append('g');
+    var svg = d3.select('body').append('svg')
+      .attr('width', width)
+      .attr('height', height)
+      .classed('main', true)
+      .append('g').attr('id', 'zoom-group')
+      .call(zoom).on('mousedown.zoom', null) //disable panning
+      .append('g').attr('id', 'brush-group')
+      .call(brush);
 
 
     var plotWidth = 600;
@@ -173,9 +174,11 @@ queue()
     var strokeWidth = 3;
     var lastScale = strokeWidth;
 
+    var panning = false;
+
     function zoomed() {
 
-      svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+      d3.select('#brush-group').attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
 
       var modifiedXExtent = xScale.domain();
       var modifiedYExtent = yScale.domain();
@@ -195,6 +198,7 @@ queue()
        * The parameter k controls how extreme the first optimization is.
        * k = 1 means that 'large' means roughly an integer difference,
        * k = 2 means that 'large' means roughly a half integer difference, etc.
+       * (I don't know what I am talking about here.)
        * Bigger k, smoother. Smaller k, faster.
        */
       var k = 3;
@@ -210,15 +214,20 @@ queue()
           })
           .style('stroke-width', scaling);
       }
+      console.log(brush.extent()[0][0], brush.extent()[1][0]);
+
       // There are so few grid lines, we can afford to update all of them
       // all of the time.
       d3.selectAll('.grid-horizontal').style('stroke-width', gridScaling);
       d3.selectAll('.grid-vertical').style('stroke-width', gridScaling);
 
       // now that's an ugly hack: redraw the brush with the new scale and old extent
-      brushSel.call(brush.x(xScale).y(yScale).extent(brush.extent()));
+      //d3.select('#brush-group').call(brush.x(xScale).y(yScale).extent(brush.extent()));
+      //if (panning) {
+      //  d3.select('#brush-group').on('mousedown.brush', null);
+      //  d3.select('#brush-group').style('pointer-events', null);
+      //}
     }
-
 
     var field = 'Kn';
     var numTicks = 20;
@@ -338,5 +347,22 @@ queue()
     }
 
     updatePlot(wholePlotExtent, true); // Initialize histogram
+
+    // zoom/pan switching
+    d3.selectAll("#mouse-options input[name=mouse-options]")
+      .on("change", function() {
+        if (this.value === 'pan') {
+          panning = true;
+          d3.select('#brush-group').on('mousedown.brush', null);
+          d3.select('#zoom-group').call(zoom);
+          d3.select('#brush-group').style('pointer-events', null);
+          d3.select('#zoom-group').style('pointer-events', 'all');
+        } else if (this.value === 'brush') {
+          panning = false;
+          d3.select('#brush-group').call(brush);
+          d3.select('#brush-group').style('pointer-events', 'all');
+          d3.select('#zoom-group').on('mousedown.zoom', null);
+        }
+      });
   });
 
