@@ -9,10 +9,32 @@ function cumulative_counts(data) {
   return ret;
 }
 
-queue()
-  .defer(d3.json, 'data/homo_chimp.json')
-  .defer(d3.json, 'lengths/11691.json')
-  .defer(d3.json, 'lengths/25577.json')
+var obj = queue();
+
+switch (window.location.hash) {
+    case '#homo_chimp':
+    obj = obj.defer(d3.json, 'data/homo_chimp.json')
+        .defer(d3.json, 'lengths/11691.json')
+        .defer(d3.json, 'lengths/25577.json');
+    break;
+    case '#ecoli':
+    obj = obj.defer(d3.json, 'data/ecoli.json')
+        .defer(d3.json, 'lengths/4241.json')
+        .defer(d3.json, 'lengths/4242.json');
+    break;
+    case '#arabidopsis':
+    obj = obj.defer(d3.json, 'data/arabidopsis.json')
+        .defer(d3.json, 'lengths/16911.json')
+        .defer(d3.json, 'lengths/3068.json');
+    break;
+default:
+    alert("Don't know what '" + window.location.hash + "' is. Loading homo_chimp.json");
+    obj = obj.defer(d3.json, 'data/homo_chimp.json')
+        .defer(d3.json, 'lengths/11691.json')
+        .defer(d3.json, 'lengths/25577.json');
+}
+
+obj
   .await(function(error, data, aLengths, bLengths) {
     if (error) {
       console.log(error);
