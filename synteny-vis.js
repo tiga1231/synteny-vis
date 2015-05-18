@@ -177,6 +177,25 @@ queue()
     var panning = false;
 
     function zoomed() {
+      
+      var xmin = 0;
+      var xmax = xTotalBPs;
+      var ymin = 0;
+      var ymax = yTotalBPs;
+      if (xScale.domain()[0] < xmin) {
+        zoom.translate([zoom.translate()[0] - xScale(xmin) + xScale.range()[0], zoom.translate()[1]]);
+        return;
+      } else if (xScale.domain()[1] > xmax) {
+        zoom.translate([zoom.translate()[0] - xScale(xmax) + xScale.range()[1], zoom.translate()[1]]);
+        return;
+      }
+      if (yScale.domain()[0] < ymin) {
+        zoom.translate([zoom.translate()[0], zoom.translate()[1] - yScale(ymin) + yScale.range()[0]]);
+        return;
+      } else if (yScale.domain()[1] > ymax) {
+        zoom.translate([zoom.translate()[0], zoom.translate()[1] - yScale(ymax) + yScale.range()[1]]);
+        return;
+      }
 
       d3.select('#brush-group').attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
 
