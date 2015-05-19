@@ -168,16 +168,13 @@ q.await(function(error, data, aLengths, bLengths) {
       }
     });
 
-  var svg = d3.select('body').append('svg')
+  var svgPre = d3.select('body').append('svg')
     .attr('width', width)
     .attr('height', height)
     .classed('main', true)
     .append('g').attr('id', 'zoom-group')
     .call(zoom).on('mousedown.zoom', null); //disable panning
-  svg
-    .append('g').attr('id', 'brush-group')
-    .call(brush);
-  svg = svg.append('g').attr('id', 'data-group');
+  var svg = svgPre.append('g').attr('id', 'data-group');
 
   var plotWidth = 600;
   var plotHeight = 600;
@@ -225,7 +222,9 @@ q.await(function(error, data, aLengths, bLengths) {
       return yScale(d.adjustedStop2);
     });
 
-
+  svgPre
+    .append('g').attr('id', 'brush-group')
+    .call(brush);
 
   var strokeWidth = 3;
   var lastScale = strokeWidth;
@@ -383,7 +382,7 @@ q.await(function(error, data, aLengths, bLengths) {
       })
       .attr('fill', 'steelblue');
 
-    plotBrushBrush(); 
+    plotBrushBrush();
 
     plot.selectAll('.xAxis').remove();
     plot.selectAll('.yAxis').remove();
