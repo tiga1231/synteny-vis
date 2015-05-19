@@ -132,26 +132,26 @@ q.await(function(error, data, aLengths, bLengths) {
     console.log(scaling);
     // Fix the brush extent cursor box sizes
     d3.select('.resize.e').select('rect')
-      .attr('width', 6 / s).attr('x', -3/s);
+      .attr('width', 6 / s).attr('x', -3 / s);
     d3.select('.resize.w').select('rect')
-      .attr('width', 6 / s).attr('x', -3/s);
+      .attr('width', 6 / s).attr('x', -3 / s);
     d3.select('.resize.n').select('rect')
-      .attr('height', 6 / s).attr('y', -3/s);
+      .attr('height', 6 / s).attr('y', -3 / s);
     d3.select('.resize.s').select('rect')
-      .attr('height', 6 / s).attr('y', -3/s);
+      .attr('height', 6 / s).attr('y', -3 / s);
 
     d3.select('.resize.nw').select('rect')
-      .attr('width', 6 / s).attr('x', -3/s)
-      .attr('height', 6 / s).attr('y', -3/s);
+      .attr('width', 6 / s).attr('x', -3 / s)
+      .attr('height', 6 / s).attr('y', -3 / s);
     d3.select('.resize.ne').select('rect')
-      .attr('width', 6 / s).attr('x', -3/s)
-      .attr('height', 6 / s).attr('y', -3/s);
+      .attr('width', 6 / s).attr('x', -3 / s)
+      .attr('height', 6 / s).attr('y', -3 / s);
     d3.select('.resize.se').select('rect')
-      .attr('width', 6 / s).attr('x', -3/s)
-      .attr('height', 6 / s).attr('y', -3/s);
+      .attr('width', 6 / s).attr('x', -3 / s)
+      .attr('height', 6 / s).attr('y', -3 / s);
     d3.select('.resize.sw').select('rect')
-      .attr('width', 6 / s).attr('x', -3/s)
-      .attr('height', 6 / s).attr('y', -3/s);
+      .attr('width', 6 / s).attr('x', -3 / s)
+      .attr('height', 6 / s).attr('y', -3 / s);
   }
 
   var brush = d3.svg.brush()
