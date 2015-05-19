@@ -9,33 +9,32 @@ function cumulative_counts(data) {
   return ret;
 }
 
-var obj = queue();
+var q = queue();
 
 switch (window.location.hash) {
-    case '#homo_chimp':
-    obj = obj.defer(d3.json, 'data/homo_chimp.json')
-        .defer(d3.json, 'lengths/11691.json')
-        .defer(d3.json, 'lengths/25577.json');
+  case '#homo_chimp':
+    q = q.defer(d3.json, 'data/homo_chimp.json')
+      .defer(d3.json, 'lengths/11691.json')
+      .defer(d3.json, 'lengths/25577.json');
     break;
-    case '#ecoli':
-    obj = obj.defer(d3.json, 'data/ecoli.json')
-        .defer(d3.json, 'lengths/4241.json')
-        .defer(d3.json, 'lengths/4242.json');
+  case '#ecoli':
+    q = q.defer(d3.json, 'data/ecoli.json')
+      .defer(d3.json, 'lengths/4241.json')
+      .defer(d3.json, 'lengths/4242.json');
     break;
-    case '#arabidopsis':
-    obj = obj.defer(d3.json, 'data/arabidopsis.json')
-        .defer(d3.json, 'lengths/16911.json')
-        .defer(d3.json, 'lengths/3068.json');
+  case '#arabidopsis':
+    q = q.defer(d3.json, 'data/arabidopsis.json')
+      .defer(d3.json, 'lengths/16911.json')
+      .defer(d3.json, 'lengths/3068.json');
     break;
-default:
+  default:
     alert("Don't know what '" + window.location.hash + "' is. Loading homo_chimp.json");
-    obj = obj.defer(d3.json, 'data/homo_chimp.json')
-        .defer(d3.json, 'lengths/11691.json')
-        .defer(d3.json, 'lengths/25577.json');
+    q = q.defer(d3.json, 'data/homo_chimp.json')
+      .defer(d3.json, 'lengths/11691.json')
+      .defer(d3.json, 'lengths/25577.json');
 }
 
-obj
-  .await(function(error, data, aLengths, bLengths) {
+q.await(function(error, data, aLengths, bLengths) {
     if (error) {
       console.log(error);
       return;
@@ -118,6 +117,8 @@ obj
     var yExtent = [0, yTotalBPs];
     var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
     var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
+    var xScaleOriginal = d3.scale.linear().domain(xExtent).range([0, width]);
+    var yScaleOriginal = d3.scale.linear().domain(yExtent).range([height, 0]);
 
     var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 10000]).on('zoom', zoomed);
 
@@ -125,7 +126,9 @@ obj
       [0, 0],
       [1e15, 1e15]
     ];
-    var brush = d3.svg.brush().x(xScale).y(yScale)
+    var brush = d3.svg.brush()
+      .x(d3.scale.linear().domain([0, width]).range([0, width]))
+      .y(d3.scale.linear().domain([0, height]).range([0, height]))
       .on('brush', function() {
         updatePlot(brush.extent(), false);
       })
@@ -142,10 +145,11 @@ obj
       .attr('height', height)
       .classed('main', true)
       .append('g').attr('id', 'zoom-group')
-      .call(zoom).on('mousedown.zoom', null) //disable panning
+      .call(zoom).on('mousedown.zoom', null); //disable panning
+    svg
       .append('g').attr('id', 'brush-group')
       .call(brush);
-
+    svg = svg.append('g').attr('id', 'data-group');
 
     var plotWidth = 600;
     var plotHeight = 600;
@@ -193,33 +197,46 @@ obj
         return yScale(d.adjustedStop2);
       });
 
+
+
     var strokeWidth = 3;
     var lastScale = strokeWidth;
 
     var panning = false;
+    var translation = [0, 0];
 
     function zoomed() {
-      
-      var xmin = 0;
-      var xmax = xTotalBPs;
-      var ymin = 0;
-      var ymax = yTotalBPs;
-      if (xScale.domain()[0] < xmin) {
-        zoom.translate([zoom.translate()[0] - xScale(xmin) + xScale.range()[0], zoom.translate()[1]]);
-        return;
-      } else if (xScale.domain()[1] > xmax) {
-        zoom.translate([zoom.translate()[0] - xScale(xmax) + xScale.range()[1], zoom.translate()[1]]);
-        return;
-      }
-      if (yScale.domain()[0] < ymin) {
-        zoom.translate([zoom.translate()[0], zoom.translate()[1] - yScale(ymin) + yScale.range()[0]]);
-        return;
-      } else if (yScale.domain()[1] > ymax) {
-        zoom.translate([zoom.translate()[0], zoom.translate()[1] - yScale(ymax) + yScale.range()[1]]);
-        return;
-      }
+      /*
+            var xmin = 0;
+            var xmax = xTotalBPs;
+            var ymin = 0;
+            var ymax = yTotalBPs;
+            if (xScale.domain()[0] < xmin) {
+              zoom.translate([zoom.translate()[0] - xScale(xmin) + xScale.range()[0], zoom.translate()[1]]);
+              return;
+            } else if (xScale.domain()[1] > xmax) {
+              zoom.translate([zoom.translate()[0] - xScale(xmax) + xScale.range()[1], zoom.translate()[1]]);
+              return;
+            }
+            if (yScale.domain()[0] < ymin) {
+              zoom.translate([zoom.translate()[0], zoom.translate()[1] - yScale(ymin) + yScale.range()[0]]);
+              return;
+            } else if (yScale.domain()[1] > ymax) {
+              zoom.translate([zoom.translate()[0], zoom.translate()[1] - yScale(ymax) + yScale.range()[1]]);
+              return;
+            }
+           */
 
-      d3.select('#brush-group').attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+      var t = d3.event.translate;
+      var s = d3.event.scale;
+
+      t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
+      t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
+      translation = t;
+      zoom.translate(t); // prevents the translate from growing large. This way, you don't have to "scroll back" onto the canvas if you go too far.
+
+      d3.select('#brush-group').attr("transform", "translate(" + t + ")scale(" + d3.event.scale + ")");
+      d3.select('#data-group').attr("transform", "translate(" + t + ")scale(" + d3.event.scale + ")");
 
       var modifiedXExtent = xScale.domain();
       var modifiedYExtent = yScale.domain();
@@ -255,19 +272,11 @@ obj
           })
           .style('stroke-width', scaling);
       }
-      console.log(brush.extent()[0][0], brush.extent()[1][0]);
 
       // There are so few grid lines, we can afford to update all of them
       // all of the time.
       d3.selectAll('.grid-horizontal').style('stroke-width', gridScaling);
       d3.selectAll('.grid-vertical').style('stroke-width', gridScaling);
-
-      // now that's an ugly hack: redraw the brush with the new scale and old extent
-      //d3.select('#brush-group').call(brush.x(xScale).y(yScale).extent(brush.extent()));
-      //if (panning) {
-      //  d3.select('#brush-group').on('mousedown.brush', null);
-      //  d3.select('#brush-group').style('pointer-events', null);
-      //}
     }
 
     var field = 'Kn';
@@ -315,11 +324,17 @@ obj
 
     function updatePlot(extent, shouldRescaleYAxis) {
       var e = extent;
+      e = [
+        [xScaleOriginal.invert(e[0][0]), yScaleOriginal.invert(e[1][1])],
+        [xScaleOriginal.invert(e[1][0]), yScaleOriginal.invert(e[0][1])],
+      ];
 
-      var filteredData = _.chain(data).filter(function(d) {
-        return d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
-          d.adjustedStart2 > e[0][1] && d.adjustedStart2 < e[1][1];
-      }).pluck(field).value();
+      // This filters out NA
+      var filteredData = _.chain(data)
+        .filter(function(d) {
+          return d[field] !== 'NA' && d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
+            d.adjustedStart2 > e[0][1] && d.adjustedStart2 < e[1][1];
+        }).pluck(field).value();
 
       var plotData = d3.layout.histogram()
         .bins(d3.scale.linear().ticks(numTicks))(filteredData);
