@@ -274,9 +274,10 @@ q.await(function(error, data, aLengths, bLengths) {
       var xMin = modifiedXExtent[0];
       var yMax = modifiedYExtent[1];
       var yMin = modifiedYExtent[0];
+      var wMargin = 1e7; // fudge by a little bit to catch data that starts off screen and extends on screen
       dataSel
         .filter(function(d) {
-          return d.adjustedStart1 < xMax && d.adjustedStart1 > xMin && d.adjustedStart2 < yMax && d.adjustedStart2 > yMin;
+          return d.adjustedStart1 < xMax + wMargin && d.adjustedStart1 > xMin -wMargin && d.adjustedStart2 < yMax + wMargin && d.adjustedStart2 > yMin - wMargin;
         })
         .style('stroke-width', plotScaling);
     }
