@@ -129,7 +129,6 @@ q.await(function(error, data, aLengths, bLengths) {
 
   function resizeBrushBoundary() {
     var s = scaling;
-    console.log(scaling);
     // Fix the brush extent cursor box sizes
     d3.select('.resize.e').select('rect')
       .attr('width', 6 / s).attr('x', -3 / s);
@@ -308,29 +307,32 @@ q.await(function(error, data, aLengths, bLengths) {
   function plotBrushBrush() {
     var e = plotBrush.extent();
     // Rounding to include entire histogram bars at once
-    var min = Math.floor(numTicks * e[0][0]) / numTicks;
-    var max = Math.ceil(numTicks * e[1][0]) / numTicks;
+    var min = Math.floor(numTicks * e[0]) / numTicks;
+    var max = Math.ceil(numTicks * e[1]) / numTicks;
     svg.selectAll('.synteny').classed('selected', function(d) {
       return d[field] <= max && d[field] >= min;
     });
     plot.selectAll('.dataBars').attr('fill', function(d) {
       return (d.x + d.dx <= max && d.x >= min) ? 'red' : 'steelblue';
     });
-    // Force the brush to occupy the entire height of the plot
-    var newExtent = [
-      [e[0][0], 0],
-      [e[1][0], yPlotScale.invert(plotHeight - margin)]
-    ];
-    plotBrush.extent(newExtent);
-    plot.select('.extent')
-      .attr('x', xPlotScale(min))
-      .attr('width', xPlotScale(max - min) - margin)
-      .attr('y', margin)
-      .attr('height', plotHeight - 2 * margin);
+
+    if (d3.event && d3.event.mode === 'move') {
+      d3.select('#plotbrush-group').call(plotBrush.extent([min, Math.round(numTicks * (min + e[1] - e[0])) / numTicks]));
+    }
+
+  }
+
+  function plotBrushEnd() {
+    if (plotBrush.empty()) {
+      svg.selectAll('.synteny').classed('selected', false);
+      plot.selectAll('.dataBars').attr('fill', 'steelblue');
+    }
   }
 
   var lastYExtent = [0, data.length / 4]; // Default--no reason why
-  var plotBrush = d3.svg.brush().on('brush', plotBrushBrush);
+  var plotBrush = d3.svg.brush()
+    .on('brush', plotBrushBrush)
+    .on('brushend', plotBrushEnd);
   var xPlotScale, yPlotScale;
 
   function updatePlot(extent, shouldRescaleYAxis) {
@@ -351,6 +353,7 @@ q.await(function(error, data, aLengths, bLengths) {
       .bins(d3.scale.linear().ticks(numTicks))(filteredData);
 
     xPlotScale = d3.scale.linear()
+      .domain([0, 1])
       .range([margin, plotWidth - margin]);
     yPlotScale = d3.scale.linear()
       .domain(lastYExtent)
@@ -358,8 +361,12 @@ q.await(function(error, data, aLengths, bLengths) {
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
-    plotBrush.x(xPlotScale).y(yPlotScale);
-    plot.call(plotBrush);
+    plotBrush.x(xPlotScale);
+    plot.selectAll('#plotbrush-group').remove();
+    var gBrush = plot.append('g').attr('id', 'plotbrush-group')
+      .attr('transform', 'translate(0,' + margin + ')')
+      .call(plotBrush);
+    gBrush.selectAll('rect').attr('height', plotHeight - 2 * margin);
 
     plot.selectAll('.dataBars').data(plotData)
       .attr('x', function(d) {
@@ -376,7 +383,7 @@ q.await(function(error, data, aLengths, bLengths) {
       })
       .attr('fill', 'steelblue');
 
-    plotBrushBrush();
+    plotBrushBrush(); 
 
     plot.selectAll('.xAxis').remove();
     plot.selectAll('.yAxis').remove();
