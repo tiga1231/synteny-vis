@@ -408,7 +408,7 @@ q.await(function(error, data, aLengths, bLengths) {
       .classed('yAxis', true).call(yAxis);
 
     if (shouldRescaleYAxis) {
-      var transitionLength = 250;
+      var transitionLength = 750;
 
       lastYExtent = [0, 3 / 2 * d3.max(_.pluck(plotData, 'y'))];
       yPlotScale = d3.scale.linear()
