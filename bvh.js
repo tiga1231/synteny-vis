@@ -1,13 +1,3 @@
-function cleanList(L) {
-  return _.map(L, function(d) {
-    if(d === 'NA' || d === 'undef') {
-      return '0';
-    } 
-    return d;
-  });
-  //return L; // No filtering
-}
-
 function build_bvh(nodes, dataField) {
   if (nodes.length === 0) {
     return null;
@@ -20,7 +10,7 @@ function build_bvh(nodes, dataField) {
       "xmax": node.adjustedStart1,
       "ymin": node.adjustedStart2,
       "ymax": node.adjustedStart2,
-      "data": cleanList([node[dataField]]),
+      "data": [node[dataField]],
       "left": null,
       "right": null
     };
@@ -56,14 +46,13 @@ function build_bvh(nodes, dataField) {
   }
 
   var data = _.pluck(nodes, dataField);
-  var cleanData = cleanList(data);
 
   var thisNode = {
     "xmin": xmin,
     "xmax": xmax,
     "ymin": ymin,
     "ymax": ymax,
-    "data": cleanData
+    "data": data
   };
   if (pieces[0].length === 0 || pieces[1].length === 0) {
     thisNode.left = null;

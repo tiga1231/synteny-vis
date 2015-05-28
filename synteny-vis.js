@@ -90,6 +90,8 @@ q.await(function(error, data, aLengths, bLengths) {
   var xShiftScale = d3.scale.ordinal().domain(xNames).range(xCumBPCount);
   var yShiftScale = d3.scale.ordinal().domain(yNames).range(yCumBPCount);
 
+  var field = 'Kn';
+
   // Compute absolute BP offset from chromosome and relative offset
   for (var i = 0; i < data.length; i++) {
     var group = data[i].data;
@@ -103,12 +105,14 @@ q.await(function(error, data, aLengths, bLengths) {
       match.adjustedStop1 = Number(match.stop1) + xShift;
       match.adjustedStart2 = Number(match.start2) + yShift;
       match.adjustedStop2 = Number(match.stop2) + yShift;
+      if(match[field] === 'NA' || match[field] === 'undef') {
+        match[field] = '0';
+      }
     }
   }
   // Combine all chunks
   data = _.flatten(_.pluck(data, 'data'));
 
-  var field = 'Kn';
   var bvh_nodes = build_bvh(data, field);
 
   var xTotalBPs = _.last(xCumBPCount);
@@ -317,11 +321,6 @@ q.await(function(error, data, aLengths, bLengths) {
     plot.selectAll('.dataBars').attr('fill', function(d) {
       return (d.x + d.dx <= max && d.x >= min) ? 'red' : 'steelblue';
     });
-
-    if (d3.event && d3.event.mode === 'move') {
-      d3.select('#plotbrush-group').call(plotBrush.extent([min, Math.round(numTicks * (min + e[1] - e[0])) / numTicks]));
-    }
-
   }
 
   function plotBrushEnd() {
@@ -350,15 +349,6 @@ q.await(function(error, data, aLengths, bLengths) {
       xmax: e[1][0],
       ymax: e[1][1]
     };
-    /*var filteredData = _.chain(data)
-      .filter(function(d) {
-        return d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
-          d.adjustedStart2 > e[0][1] && d.adjustedStart2 < e[1][1];
-      }).map(function(d) {
-        if(d[field] === 'NA' || d[field] === 'undef') return '0';
-        return d[field];
-      }).value();
-*/
     var filteredData = find_bvh(bvh_nodes, bbox);
     
     var plotData = d3.layout.histogram()
