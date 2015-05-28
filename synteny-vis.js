@@ -108,6 +108,9 @@ q.await(function(error, data, aLengths, bLengths) {
   // Combine all chunks
   data = _.flatten(_.pluck(data, 'data'));
 
+  var field = 'Kn';
+  var bvh_nodes = build_bvh(data, field);
+
   var xTotalBPs = _.last(xCumBPCount);
   var yTotalBPs = _.last(yCumBPCount);
   var width = 600;
@@ -277,7 +280,7 @@ q.await(function(error, data, aLengths, bLengths) {
       var wMargin = 1e7; // fudge by a little bit to catch data that starts off screen and extends on screen
       dataSel
         .filter(function(d) {
-          return d.adjustedStart1 < xMax + wMargin && d.adjustedStart1 > xMin -wMargin && d.adjustedStart2 < yMax + wMargin && d.adjustedStart2 > yMin - wMargin;
+          return d.adjustedStart1 < xMax + wMargin && d.adjustedStart1 > xMin - wMargin && d.adjustedStart2 < yMax + wMargin && d.adjustedStart2 > yMin - wMargin;
         })
         .style('stroke-width', plotScaling);
     }
@@ -289,7 +292,6 @@ q.await(function(error, data, aLengths, bLengths) {
 
   }
 
-  var field = 'Kn';
   var numTicks = 20;
   var margin = 50;
 
@@ -342,13 +344,23 @@ q.await(function(error, data, aLengths, bLengths) {
       [xScaleOriginal.invert(e[1][0]), yScaleOriginal.invert(e[0][1])],
     ];
 
-    // This filters out NA
-    var filteredData = _.chain(data)
+    var bbox = {
+      xmin: e[0][0],
+      ymin: e[0][1],
+      xmax: e[1][0],
+      ymax: e[1][1]
+    };
+    /*var filteredData = _.chain(data)
       .filter(function(d) {
-        return d[field] !== 'NA' && d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
+        return d.adjustedStart1 > e[0][0] && d.adjustedStart1 < e[1][0] &&
           d.adjustedStart2 > e[0][1] && d.adjustedStart2 < e[1][1];
-      }).pluck(field).value();
-
+      }).map(function(d) {
+        if(d[field] === 'NA' || d[field] === 'undef') return '0';
+        return d[field];
+      }).value();
+*/
+    var filteredData = find_bvh(bvh_nodes, bbox);
+    
     var plotData = d3.layout.histogram()
       .bins(d3.scale.linear().ticks(numTicks))(filteredData);
 
