@@ -105,6 +105,7 @@ q.await(function(error, data, aLengths, bLengths) {
       match.adjustedStop1 = Number(match.stop1) + xShift;
       match.adjustedStart2 = Number(match.start2) + yShift;
       match.adjustedStop2 = Number(match.stop2) + yShift;
+      match.logKs = Math.log(Number(match.Ks));
       if(match[field] === 'NA' || match[field] === 'undef') {
         match[field] = '0';
       }
@@ -112,6 +113,11 @@ q.await(function(error, data, aLengths, bLengths) {
   }
   // Combine all chunks
   data = _.flatten(_.pluck(data, 'data'));
+  // clean data
+  data = _.filter(data, function(d) { return isFinite(d.logKs); });
+  data = _.sortBy(data, function(d) { return -d.logKs; });
+  // yuck
+  field = 'logKs';
 
   var bvh_nodes = build_bvh(data, field);
 
@@ -212,6 +218,10 @@ q.await(function(error, data, aLengths, bLengths) {
       return 'M ' + x1 + ' ' + y + ' L ' + x2 + ' ' + y;
     });
 
+  var dataExtent = d3.extent(data, function(d) { return d.logKs; });
+  var colorScale = d3.scale.linear().domain(dataExtent)
+        .range(["red", "green"]);
+
   // Data
   var dataSel = svg.selectAll('.synteny').data(data).enter()
     .append('line')
@@ -227,6 +237,9 @@ q.await(function(error, data, aLengths, bLengths) {
     })
     .attr('y2', function(d) {
       return yScale(d.adjustedStop2);
+    })
+    .style('stroke', function(d) {
+      return colorScale(d.logKs);
     });
 
   svgPre
@@ -318,15 +331,15 @@ q.await(function(error, data, aLengths, bLengths) {
     svg.selectAll('.synteny').classed('selected', function(d) {
       return d[field] <= max && d[field] >= min;
     });
-    plot.selectAll('.dataBars').attr('fill', function(d) {
-      return (d.x + d.dx <= max && d.x >= min) ? 'red' : 'steelblue';
-    });
+    // plot.selectAll('.dataBars').attr('fill', function(d) {
+    //   return (d.x + d.dx <= max && d.x >= min) ? 'red' : 'steelblue';
+    // });
   }
 
   function plotBrushEnd() {
     if (plotBrush.empty()) {
       svg.selectAll('.synteny').classed('selected', false);
-      plot.selectAll('.dataBars').attr('fill', 'steelblue');
+    //   plot.selectAll('.dataBars').attr('fill', 'steelblue');
     }
   }
 
@@ -352,10 +365,10 @@ q.await(function(error, data, aLengths, bLengths) {
     var filteredData = find_bvh(bvh_nodes, bbox);
     
     var plotData = d3.layout.histogram()
-      .bins(d3.scale.linear().ticks(numTicks))(filteredData);
+      .bins(d3.scale.linear().domain(dataExtent).ticks(numTicks))(filteredData);
 
     xPlotScale = d3.scale.linear()
-      .domain([0, 1])
+      .domain(dataExtent)
       .range([margin, plotWidth - margin]);
     yPlotScale = d3.scale.linear()
       .domain(lastYExtent)
@@ -375,7 +388,7 @@ q.await(function(error, data, aLengths, bLengths) {
         return xPlotScale(d.x);
       })
       .attr('width', function(d) {
-        return xPlotScale(d.dx) - margin;
+        return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
       })
       .attr('y', function(d) {
         return yPlotScale(d.y);
@@ -383,7 +396,9 @@ q.await(function(error, data, aLengths, bLengths) {
       .attr('height', function(d) {
         return plotHeight - margin - yPlotScale(d.y);
       })
-      .attr('fill', 'steelblue');
+      .attr('fill', function(d) {
+          return colorScale(d.x + d.dx/2);
+      });
 
     plotBrushBrush();
 
@@ -411,7 +426,7 @@ q.await(function(error, data, aLengths, bLengths) {
           return xPlotScale(d.x);
         })
         .attr('width', function(d) {
-          return xPlotScale(d.dx) - margin;
+          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
         })
         .attr('y', function(d) {
           return yPlotScale(d.y);
