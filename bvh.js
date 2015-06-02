@@ -6,16 +6,6 @@
  */
 
 function bvh_build(nodes) {
-  var ok =
-    _.every(_.pluck(nodes, 'xmin'), isFinite) &&
-    _.every(_.pluck(nodes, 'xmax'), isFinite) &&
-    _.every(_.pluck(nodes, 'ymin'), isFinite) &&
-    _.every(_.pluck(nodes, 'ymax'), isFinite);
-  if (!ok) {
-    console.log(nodes)
-    throw Error();
-  }
-
   var xmin = _.min(nodes, function(d) {
     return d.xmin;
   }).xmin;

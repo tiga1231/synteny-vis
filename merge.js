@@ -11,7 +11,8 @@ function copyList(L, dataField) {
       ymax: x.ymax,
       data: [x[dataField]],
       count: 1,
-      summary: x[dataField]
+      summary: x[dataField],
+      orig: x
     };
   });
 }
@@ -77,13 +78,29 @@ function combine(a, b) {
 }
 
 function mergeHelper(nodes, eps) {
+  // discount quadtree
+  var parts = _.groupBy(nodes, function(d) {
+    return d.orig.chr1 + ':' + d.orig.chr2
+  });
+
+  return _.chain(parts)
+    .map(function(p) {
+      return mergeHelper2(p, eps);
+    })
+    .flatten(true)
+    .value();
+}
+
+function mergeHelper2(nodes, eps) {
   var out = [];
   var start = nodes;
   var end = [];
 
   var cur;
   while (start.length > 0) {
-    start.sort(function(a, b) { return a.xmin < b.xmin ? 1 : -1; });
+    start.sort(function(a, b) {
+      return a.xmin < b.xmin ? 1 : -1;
+    });
     cur = start.pop();
     while (start.length > 0) {
       var tmp = start.pop();
