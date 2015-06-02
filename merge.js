@@ -9,7 +9,6 @@ function copyList(L, dataField) {
       xmax: x.xmax,
       ymin: x.ymin,
       ymax: x.ymax,
-      data: [x[dataField]],
       count: 1,
       summary: x[dataField],
       orig: x
@@ -18,16 +17,12 @@ function copyList(L, dataField) {
 }
 
 function merge(nodes, dataField, levels, flag) {
-  var ret = [];
-  for (var i = 0; i < levels.length; i++) {
-    var cp = copyList(nodes, dataField);
-    var merged = mergeHelper(cp, levels[i]);
-    ret.push({
-      epsilon: levels[i],
-      sets: merged
-    });
-  }
-  return ret;
+  return _.map(levels, function(epsilon) {
+    return {
+      epsilon: epsilon, 
+      sets: mergeHelper(copyList(nodes, dataField), epsilon)
+    };
+  });
 }
 
 function slope(a) {
@@ -71,7 +66,6 @@ function combine(a, b) {
     xmax: Math.max(a.xmax, b.xmax),
     ymin: Math.min(a.ymin, b.ymin),
     ymax: Math.max(a.ymax, b.ymax),
-    data: _.flatten([a.data, b.data]),
     count: a.count + b.count,
     summary: combineSummaries(a, b)
   };
@@ -80,11 +74,11 @@ function combine(a, b) {
 function mergeHelper(nodes, eps) {
   // discount quadtree
   var parts = _.groupBy(nodes, function(d) {
-    return d.orig.chr1 + ':' + d.orig.chr2
+    return d.orig.chr1 + ' ' + d.orig.chr2
   });
 
   return _.chain(parts)
-    .map(function(p) {
+    .map(function (p) {
       return mergeHelper2(p, eps);
     })
     .flatten(true)
@@ -96,11 +90,9 @@ function mergeHelper2(nodes, eps) {
   var start = nodes;
   var end = [];
 
+  // Crappy way to do a queue, but it doesn't slow us down too much
   var cur;
   while (start.length > 0) {
-    start.sort(function(a, b) {
-      return a.xmin < b.xmin ? 1 : -1;
-    });
     cur = start.pop();
     while (start.length > 0) {
       var tmp = start.pop();
