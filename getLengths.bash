@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [[ $1 -eq '' ]] ; then
     echo 'Specifiy an ID.'
     exit 1
