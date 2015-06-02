@@ -1,3 +1,125 @@
+function copyList(L, dataField) {
+  return _.map(L, function(x) {
+    return {
+      adjustedStart1: x.adjustedStart1,
+      adjustedStart2: x.adjustedStart2,
+      adjustedStop1: x.adjustedStop1,
+      adjustedStop2: x.adjustedStop2,
+      xmin: x.xmin,
+      xmax: x.xmax,
+      ymin: x.ymin,
+      ymax: x.ymax,
+      data: x[dataField],
+      count: 1
+    };
+  });
+}
+
+function merge(nodes, dataField, levels) {
+  var ret = [];
+  console.log(levels.length);
+  for (var i = 0; i < levels.length; i++) {
+    var cp = copyList(nodes, dataField);
+    var merged = mergeHelper(cp, levels[i]);
+    ret.push({
+      epsilon: levels[i],
+      sets: merged
+    });
+  }
+  return ret;
+}
+
+function slope(a) {
+  return (a.adjustedStop2 - a.adjustedStart2) / (a.adjustedStop1 - a.adjustedStart1);
+}
+
+function sameOrientation(a, b) {
+  return slope(a) / slope(b) > 0;
+}
+
+function closeish(a, b, e) {
+  return !(a.xmin > b.xmax + e || b.xmin > a.xmax + e ||
+    a.ymin > b.ymax + e || b.ymin > a.ymax + e) && sameOrientation(a, b);
+}
+
+function dist2(a, b) {
+  return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]);
+}
+
+function combine(a, b) {
+  var adjx1 = Math.min(a.xmin, b.xmin);
+  var adjx2 = Math.max(a.xmax, b.xmax);
+  var adjy1 = Math.min(a.ymin, b.ymin);
+  var adjy2 = Math.max(a.ymax, b.ymax);
+  if (slope(a) < 0) {
+    var temp = adjy1;
+    adjy1 = adjy2;
+    adjy2 = temp;
+  }
+
+  return {
+    adjustedStart1: adjx1,
+    adjustedStart2: adjy1,
+    adjustedStop1: adjx2,
+    adjustedStop2: adjy2,
+    xmin: Math.min(a.xmin, b.xmin),
+    xmax: Math.max(a.xmax, b.xmax),
+    ymin: Math.min(a.ymin, b.ymin),
+    ymax: Math.max(a.ymax, b.ymax),
+    data: (a.data * a.count + b.data * b.count) / (a.count + b.count),
+    count: a.count + b.count
+  };
+}
+
+function presort(nodes) {
+  var p = _.partition(nodes, function(x) {
+    return slope(x) < 0;
+  });
+  var q = p[0];
+  var r = p[1];
+  q.sort(function(a, b) {
+    return a.xmin < b.xmin ? 1 : -1;
+  });
+  r.sort(function(a, b) {
+    return a.xmin < b.xmin ? 1 : -1;
+  });
+  q.push.apply(q, r);
+  return q;
+}
+
+function shove(a, b) {
+  a.push.apply(a, b);
+  return a;
+}
+
+function mergeHelper(nodes, eps) {
+  var out = [];
+  var start = nodes;
+  var end = [];
+
+  var cur;
+  while (start.length > 0) {
+    cur = start.pop();
+    while (start.length > 0) {
+      var tmp = start.pop();
+      if (closeish(cur, tmp, eps)) {
+        end.push(combine(cur, tmp));
+        //end.push.apply(end, start);
+        end = shove(end,start);
+        start = end;
+        end = [];
+        cur = start.pop();
+      } else {
+        end.push(tmp);
+      }
+    }
+    start = end;
+    end = [];
+    out.push(cur);
+  }
+  return out;
+}
+
 function build_bvh(nodes, dataField) {
   if (nodes.length === 0) {
     return null;
@@ -6,10 +128,10 @@ function build_bvh(nodes, dataField) {
   if (nodes.length === 1) {
     var node = nodes[0];
     return {
-      "xmin": node.adjustedStart1,
-      "xmax": node.adjustedStart1,
-      "ymin": node.adjustedStart2,
-      "ymax": node.adjustedStart2,
+      "xmin": node.xmin,
+      "xmax": node.xmax,
+      "ymin": node.ymin,
+      "ymax": node.ymax,
       "data": [node[dataField]],
       "left": null,
       "right": null
@@ -17,16 +139,16 @@ function build_bvh(nodes, dataField) {
   }
 
   var xmin = d3.min(nodes, function(d) {
-    return Math.min(d.adjustedStart1, d.adjustedStop1);
+    return d.xmin;
   });
   var xmax = d3.max(nodes, function(d) {
-    return Math.max(d.adjustedStart1, d.adjustedStop1);
+    return d.xmax;
   });
   var ymin = d3.min(nodes, function(d) {
-    return Math.min(d.adjustedStart2, d.adjustedStop2);
+    return d.ymin;
   });
   var ymax = d3.max(nodes, function(d) {
-    return Math.max(d.adjustedStart2, d.adjustedStop2);
+    return d.ymax;
   });
 
   var xwidth = xmax - xmin;
@@ -36,12 +158,12 @@ function build_bvh(nodes, dataField) {
   if (xwidth > ywidth) {
     var middle = (xmax + xmin) / 2;
     pieces = _.partition(nodes, function(d) {
-      return Math.max(d.adjustedStart1, d.adjustedStop1) < middle;
+      return Math.max(d.xmax) < middle;
     });
   } else {
     var middle = (ymax + ymin) / 2;
     pieces = _.partition(nodes, function(d) {
-      return Math.max(d.adjustedStart2, d.adjustedStop2) < middle;
+      return Math.max(d.ymax) < middle;
     });
   }
 

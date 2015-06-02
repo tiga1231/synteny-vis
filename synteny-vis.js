@@ -1,3 +1,5 @@
+var SHOW_BOUNDING_BOXES = false;
+
 function cumulative_counts(data) {
   var ret = [];
   var count = 0;
@@ -13,16 +15,19 @@ var q = queue();
 
 switch (window.location.hash) {
   case '#homo_chimp':
+  case '#h':
     q = q.defer(d3.json, 'data/homo_chimp.json')
       .defer(d3.json, 'lengths/11691.json')
       .defer(d3.json, 'lengths/25577.json');
     break;
   case '#ecoli':
+  case '#e':
     q = q.defer(d3.json, 'data/ecoli.json')
       .defer(d3.json, 'lengths/4241.json')
       .defer(d3.json, 'lengths/4242.json');
     break;
   case '#arabidopsis':
+  case '#a':
     q = q.defer(d3.json, 'data/arabidopsis.json')
       .defer(d3.json, 'lengths/16911.json')
       .defer(d3.json, 'lengths/3068.json');
@@ -90,8 +95,6 @@ q.await(function(error, data, aLengths, bLengths) {
   var xShiftScale = d3.scale.ordinal().domain(xNames).range(xCumBPCount);
   var yShiftScale = d3.scale.ordinal().domain(yNames).range(yCumBPCount);
 
-  var field = 'Kn';
-
   // Compute absolute BP offset from chromosome and relative offset
   for (var i = 0; i < data.length; i++) {
     var group = data[i].data;
@@ -101,30 +104,47 @@ q.await(function(error, data, aLengths, bLengths) {
     var yShift = yShiftScale(bChrom);
     for (var j = 0; j < group.length; j++) {
       var match = group[j];
-      match.adjustedStart1 = Number(match.start1) + xShift;
-      match.adjustedStop1 = Number(match.stop1) + xShift;
-      match.adjustedStart2 = Number(match.start2) + yShift;
-      match.adjustedStop2 = Number(match.stop2) + yShift;
+      match.adjustedStart1 = x1 = Number(match.start1) + xShift;
+      match.adjustedStop1 = x2 = Number(match.stop1) + xShift;
+      match.adjustedStart2 = y1 = Number(match.start2) + yShift;
+      match.adjustedStop2 = y2 = Number(match.stop2) + yShift;
+      match.xmin = Math.min(x1, x2);
+      match.xmax = Math.max(x1, x2);
+      match.ymin = Math.min(y1, y2);
+      match.ymax = Math.max(y1, y2);
+
       match.logKs = Math.log(Number(match.Ks));
-      if(match[field] === 'NA' || match[field] === 'undef') {
-        match[field] = '0';
-      }
     }
   }
-  // Combine all chunks
-  data = _.flatten(_.pluck(data, 'data'));
-  // clean data
-  data = _.filter(data, function(d) { return isFinite(d.logKs); });
-  data = _.sortBy(data, function(d) { return -d.logKs; });
-  // yuck
-  field = 'logKs';
-
-  var bvh_nodes = build_bvh(data, field);
 
   var xTotalBPs = _.last(xCumBPCount);
   var yTotalBPs = _.last(yCumBPCount);
   var width = 600;
   var height = width * (yTotalBPs / xTotalBPs);
+
+  var field = 'logKs';
+
+  // Combine all chunks
+  data = _.flatten(_.pluck(data, 'data'));
+  // clean data
+  data = _.filter(data, function(d) {
+    return isFinite(d[field]);
+  });
+  data = _.sortBy(data, function(d) {
+    return -d[field];
+  });
+
+  var BPPerPixel = xTotalBPs / width;
+  console.log(BPPerPixel);
+  var merged = merge(data, field, [BPPerPixel]);
+  data = _.map(merged[0].sets, function(d) {
+    d[field] = _.map(_.range(d.count), function() {
+      return d.data;
+    });
+    return d;
+  });
+
+  var bvh_nodes = build_bvh(data, field);
 
   var xExtent = [0, xTotalBPs];
   var yExtent = [0, yTotalBPs];
@@ -218,9 +238,16 @@ q.await(function(error, data, aLengths, bLengths) {
       return 'M ' + x1 + ' ' + y + ' L ' + x2 + ' ' + y;
     });
 
-  var dataExtent = d3.extent(data, function(d) { return d.logKs; });
+  var wholePlotBBox = {
+    xmin: 0,
+    ymin: 0,
+    xmax: 1e15,
+    ymax: 1e15
+  };
+
+  var dataExtent = d3.extent(_.flatten(find_bvh(bvh_nodes, wholePlotBBox)));
   var colorScale = d3.scale.linear().domain(dataExtent)
-        .range(["red", "green"]);
+    .range(["red", "green"]);
 
   // Data
   var dataSel = svg.selectAll('.synteny').data(data).enter()
@@ -239,8 +266,29 @@ q.await(function(error, data, aLengths, bLengths) {
       return yScale(d.adjustedStop2);
     })
     .style('stroke', function(d) {
-      return colorScale(d.logKs);
+      return colorScale(d[field][0]);
     });
+
+  if (SHOW_BOUNDING_BOXES) {
+    var bbxs = svg.selectAll('rect').data(data).enter()
+      .append('rect')
+      .attr('x', function(d) {
+        return xScale(d.xmin);
+      })
+      .attr('y', function(d) {
+        return yScale(d.ymax);
+      })
+      .attr('width', function(d) {
+        return xScale(d.xmax) - xScale(d.xmin);
+      })
+      .attr('height', function(d) {
+        return yScale(d.ymin) - yScale(d.ymax);
+      })
+      .style('stroke', 'red')
+      .style('stroke-opacity', '1')
+      .style('fill', 'none')
+      .style('stroke-width', '.5');
+  }
 
   svgPre
     .append('g').attr('id', 'brush-group')
@@ -307,12 +355,26 @@ q.await(function(error, data, aLengths, bLengths) {
     d3.selectAll('.grid-horizontal').style('stroke-width', gridScaling);
     d3.selectAll('.grid-vertical').style('stroke-width', gridScaling);
 
+    //temp
+    if (SHOW_BOUNDING_BOXES) {
+      bbxs.style('stroke-width', gridScaling);
+    }
   }
 
-  var numTicks = 20;
+  var numTicks = 50;
   var margin = 50;
 
-  plot.selectAll('.dataBars').data(d3.range(numTicks)).enter()
+  // What a mess... d3.scale.linear.ticks decides how many ticks you get.
+  // The param is only a hint. We need to get the right number of bars, 
+  // so we make an axis just for that purpose. slice(1) deals with the 
+  // fact that the histogram layout bins between the tick values: n ticks 
+  // goes to n - 1 bins
+  plot.selectAll('.dataBars')
+    .data(d3.scale.linear()
+      .domain(dataExtent)
+      .range([margin, plotWidth - margin])
+      .ticks(numTicks).slice(1))
+    .enter()
     .append('rect').classed('dataBars', true);
 
   plot.append('text')
@@ -331,15 +393,12 @@ q.await(function(error, data, aLengths, bLengths) {
     svg.selectAll('.synteny').classed('selected', function(d) {
       return d[field] <= max && d[field] >= min;
     });
-    // plot.selectAll('.dataBars').attr('fill', function(d) {
-    //   return (d.x + d.dx <= max && d.x >= min) ? 'red' : 'steelblue';
-    // });
   }
 
   function plotBrushEnd() {
     if (plotBrush.empty()) {
       svg.selectAll('.synteny').classed('selected', false);
-    //   plot.selectAll('.dataBars').attr('fill', 'steelblue');
+      //   plot.selectAll('.dataBars').attr('fill', 'steelblue');
     }
   }
 
@@ -362,10 +421,7 @@ q.await(function(error, data, aLengths, bLengths) {
       xmax: e[1][0],
       ymax: e[1][1]
     };
-    var filteredData = find_bvh(bvh_nodes, bbox);
-    
-    var plotData = d3.layout.histogram()
-      .bins(d3.scale.linear().domain(dataExtent).ticks(numTicks))(filteredData);
+    var filteredData = _.flatten(find_bvh(bvh_nodes, bbox));
 
     xPlotScale = d3.scale.linear()
       .domain(dataExtent)
@@ -373,6 +429,10 @@ q.await(function(error, data, aLengths, bLengths) {
     yPlotScale = d3.scale.linear()
       .domain(lastYExtent)
       .range([plotHeight - margin, margin]);
+
+    var plotData = d3.layout.histogram()
+      .bins(xPlotScale.ticks(numTicks))(filteredData);
+
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
@@ -397,7 +457,7 @@ q.await(function(error, data, aLengths, bLengths) {
         return plotHeight - margin - yPlotScale(d.y);
       })
       .attr('fill', function(d) {
-          return colorScale(d.x + d.dx/2);
+        return colorScale(d.x + d.dx / 2);
       });
 
     plotBrushBrush();
