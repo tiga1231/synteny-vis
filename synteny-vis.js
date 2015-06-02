@@ -396,7 +396,7 @@ q.await(function(error, data, aLengths, bLengths) {
     .data(tempScale.ticks(numTicks).slice(1))
     .enter()
     .append('rect').classed('dataBars', true);
-  addBins(bvh_nodes, field, tempScale.ticks(numTicks));
+  computeBins(bvh_nodes, field, tempScale.ticks(numTicks));
 
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
