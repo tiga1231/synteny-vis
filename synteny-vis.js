@@ -1,5 +1,3 @@
-var SHOW_BOUNDING_BOXES = false;
-
 function cumulative_counts(data) {
   var ret = [];
   var count = 0;
@@ -110,14 +108,14 @@ q.await(function(error, data, aLengths, bLengths) {
     var yShift = yShiftScale(bChrom);
     for (var j = 0; j < group.length; j++) {
       var match = group[j];
-      match.adjustedStart1 = x1 = Number(match.start1) + xShift;
-      match.adjustedStop1 = x2 = Number(match.stop1) + xShift;
-      match.adjustedStart2 = y1 = Number(match.start2) + yShift;
-      match.adjustedStop2 = y2 = Number(match.stop2) + yShift;
-      match.xmin = Math.min(x1, x2);
-      match.xmax = Math.max(x1, x2);
-      match.ymin = Math.min(y1, y2);
-      match.ymax = Math.max(y1, y2);
+      match.x1 = Number(match.start1) + xShift;
+      match.x2 = Number(match.stop1) + xShift;
+      match.y1 = Number(match.start2) + yShift;
+      match.y2 = Number(match.stop2) + yShift;
+      match.xmin = Math.min(match.x1, match.x2);
+      match.xmax = Math.max(match.x1, match.x2);
+      match.ymin = Math.min(match.y1, match.y2);
+      match.ymax = Math.max(match.y1, match.y2);
 
       match.logKs = Math.log(Number(match.Ks));
     }
@@ -141,16 +139,17 @@ q.await(function(error, data, aLengths, bLengths) {
   });
 
   var BPPerPixel = xTotalBPs / width;
-  console.log(BPPerPixel);
-  var merged = merge(data, field, [BPPerPixel]);
-  data = _.map(merged[0].sets, function(d) {
-    d[field] = _.map(_.range(d.count), function() {
-      return d.data;
-    });
-    return d;
-  });
-
-  var bvh_nodes = build_bvh(data, field);
+  var base = 4;
+  var numLevels = Math.ceil(Math.log(BPPerPixel) / Math.log(base));
+  var levels = [];
+  for (var i = 0; i < numLevels; i++) {
+    var level = BPPerPixel / Math.pow(base, i);
+    levels.push(level);
+  }
+  var merged = merge(data, field, levels);
+  var bvh_nodes = bvh_build(data);
+  var prevMergeIndex = 0;
+  data = merged[0].sets;
 
   var xExtent = [0, xTotalBPs];
   var yExtent = [0, yTotalBPs];
@@ -251,7 +250,7 @@ q.await(function(error, data, aLengths, bLengths) {
     ymax: 1e15
   };
 
-  var dataExtent = d3.extent(_.flatten(find_bvh(bvh_nodes, wholePlotBBox)));
+  var dataExtent = d3.extent(bvh_find(bvh_nodes, wholePlotBBox), function(d) { return d[field]; });
   var colorScale = d3.scale.linear().domain(dataExtent)
     .range(["red", "green"]);
 
@@ -260,41 +259,20 @@ q.await(function(error, data, aLengths, bLengths) {
     .append('line')
     .classed('synteny', true)
     .attr('x1', function(d) {
-      return xScale(d.adjustedStart1);
+      return xScale(d.x1);
     })
     .attr('y1', function(d) {
-      return yScale(d.adjustedStart2);
+      return yScale(d.y1);
     })
     .attr('x2', function(d) {
-      return xScale(d.adjustedStop1);
+      return xScale(d.x2);
     })
     .attr('y2', function(d) {
-      return yScale(d.adjustedStop2);
+      return yScale(d.y2);
     })
     .style('stroke', function(d) {
-      return colorScale(d[field][0]);
+      return colorScale(d.summary);
     });
-
-  if (SHOW_BOUNDING_BOXES) {
-    var bbxs = svg.selectAll('rect').data(data).enter()
-      .append('rect')
-      .attr('x', function(d) {
-        return xScale(d.xmin);
-      })
-      .attr('y', function(d) {
-        return yScale(d.ymax);
-      })
-      .attr('width', function(d) {
-        return xScale(d.xmax) - xScale(d.xmin);
-      })
-      .attr('height', function(d) {
-        return yScale(d.ymin) - yScale(d.ymax);
-      })
-      .style('stroke', 'red')
-      .style('stroke-opacity', '1')
-      .style('fill', 'none')
-      .style('stroke-width', '.5');
-  }
 
   svgPre
     .append('g').attr('id', 'brush-group')
@@ -311,6 +289,52 @@ q.await(function(error, data, aLengths, bLengths) {
     var t = d3.event.translate;
     var s = d3.event.scale;
 
+    var modifiedXExtent = xScale.domain();
+    var modifiedYExtent = yScale.domain();
+    var screenWidth = modifiedXExtent[1] - modifiedXExtent[0]; // Ratio is same using x or y
+    var original = xExtent[1] - xExtent[0];
+    var plotScaling = strokeWidth * screenWidth / original;
+    var gridScaling = screenWidth / original;
+
+
+    var BP = BPPerPixel * gridScaling;
+    var mergeIndex = 0;
+    for (var i = levels.length - 1; i >= 0; i--) {
+      if (BP < levels[i]) {
+        mergeIndex = i;
+        break;
+      }
+    }
+    if (mergeIndex !== prevMergeIndex) {
+      prevMergeIndex = mergeIndex;
+      data = merged[mergeIndex].sets;
+      var tempSel = svg.selectAll('.synteny').data(data);
+
+      tempSel.enter().append('line').classed('synteny', true);
+
+      tempSel
+        .attr('x1', function(d) {
+          return xScaleOriginal(d.x1);
+        })
+        .attr('y1', function(d) {
+          return yScaleOriginal(d.y1);
+        })
+        .attr('x2', function(d) {
+          return xScaleOriginal(d.x2);
+        })
+        .attr('y2', function(d) {
+          return yScaleOriginal(d.y2);
+        })
+        .style('stroke', function(d) {
+          return colorScale(d.summary);
+        });
+
+      tempSel.exit().remove();
+
+      dataSel = tempSel;
+    }
+
+
     t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
     t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
     translation = t;
@@ -320,12 +344,7 @@ q.await(function(error, data, aLengths, bLengths) {
     d3.select('#brush-group').attr("transform", "translate(" + t + ")scale(" + d3.event.scale + ")");
     d3.select('#data-group').attr("transform", "translate(" + t + ")scale(" + d3.event.scale + ")");
 
-    var modifiedXExtent = xScale.domain();
-    var modifiedYExtent = yScale.domain();
-    var screenWidth = modifiedXExtent[1] - modifiedXExtent[0]; // Ratio is same using x or y
-    var original = xExtent[1] - xExtent[0];
-    var plotScaling = strokeWidth * screenWidth / original;
-    var gridScaling = screenWidth / original;
+
 
     /* 
      * Two optimizations for semantic zooming:
@@ -351,7 +370,7 @@ q.await(function(error, data, aLengths, bLengths) {
       var wMargin = 1e7; // fudge by a little bit to catch data that starts off screen and extends on screen
       dataSel
         .filter(function(d) {
-          return d.adjustedStart1 < xMax + wMargin && d.adjustedStart1 > xMin - wMargin && d.adjustedStart2 < yMax + wMargin && d.adjustedStart2 > yMin - wMargin;
+          return d.x1 < xMax + wMargin && d.x1 > xMin - wMargin && d.y1 < yMax + wMargin && d.y1 > yMin - wMargin;
         })
         .style('stroke-width', plotScaling);
     }
@@ -360,14 +379,9 @@ q.await(function(error, data, aLengths, bLengths) {
     // all of the time.
     d3.selectAll('.grid-horizontal').style('stroke-width', gridScaling);
     d3.selectAll('.grid-vertical').style('stroke-width', gridScaling);
-
-    //temp
-    if (SHOW_BOUNDING_BOXES) {
-      bbxs.style('stroke-width', gridScaling);
-    }
   }
 
-  var numTicks = 50;
+  var numTicks = 20;
   var margin = 50;
 
   // What a mess... d3.scale.linear.ticks decides how many ticks you get.
@@ -375,13 +389,14 @@ q.await(function(error, data, aLengths, bLengths) {
   // so we make an axis just for that purpose. slice(1) deals with the 
   // fact that the histogram layout bins between the tick values: n ticks 
   // goes to n - 1 bins
+  var tempScale = d3.scale.linear()
+    .domain(dataExtent)
+    .range([margin, plotWidth - margin]);
   plot.selectAll('.dataBars')
-    .data(d3.scale.linear()
-      .domain(dataExtent)
-      .range([margin, plotWidth - margin])
-      .ticks(numTicks).slice(1))
+    .data(tempScale.ticks(numTicks).slice(1))
     .enter()
     .append('rect').classed('dataBars', true);
+  addBins(bvh_nodes, field, tempScale.ticks(numTicks));
 
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
@@ -408,7 +423,7 @@ q.await(function(error, data, aLengths, bLengths) {
     }
   }
 
-  var lastYExtent = [0, data.length / 4]; // Default--no reason why
+  var lastYExtent = [0, bvh_nodes.data.length]; // Default--no reason why
   var plotBrush = d3.svg.brush()
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
@@ -427,7 +442,8 @@ q.await(function(error, data, aLengths, bLengths) {
       xmax: e[1][0],
       ymax: e[1][1]
     };
-    var filteredData = _.flatten(find_bvh(bvh_nodes, bbox));
+
+    var filteredData = bvh_find_summary(bvh_nodes, bbox);
 
     xPlotScale = d3.scale.linear()
       .domain(dataExtent)
@@ -435,9 +451,6 @@ q.await(function(error, data, aLengths, bLengths) {
     yPlotScale = d3.scale.linear()
       .domain(lastYExtent)
       .range([plotHeight - margin, margin]);
-
-    var plotData = d3.layout.histogram()
-      .bins(xPlotScale.ticks(numTicks))(filteredData);
 
     var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
     var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
@@ -449,7 +462,7 @@ q.await(function(error, data, aLengths, bLengths) {
       .call(plotBrush);
     gBrush.selectAll('rect').attr('height', plotHeight - 2 * margin);
 
-    plot.selectAll('.dataBars').data(plotData)
+    plot.selectAll('.dataBars').data(filteredData)
       .attr('x', function(d) {
         return xPlotScale(d.x);
       })
@@ -481,7 +494,7 @@ q.await(function(error, data, aLengths, bLengths) {
     if (shouldRescaleYAxis) {
       var transitionLength = 750;
 
-      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(plotData, 'y'))];
+      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(filteredData, 'y'))];
       yPlotScale = d3.scale.linear()
         .domain(lastYExtent)
         .range([plotHeight - margin, margin]);
