@@ -1,6 +1,6 @@
 var syntenyLineStrokeWidth = 3;
 var gridLineStrokeWidth = 1;
-var numHistogramTicks = 20;
+var numHistogramTicks = 50;
 var histogramYScaleTransitionLength = 750;
 
 
