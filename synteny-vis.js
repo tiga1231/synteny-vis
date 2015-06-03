@@ -3,42 +3,7 @@ var gridLineStrokeWidth = 1;
 var numHistogramTicks = 50;
 var histogramYScaleTransitionLength = 750;
 
-
-var q = queue();
-
-switch (window.location.hash) {
-  case '#homo_chimp':
-  case '#h':
-    q = q.defer(d3.json, 'data/homo_chimp.json')
-      .defer(d3.json, 'lengths/11691.json')
-      .defer(d3.json, 'lengths/25577.json');
-    break;
-  case '#ecoli':
-  case '#e':
-    q = q.defer(d3.json, 'data/ecoli.json')
-      .defer(d3.json, 'lengths/4241.json')
-      .defer(d3.json, 'lengths/4242.json');
-    break;
-  case '#arabidopsis':
-  case '#a':
-    q = q.defer(d3.json, 'data/arabidopsis.json')
-      .defer(d3.json, 'lengths/16911.json')
-      .defer(d3.json, 'lengths/3068.json');
-    break;
-  case '#maize_sorghum':
-  case '#m':
-    q = q.defer(d3.json, 'data/maize_sorghum.json')
-      .defer(d3.json, 'lengths/6807.json')
-      .defer(d3.json, 'lengths/8082.json');
-    break;
-  default:
-    alert("Don't know what '" + window.location.hash + "' is. Loading homo_chimp.json");
-    q = q.defer(d3.json, 'data/homo_chimp.json')
-      .defer(d3.json, 'lengths/11691.json')
-      .defer(d3.json, 'lengths/25577.json');
-}
-
-q.await(function(error, data, aLengths, bLengths) {
+function synteny(error, data, aLengths, bLengths) {
   if (error) {
     console.log(error);
     return;
@@ -120,7 +85,7 @@ q.await(function(error, data, aLengths, bLengths) {
   });
 
   var BPPerPixel = xTotalBPs / width;
-  var base = 4;
+  var base = 2;
   var numLevels = Math.ceil(Math.log(BPPerPixel) / Math.log(base));
   var levels = _.map(_.range(numLevels), function(i) {
     return BPPerPixel / Math.pow(base, i);
@@ -128,8 +93,11 @@ q.await(function(error, data, aLengths, bLengths) {
 
   var merged = merge(data, field, levels);
   var bvh_nodes = bvh_build(data);
-  var prevMergeIndex = 0;
-  data = merged[0].sets;
+
+  var dataExtent = d3.extent(_.pluck(data, field));
+  var colorScale = d3.scale.linear()
+    .domain(dataExtent)
+    .range(["red", "green"]);
 
   var xExtent = [0, xTotalBPs];
   var yExtent = [0, yTotalBPs];
@@ -170,7 +138,7 @@ q.await(function(error, data, aLengths, bLengths) {
   }
 
   function mainBrush() {
-    if(brush.empty()) return;
+    if (brush.empty()) return;
     var e = brush.extent();
     e = [
       [xScaleOriginal.invert(e[0][0]), yScaleOriginal.invert(e[1][1])],
@@ -180,7 +148,6 @@ q.await(function(error, data, aLengths, bLengths) {
       return d.xmin > e[1][0] || d.xmax < e[0][0] ||
         d.ymin > e[1][1] || d.ymax < e[0][1];
     });
-    console.log(e[0], e[1]);
     updatePlot(brush.extent(), false);
     resizeBrushBoundary();
   }
@@ -208,41 +175,30 @@ q.await(function(error, data, aLengths, bLengths) {
     .call(zoom).on('mousedown.zoom', null); //disable panning
   var svg = svgPre.append('g').attr('id', 'data-group');
 
-  var plotWidth = 600;
-  var plotHeight = 600;
-  var plot = d3.select('body').append('svg').classed('plot', true)
-    .attr({
-      width: plotWidth,
-      height: plotHeight
-    });
-
   // Grid lines
-  svg.selectAll('.grid-vertical')
+  svg.append('g').classed('.grid-vertical', true)
+    .selectAll('path')
     .data(xCumBPCount).enter().append('path')
-    .classed('grid-vertical', true)
+    .classed('grid', true)
     .attr('d', function(d) {
       var x = xScale(d);
       var y1 = 0;
       var y2 = height;
       return 'M ' + x + ' ' + y1 + ' L ' + x + ' ' + y2;
-    });
+    })
+    .attr('stroke-width', gridLineStrokeWidth);
 
-  svg.selectAll('.grid-horizontal')
+  svg.append('g').classed('.grid-horizontal', true)
+    .selectAll('path')
     .data(yCumBPCount).enter().append('path')
-    .classed('grid-horizontal', true)
+    .classed('grid', true)
     .attr('d', function(d) {
       var y = yScale(d);
       var x1 = 0;
       var x2 = width;
       return 'M ' + x1 + ' ' + y + ' L ' + x2 + ' ' + y;
-    });
-
-
-  var dataExtent = d3.extent(bvh_find(bvh_nodes, wholePlot), function(d) {
-    return d[field];
-  });
-  var colorScale = d3.scale.linear().domain(dataExtent)
-    .range(["red", "green"]);
+    })
+    .attr('stroke-width', gridLineStrokeWidth);
 
   var dataSel;
 
@@ -265,6 +221,7 @@ q.await(function(error, data, aLengths, bLengths) {
       .style('stroke', function(d) {
         return colorScale(d.summary);
       })
+      .style('stroke-width', syntenyLineStrokeWidth)
       .classed('unselectedByMain', false)
       .classed('unselectedByHistogram', false);
 
@@ -273,11 +230,13 @@ q.await(function(error, data, aLengths, bLengths) {
   }
 
   // Data
-  setSyntenyData(data);
+  setSyntenyData(merged[0].sets);
 
   svgPre
     .append('g').attr('id', 'brush-group')
     .call(brush);
+
+  var prevMergeIndex = 0;
 
   function updateMergeLevel(s) {
     var BP = BPPerPixel * s;
@@ -290,8 +249,8 @@ q.await(function(error, data, aLengths, bLengths) {
     }
     if (mergeIndex !== prevMergeIndex) {
       prevMergeIndex = mergeIndex;
-      data = merged[mergeIndex].sets;
-      setSyntenyData(data);
+
+      setSyntenyData(merged[mergeIndex].sets);
 
       // Update brushes
       plotBrushBrush();
@@ -320,9 +279,7 @@ q.await(function(error, data, aLengths, bLengths) {
 
     var mergeUpdate = updateMergeLevel(1 / s);
 
-    /* 
-     * We only update the svg elements that are visible.
-     */
+    // We only update the svg elements that are visible.
     var e = 1.e7
     var xMax = xScale.domain()[1] + e;
     var xMin = xScale.domain()[0] - e;
@@ -336,11 +293,17 @@ q.await(function(error, data, aLengths, bLengths) {
       })
       .style('stroke-width', syntenyLineStrokeWidth / s);
 
-    svg.selectAll('.grid-horizontal')
-      .style('stroke-width', gridLineStrokeWidth / s);
-    svg.selectAll('.grid-vertical')
+    svg.selectAll('.grid')
       .style('stroke-width', gridLineStrokeWidth / s);
   }
+
+  /* Histogram */
+
+  var plotWidth = 600;
+  var plotHeight = 600;
+  var plot = d3.select('body').append('svg').classed('plot', true)
+    .attr('width', plotWidth)
+    .attr('height', plotHeight);
 
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
@@ -357,11 +320,16 @@ q.await(function(error, data, aLengths, bLengths) {
       .classed('unselectedByHistogram', function(d) {
         return d.summary > e[1] || d.summary < e[0];
       });
+    plot.selectAll('.dataBars')
+      .classed('unselectedByHistogram', function(d) {
+        return d.x > e[1] || d.x + d.dx < e[0];
+      });
   }
 
   function plotBrushEnd() {
     if (plotBrush.empty()) {
       svg.selectAll('.synteny').classed('unselectedByHistogram', false);
+      plot.selectAll('.dataBars').classed('unselectedByHistogram', false);
     }
   }
 
@@ -415,22 +383,27 @@ q.await(function(error, data, aLengths, bLengths) {
       .call(plotBrush);
     gBrush.selectAll('rect').attr('height', plotHeight - 2 * margin);
 
+    function updatePlotAttrs(selection) {
+      selection
+        .attr('x', function(d) {
+          return xPlotScale(d.x);
+        })
+        .attr('width', function(d) {
+          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
+        })
+        .attr('y', function(d) {
+          return yPlotScale(d.y);
+        })
+        .attr('height', function(d) {
+          return plotHeight - margin - yPlotScale(d.y);
+        })
+        .attr('fill', function(d) {
+          return colorScale(d.x + d.dx / 2);
+        });
+    }
+
     plot.selectAll('.dataBars').data(filteredData)
-      .attr('x', function(d) {
-        return xPlotScale(d.x);
-      })
-      .attr('width', function(d) {
-        return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-      })
-      .attr('y', function(d) {
-        return yPlotScale(d.y);
-      })
-      .attr('height', function(d) {
-        return plotHeight - margin - yPlotScale(d.y);
-      })
-      .attr('fill', function(d) {
-        return colorScale(d.x + d.dx / 2);
-      });
+      .call(updatePlotAttrs);
 
     plotBrushBrush();
 
@@ -455,24 +428,13 @@ q.await(function(error, data, aLengths, bLengths) {
         .call(yAxis);
       plot.selectAll('.dataBars').transition()
         .duration(histogramYScaleTransitionLength)
-        .attr('x', function(d) {
-          return xPlotScale(d.x);
-        })
-        .attr('width', function(d) {
-          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-        })
-        .attr('y', function(d) {
-          return yPlotScale(d.y);
-        })
-        .attr('height', function(d) {
-          return plotHeight - margin - yPlotScale(d.y);
-        });
+        .call(updatePlotAttrs);
     }
   }
 
-  updatePlot(wholePlot, true); // Initialize histogram
+  updatePlot(wholePlot, true);
 
-  // zoom/pan switching
+  /* zoom/pan switching */
   d3.selectAll("#mouse-options input[name=mouse-options]")
     .on("change", function() {
       if (this.value === 'pan') {
@@ -486,5 +448,5 @@ q.await(function(error, data, aLengths, bLengths) {
         d3.select('#zoom-group').on('mousedown.zoom', null);
       }
     });
-});
+}
 

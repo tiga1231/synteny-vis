@@ -2,30 +2,19 @@
 
 <head>
   <meta charset='utf-8'>
-  <script src="d3.js"></script>
-  <script src="queue.js"></script>
-  <script src="underscore.js"></script>
+  <script src="lib/d3.js"></script>
+  <script src="lib/queue.js"></script>
+  <script src="lib/underscore.js"></script>
   <style>
     svg {
       border: 1px solid black;
     }
-    .grid-horizontal {
+    .grid {
       stroke: grey;
-    }
-    .grid-vertical {
-      stroke: grey;
-    }
-    .synteny {
-      stroke: green;
-      stroke-width: 3;
     }
     .extent {
       fill: grey;
       opacity: .2;
-    }
-    .plot > .extent {
-      fill: red;
-      opacity: .1;
     }
     .textInPlot {
       font-family: Verdana, geneva, sans-serif;
@@ -51,6 +40,7 @@
   <script src="bvh.js"></script>
   <script src="merge.js"></script>
   <script src="synteny-vis.js"></script>
+  <script src="load.js"></script>
 </body>
 
 </html>
