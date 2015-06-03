@@ -155,8 +155,8 @@ q.await(function(error, data, aLengths, bLengths) {
     var corners = ['.nw', '.ne', '.se', '.sw'];
     var vertical = ['.e', '.w'];
     var horizontal = ['.n', '.s'];
-    var horizontalRescale = _.union(corners, horizontal);
-    var verticalRescale = _.union(corners, vertical);
+    var horizontalRescale = _.union(corners, vertical);
+    var verticalRescale = _.union(corners, horizontal);
 
     _.map(horizontalRescale, function(name) {
       d3.select('.resize' + name).select('rect')
@@ -170,6 +170,7 @@ q.await(function(error, data, aLengths, bLengths) {
   }
 
   function mainBrush() {
+    if(brush.empty()) return;
     var e = brush.extent();
     e = [
       [xScaleOriginal.invert(e[0][0]), yScaleOriginal.invert(e[1][1])],
@@ -322,11 +323,11 @@ q.await(function(error, data, aLengths, bLengths) {
     /* 
      * We only update the svg elements that are visible.
      */
-    lastScale = s;
-    var xMax = xScale.domain()[1];
-    var xMin = xScale.domain()[0];
-    var yMax = yScale.domain()[1];
-    var yMin = yScale.domain()[0];
+    var e = 1.e7
+    var xMax = xScale.domain()[1] + e;
+    var xMin = xScale.domain()[0] - e;
+    var yMax = yScale.domain()[1] + e;
+    var yMin = yScale.domain()[0] - e;
 
     dataSel
       .filter(function(d) {
