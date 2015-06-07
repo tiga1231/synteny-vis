@@ -33,10 +33,25 @@
 </head>
 
 <body>
+  <svg id="main"></svg>
+  <svg id="plot"></svg>
+
   <form id="mouse-options">
     <input type="radio" name="mouse-options" value="brush" checked>Brushing
     <input type="radio" name="mouse-options" value="pan">Panning
   </form>
+
+  <form id="summary-options">
+    <input type="radio" name="summary-options" value="average" checked>Average
+    <input type="radio" name="summary-options" value="minimum">Minimum
+    <input type="radio" name="summary-options" value="maximum">Maximum
+  </form>
+
+  <form id="color-options">
+    <input type="radio" name="color-options" value="rg" checked>red-green
+    <input type="radio" name="color-options" value="rainbow">rainbow
+  </form>
+
   <script src="bvh.js"></script>
   <script src="merge.js"></script>
   <script src="synteny-vis.js"></script>

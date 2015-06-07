@@ -1,6 +1,6 @@
-function copyList(L, dataField) {
+function copyList(L, dataField, combinators) {
   return _.map(L, function(x) {
-    return {
+    var ret = {
       x1: x.x1,
       y1: x.y1,
       x2: x.x2,
@@ -10,17 +10,29 @@ function copyList(L, dataField) {
       ymin: x.ymin,
       ymax: x.ymax,
       count: 1,
-      summary: x[dataField],
       orig: x
     };
+    ret.summary = {};
+    _.each(_.pairs(combinators), function(p) {
+      var k = p[0];
+      ret.summary[k] = x[dataField];
+    });
+    return ret;
   });
 }
 
-function merge(nodes, dataField, levels, flag) {
+function average(a, b) {
+  return (a.summary.average * a.count + b.summary.average * b.count) / (a.count + b.count);
+}
+
+function merge(nodes, dataField, levels, combinators) {
+  combinators = combinators || {
+    average: average
+  };
   return _.map(levels, function(epsilon) {
     return {
-      epsilon: epsilon, 
-      sets: mergeHelper(copyList(nodes, dataField), epsilon)
+      epsilon: epsilon,
+      sets: mergeHelper(copyList(nodes, dataField, combinators), epsilon, combinators)
     };
   });
 }
@@ -42,7 +54,7 @@ function dist2(a, b) {
   return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]);
 }
 
-function combine(a, b) {
+function combine(a, b, combinators) {
   var x1 = Math.min(a.xmin, b.xmin);
   var x2 = Math.max(a.xmax, b.xmax);
   var y1 = Math.min(a.ymin, b.ymin);
@@ -53,11 +65,7 @@ function combine(a, b) {
     y2 = temp;
   }
 
-  function combineSummaries(a, b) {
-    return (a.summary * a.count + b.summary * b.count) / (a.count + b.count);
-  }
-
-  return {
+  var ret = {
     x1: x1,
     y1: y1,
     x2: x2,
@@ -67,25 +75,31 @@ function combine(a, b) {
     ymin: Math.min(a.ymin, b.ymin),
     ymax: Math.max(a.ymax, b.ymax),
     count: a.count + b.count,
-    summary: combineSummaries(a, b)
   };
+  ret.summary = {};
+  _.each(_.pairs(combinators), function(p) {
+    var k = p[0];
+    var f = p[1];
+    ret.summary[k] = f(a, b);
+  });
+  return ret;
 }
 
-function mergeHelper(nodes, eps) {
+function mergeHelper(nodes, eps, combinators) {
   // discount quadtree
   var parts = _.groupBy(nodes, function(d) {
     return d.orig.chr1 + ' ' + d.orig.chr2
   });
 
   return _.chain(parts)
-    .map(function (p) {
-      return mergeHelper2(p, eps);
+    .map(function(p) {
+      return mergeHelper2(p, eps, combinators);
     })
     .flatten(true)
     .value();
 }
 
-function mergeHelper2(nodes, eps) {
+function mergeHelper2(nodes, eps, combinators) {
   var out = [];
   var start = nodes;
   var end = [];
@@ -97,7 +111,7 @@ function mergeHelper2(nodes, eps) {
     while (start.length > 0) {
       var tmp = start.pop();
       if (closeish(cur, tmp, eps)) {
-        end.push(combine(cur, tmp));
+        end.push(combine(cur, tmp, combinators));
         end.push.apply(end, start);
         start = end;
         end = [];

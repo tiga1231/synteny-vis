@@ -1,7 +1,31 @@
-var syntenyLineStrokeWidth = 3;
+var syntenyLineStrokeWidth = 5;
 var gridLineStrokeWidth = 1;
-var numHistogramTicks = 50;
+var numHistogramTicks = 80;
 var histogramYScaleTransitionLength = 750;
+
+/* Don't forget to add a corresponding button in index.html */
+var summaryFunctions = {
+  average: function(a, b) {
+    return (a.summary.average * a.count + b.summary.average * b.count) / (a.count + b.count);
+  },
+  minimum: function(a, b) {
+    return Math.min(a.summary.minimum, b.summary.minimum);
+  },
+  maximum: function(a, b) {
+    return Math.max(a.summary.maximum, b.summary.maximum);
+  }
+};
+
+var colorScaleRanges = {
+  rg: {
+    domain: [0, 1],
+    range: ['red', 'green']
+  },
+  rainbow: {
+    domain: [0, .20, .35, .5, .75, 1],
+    range: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
+  }
+};
 
 function synteny(error, data, aLengths, bLengths) {
   if (error) {
@@ -67,7 +91,7 @@ function synteny(error, data, aLengths, bLengths) {
       match.ymin = Math.min(match.y1, match.y2);
       match.ymax = Math.max(match.y1, match.y2);
 
-      match.logKs = Math.log(Number(match.Ks));
+      match.logKs = Math.log(Number(match.Ks)) / Math.log(10);
     }
   }
 
@@ -91,13 +115,25 @@ function synteny(error, data, aLengths, bLengths) {
     return BPPerPixel / Math.pow(base, i);
   });
 
-  var merged = merge(data, field, levels);
+  var merged = merge(data, field, levels, summaryFunctions);
   var bvh_nodes = bvh_build(data);
 
   var dataExtent = d3.extent(_.pluck(data, field));
-  var colorScale = d3.scale.linear()
-    .domain(dataExtent)
-    .range(["red", "green"]);
+
+  function domainPartition(dom, values) {
+    return _.map(values, function(v) {
+      return dom[0] + v * (dom[1] - dom[0]);
+    });
+  }
+
+  var colorScales = {};
+  _.each(_.pairs(colorScaleRanges), function(p) {
+    console.log(p);
+    colorScales[p[0]] = d3.scale.linear()
+      .domain(domainPartition(dataExtent, p[1].domain))
+      .range(p[1].range);
+  });
+  var colorScale = colorScales['rg'];
 
   var xExtent = [0, xTotalBPs];
   var yExtent = [0, yTotalBPs];
@@ -167,7 +203,7 @@ function synteny(error, data, aLengths, bLengths) {
     .on('brush', mainBrush)
     .on('brushend', mainBrushEnd);
 
-  var svgPre = d3.select('body').append('svg')
+  var svgPre = d3.select('#main')
     .attr('width', width)
     .attr('height', height)
     .classed('main', true)
@@ -201,6 +237,7 @@ function synteny(error, data, aLengths, bLengths) {
     .attr('stroke-width', gridLineStrokeWidth);
 
   var dataSel;
+  var type = 'average';
 
   function setSyntenyData(lines) {
     var tempSel = svg.selectAll('.synteny').data(lines);
@@ -219,7 +256,7 @@ function synteny(error, data, aLengths, bLengths) {
         return yScaleOriginal(d.y2);
       })
       .style('stroke', function(d) {
-        return colorScale(d.summary);
+        return colorScale(d.summary[type]);
       })
       .style('stroke-width', syntenyLineStrokeWidth)
       .classed('unselectedByMain', false)
@@ -301,7 +338,7 @@ function synteny(error, data, aLengths, bLengths) {
 
   var plotWidth = 600;
   var plotHeight = 600;
-  var plot = d3.select('body').append('svg').classed('plot', true)
+  var plot = d3.select('#plot')
     .attr('width', plotWidth)
     .attr('height', plotHeight);
 
@@ -447,6 +484,32 @@ function synteny(error, data, aLengths, bLengths) {
         d3.select('#brush-group').style('pointer-events', 'all');
         d3.select('#zoom-group').on('mousedown.zoom', null);
       }
+    });
+
+  /* summary mode switching */
+  d3.selectAll("#summary-options input[name=summary-options]")
+    .on("change", function() {
+      type = this.value;
+      svg.selectAll('.synteny').transition().duration(500)
+      .style('stroke', function(d) {
+        return colorScale(d.summary[type]);
+      })
+    });
+
+  /* color mode switching */
+  d3.selectAll("#color-options input[name=color-options]")
+    .on("change", function() {
+      colorScale = colorScales[this.value];
+
+      svg.selectAll('.synteny').transition().duration(500)
+        .style('stroke', function(d) {
+          return colorScale(d.summary[type]);
+        });
+      plot.selectAll('.dataBars')
+        .transition().duration(500)
+        .attr('fill', function(d) {
+          return colorScale(d.x + d.dx / 2);
+        });
     });
 }
 
