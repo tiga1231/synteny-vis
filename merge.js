@@ -1,4 +1,4 @@
-function copyList(L, dataField, combinators) {
+function copyList(L, dataFields, combinators) {
   return _.map(L, function(x) {
     var ret = {
       x1: x.x1,
@@ -13,26 +13,28 @@ function copyList(L, dataField, combinators) {
       orig: x
     };
     ret.summary = {};
-    _.each(_.pairs(combinators), function(p) {
-      var k = p[0];
-      ret.summary[k] = x[dataField];
+    _.each(dataFields, function(f) {
+      ret.summary[f] = {};
+      _.each(_.keys(combinators), function(k) {
+        ret.summary[f][k] = x[f];
+      });
     });
     return ret;
   });
 }
 
-function average(a, b) {
-  return (a.summary.average * a.count + b.summary.average * b.count) / (a.count + b.count);
+function average(a, b, field) {
+  return (a.summary[field].average * a.count + b.summary[field].average * b.count) / (a.count + b.count);
 }
 
-function merge(nodes, dataField, levels, combinators) {
+function merge(nodes, dataFields, levels, combinators) {
   combinators = combinators || {
     average: average
   };
   return _.map(levels, function(epsilon) {
     return {
       epsilon: epsilon,
-      sets: mergeHelper(copyList(nodes, dataField, combinators), epsilon, combinators)
+      sets: mergeHelper(copyList(nodes, dataFields, combinators), epsilon, combinators)
     };
   });
 }
@@ -42,7 +44,7 @@ function slope(a) {
 }
 
 function sameOrientation(a, b) {
-  return slope(a) / slope(b) > 0;
+  return true; //slope(a) / slope(b) > 0;
 }
 
 function closeish(a, b, e) {
@@ -77,11 +79,15 @@ function combine(a, b, combinators) {
     count: a.count + b.count,
   };
   ret.summary = {};
-  _.each(_.pairs(combinators), function(p) {
-    var k = p[0];
-    var f = p[1];
-    ret.summary[k] = f(a, b);
-  });
+  _.each(_.keys(a.summary), function(field) {
+    ret.summary[field] = {};
+    _.each(_.pairs(combinators), function(p) {
+      var k = p[0];
+      var f = p[1];
+      ret.summary[field][k] = f(a, b, field);
+    });
+
+  })
   return ret;
 }
 
