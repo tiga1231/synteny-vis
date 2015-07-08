@@ -4,20 +4,11 @@
  *
  *  xmin, xmax, ymin, ymax
  */
-
 function bvh_build(nodes) {
-  var xmin = _.min(nodes, function(d) {
-    return d.xmin;
-  }).xmin;
-  var xmax = _.max(nodes, function(d) {
-    return d.xmax;
-  }).xmax;
-  var ymin = _.min(nodes, function(d) {
-    return d.ymin;
-  }).ymin;
-  var ymax = _.max(nodes, function(d) {
-    return d.ymax;
-  }).ymax;
+  var xmin = _.chain(nodes).pluck('xmin').min().value();
+  var xmax = _.chain(nodes).pluck('xmax').max().value();
+  var ymin = _.chain(nodes).pluck('ymin').min().value();
+  var ymax = _.chain(nodes).pluck('ymax').max().value();
 
   var xwidth = xmax - xmin;
   var ywidth = ymax - ymin;
@@ -26,12 +17,12 @@ function bvh_build(nodes) {
   if (xwidth > ywidth) {
     var middle = (xmax + xmin) / 2;
     pieces = _.partition(nodes, function(d) {
-      return Math.max(d.xmax) < middle;
+      return d.xmax < middle;
     });
   } else {
     var middle = (ymax + ymin) / 2;
     pieces = _.partition(nodes, function(d) {
-      return Math.max(d.ymax) < middle;
+      return d.ymax < middle;
     });
   }
 
@@ -75,38 +66,40 @@ function bvh_find(nodes, bbox) {
   }
 }
 
-function bvh_find_summary(nodes, bbox) {
-  function empty_bin() {
-    return _.map(nodes.bins, function(d) {
-      return {
-        x: d.x,
-        dx: d.dx,
-        y: 0
-      };
-    });
-  }
+function emptyBins(bins) {
+  return _.map(bins, function(d) {
+    return {
+      x: d.x,
+      dx: d.dx,
+      y: 0
+    };
+  });
+}
 
+function addBins(a, b) {
+  return _.chain(a.length).range()
+    .map(function(i) {
+      return {
+        x: a[i].x,
+        dx: a[i].dx,
+        y: a[i].y + b[i].y
+      };
+    }).value();
+}
+
+function bvh_find_summary(nodes, bbox) {
   if (containedIn(nodes, bbox)) {
     return nodes.bins;
   } else if (intersect(nodes, bbox)) {
-    var left = nodes.left ? bvh_find_summary(nodes.left, bbox) : empty_bin();
-    var right = nodes.right ? bvh_find_summary(nodes.right, bbox) : empty_bin();
-    var bins = _.map(_.zip(left, right), function(p) {
-      var a = p[0];
-      var b = p[1];
-      return {
-        x: a.x,
-        dx: a.dx,
-        y: a.y + b.y
-      };
-    });
-    return bins;
+    var left = nodes.left ? bvh_find_summary(nodes.left, bbox) : emptyBins(nodes.bins);
+    var right = nodes.right ? bvh_find_summary(nodes.right, bbox) : emptyBins(nodes.bins);
+    return addBins(left, right);
   } else {
-    return empty_bin();
+    return emptyBins(nodes.bins);
   }
 }
 
-function addBins(nodes, dataField, ticks) {
+function computeBins(nodes, dataField, ticks) {
   if (!nodes) return;
   var bins = [];
   for (var i = 0; i < ticks.length - 1; i++) {
@@ -120,7 +113,6 @@ function addBins(nodes, dataField, ticks) {
     });
   }
   nodes.bins = bins;
-  addBins(nodes.left, dataField, ticks);
-  addBins(nodes.right, dataField, ticks);
+  computeBins(nodes.left, dataField, ticks);
+  computeBins(nodes.right, dataField, ticks);
 }
-

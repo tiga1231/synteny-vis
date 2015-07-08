@@ -1,6 +1,6 @@
-function copyList(L, dataField) {
+function copyList(L, dataFields, combinators) {
   return _.map(L, function(x) {
-    return {
+    var ret = {
       x1: x.x1,
       y1: x.y1,
       x2: x.x2,
@@ -9,25 +9,34 @@ function copyList(L, dataField) {
       xmax: x.xmax,
       ymin: x.ymin,
       ymax: x.ymax,
-      data: [x[dataField]],
       count: 1,
-      summary: x[dataField],
       orig: x
     };
+    ret.summary = {};
+    _.each(dataFields, function(f) {
+      ret.summary[f] = {};
+      _.each(_.keys(combinators), function(k) {
+        ret.summary[f][k] = x[f];
+      });
+    });
+    return ret;
   });
 }
 
-function merge(nodes, dataField, levels, flag) {
-  var ret = [];
-  for (var i = 0; i < levels.length; i++) {
-    var cp = copyList(nodes, dataField);
-    var merged = mergeHelper(cp, levels[i]);
-    ret.push({
-      epsilon: levels[i],
-      sets: merged
-    });
-  }
-  return ret;
+function average(a, b, field) {
+  return (a.summary[field].average * a.count + b.summary[field].average * b.count) / (a.count + b.count);
+}
+
+function merge(nodes, dataFields, levels, combinators) {
+  combinators = combinators || {
+    average: average
+  };
+  return _.map(levels, function(epsilon) {
+    return {
+      epsilon: epsilon,
+      sets: mergeHelper(copyList(nodes, dataFields, combinators), epsilon, combinators)
+    };
+  });
 }
 
 function slope(a) {
@@ -35,7 +44,7 @@ function slope(a) {
 }
 
 function sameOrientation(a, b) {
-  return slope(a) / slope(b) > 0;
+  return true; //slope(a) / slope(b) > 0;
 }
 
 function closeish(a, b, e) {
@@ -47,7 +56,7 @@ function dist2(a, b) {
   return (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]);
 }
 
-function combine(a, b) {
+function combine(a, b, combinators) {
   var x1 = Math.min(a.xmin, b.xmin);
   var x2 = Math.max(a.xmax, b.xmax);
   var y1 = Math.min(a.ymin, b.ymin);
@@ -58,11 +67,7 @@ function combine(a, b) {
     y2 = temp;
   }
 
-  function combineSummaries(a, b) {
-    return (a.summary * a.count + b.summary * b.count) / (a.count + b.count);
-  }
-
-  return {
+  var ret = {
     x1: x1,
     y1: y1,
     x2: x2,
@@ -71,41 +76,48 @@ function combine(a, b) {
     xmax: Math.max(a.xmax, b.xmax),
     ymin: Math.min(a.ymin, b.ymin),
     ymax: Math.max(a.ymax, b.ymax),
-    data: _.flatten([a.data, b.data]),
     count: a.count + b.count,
-    summary: combineSummaries(a, b)
   };
+  ret.summary = {};
+  _.each(_.keys(a.summary), function(field) {
+    ret.summary[field] = {};
+    _.each(_.pairs(combinators), function(p) {
+      var k = p[0];
+      var f = p[1];
+      ret.summary[field][k] = f(a, b, field);
+    });
+
+  })
+  return ret;
 }
 
-function mergeHelper(nodes, eps) {
+function mergeHelper(nodes, eps, combinators) {
   // discount quadtree
   var parts = _.groupBy(nodes, function(d) {
-    return d.orig.chr1 + ':' + d.orig.chr2
+    return d.orig.chr1 + ' ' + d.orig.chr2
   });
 
   return _.chain(parts)
     .map(function(p) {
-      return mergeHelper2(p, eps);
+      return mergeHelper2(p, eps, combinators);
     })
     .flatten(true)
     .value();
 }
 
-function mergeHelper2(nodes, eps) {
+function mergeHelper2(nodes, eps, combinators) {
   var out = [];
   var start = nodes;
   var end = [];
 
+  // Crappy way to do a queue, but it doesn't slow us down too much
   var cur;
   while (start.length > 0) {
-    start.sort(function(a, b) {
-      return a.xmin < b.xmin ? 1 : -1;
-    });
     cur = start.pop();
     while (start.length > 0) {
       var tmp = start.pop();
       if (closeish(cur, tmp, eps)) {
-        end.push(combine(cur, tmp));
+        end.push(combine(cur, tmp, combinators));
         end.push.apply(end, start);
         start = end;
         end = [];

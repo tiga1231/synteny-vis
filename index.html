@@ -2,30 +2,19 @@
 
 <head>
   <meta charset='utf-8'>
-  <script src="d3.js"></script>
-  <script src="queue.js"></script>
-  <script src="underscore.js"></script>
+  <script src="lib/d3.js"></script>
+  <script src="lib/queue.js"></script>
+  <script src="lib/underscore.js"></script>
   <style>
     svg {
       border: 1px solid black;
     }
-    .grid-horizontal {
+    .grid {
       stroke: grey;
-    }
-    .grid-vertical {
-      stroke: grey;
-    }
-    .synteny {
-      stroke: green;
-      stroke-width: 3;
     }
     .extent {
       fill: grey;
       opacity: .2;
-    }
-    .plot > .extent {
-      fill: red;
-      opacity: .1;
     }
     .textInPlot {
       font-family: Verdana, geneva, sans-serif;
@@ -34,20 +23,49 @@
     .xAxis > line {
       stroke-width: 2;
     }
-    .selected {
-      stroke: red;
+    .unselected-main, .unselected-main2, .unselected-main3, .unselected-main4,
+    .unselected-plot, .unselected-plot2, .unselected-plot3, .unselected-plot4 {
+      opacity: .1;
     }
   </style>
 </head>
 
 <body>
+  <svg id="main"></svg>
+  <svg id="plot"></svg>
+  <!--
+  <svg id="main2"></svg>
+  <svg id="plot2"></svg>
+  <svg id="main3"></svg>
+  <svg id="plot3"></svg>
+  <svg id="main4"></svg>
+  <svg id="plot4"></svg>
+  -->
+
   <form id="mouse-options">
     <input type="radio" name="mouse-options" value="brush" checked>Brushing
     <input type="radio" name="mouse-options" value="pan">Panning
   </form>
+
+  <form id="summary-options">
+    <input type="radio" name="summary-options" value="average" checked>Average
+    <input type="radio" name="summary-options" value="minimum">Minimum
+    <input type="radio" name="summary-options" value="maximum">Maximum
+  </form>
+
+  <form id="color-options">
+    <input type="radio" name="color-options" value="rg" checked>red-green
+    <input type="radio" name="color-options" value="rg_quantized">rg_quantized
+    <input type="radio" name="color-options" value="ryb_mean">ryb_mean
+    <input type="radio" name="color-options" value="ryb_median">ryb_median
+    <input type="radio" name="color-options" value="rainbow">rainbow
+    <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
+  </form>
+
   <script src="bvh.js"></script>
   <script src="merge.js"></script>
   <script src="synteny-vis.js"></script>
+  <script src="load.js"></script>
 </body>
 
 </html>

@@ -1,212 +1,254 @@
-function cumulative_counts(data) {
-  var ret = [];
-  var count = 0;
-  for (var i = 0; i < data.length; i++) {
-    ret[i] = count;
-    count += data[i];
+/* synteny plot settings */
+var syntenyLineStrokeWidth = 5;
+var gridLineStrokeWidth = 1;
+var syntenyPlotWidth = 600; /* height is computed to maintain aspect ratio */
+
+/* Histogram settings */
+var margin = 50; /* padding around graph */
+var plotWidth = 600;
+var plotHeight = 600;
+var numHistogramTicks = 80;
+var histogramYScaleTransitionLength = 750;
+
+/* Don't forget to add a corresponding button in index.html */
+var summaryFunctions = {
+  average: function(a, b, field) {
+    return (a.summary[field].average * a.count + b.summary[field].average * b.count) / (a.count + b.count);
+  },
+  minimum: function(a, b, field) {
+    return Math.min(a.summary[field].minimum, b.summary[field].minimum);
+  },
+  maximum: function(a, b, field) {
+    return Math.max(a.summary[field].maximum, b.summary[field].maximum);
   }
-  ret[i] = count;
-  return ret;
-}
+};
 
-var q = queue();
-
-switch (window.location.hash) {
-  case '#homo_chimp':
-  case '#h':
-    q = q.defer(d3.json, 'data/homo_chimp.json')
-      .defer(d3.json, 'lengths/11691.json')
-      .defer(d3.json, 'lengths/25577.json');
-    break;
-  case '#ecoli':
-  case '#e':
-    q = q.defer(d3.json, 'data/ecoli.json')
-      .defer(d3.json, 'lengths/4241.json')
-      .defer(d3.json, 'lengths/4242.json');
-    break;
-  case '#arabidopsis':
-  case '#a':
-    q = q.defer(d3.json, 'data/arabidopsis.json')
-      .defer(d3.json, 'lengths/16911.json')
-      .defer(d3.json, 'lengths/3068.json');
-    break;
-  case '#maize_sorghum':
-  case '#m':
-    q = q.defer(d3.json, 'data/maize_sorghum.json')
-      .defer(d3.json, 'lengths/6807.json')
-      .defer(d3.json, 'lengths/8082.json');
-    break;
-  default:
-    alert("Don't know what '" + window.location.hash + "' is. Loading homo_chimp.json");
-    q = q.defer(d3.json, 'data/homo_chimp.json')
-      .defer(d3.json, 'lengths/11691.json')
-      .defer(d3.json, 'lengths/25577.json');
-}
-
-q.await(function(error, data, aLengths, bLengths) {
-  if (error) {
-    console.log(error);
-    return;
+/* Again -- Don't forget to add a corresponding button in index.html */
+var colorScaleRanges = {
+  rg: {
+    domain: [0, 1],
+    range: ['red', 'green']
+  },
+  rg_quantized: {
+    quantized: true,
+    domain: [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1],
+    range: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']
+  },
+  ryb_mean: {
+    domain: [0, 'mean', 1],
+    range: ['#fc8d59', '#ffffbf', '#91bfdb']
+  },
+  ryb_median: {
+    domain: [0, 'median', 1],
+    range: ['#fc8d59', '#ffffbf', '#91bfdb']
+  },
+  rainbow: {
+    domain: [0, .20, .35, .5, .75, 1],
+    range: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
+  },
+  rainbow_quantized: {
+    quantized: true,
+    domain: [0, .20, .35, .5, .75, 1],
+    range: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
   }
+};
 
-  //Make sure we gave the length files in the right order.
-  var aID = data[0].header.aID_c.split('_')[0];
-  aID = aID.substring(1, aID.length);
-  var bID = data[0].header.bID_c.split('_')[0];
-  bID = bID.substring(1, bID.length);
-  if (aID !== aLengths.id) {
-    console.log('You got the length files backwards, swapping...');
-    var t = aLengths;
-    aLengths = bLengths;
-    bLengths = t;
-  }
-  if (aID !== aLengths.id || bID !== bLengths.id) {
-    console.log('Are you using the right length files?');
-    console.log('Length files have ID\'s: ' + aLengths.id +
-      ' and ' + bLengths.id);
-    console.log('Data file has ID\'s: ' + aID + ' and ' + bID);
-    return;
-  }
+// Can be used as array or by bvh/merge stuff
+var wholePlot = {
+  0: [0, 0],
+  1: [1e15, 1e15],
+  xmin: 0,
+  ymin: 0,
+  xmax: 1e15,
+  ymax: 1e15
+};
 
-  // Compute cumulative BP counts
-  var xLengths = _.map(aLengths.lengths, function(d) {
-    return {
-      name: d.name,
-      length: Number(d.length)
-    };
-  });
+function controller(data, cumulative) {
+  /* zoom/pan switching */
+  d3.selectAll("#mouse-options input[name=mouse-options]")
+    .on("change", function() {
+      globals.setNavigationMode(this.value);
+    });
 
-  var yLengths = _.map(bLengths.lengths, function(d) {
-    return {
-      name: d.name,
-      length: Number(d.length)
-    };
-  });
+  /* summary mode switching */
+  d3.selectAll("#summary-options input[name=summary-options]")
+    .on("change", function() {
+      type = this.value;
+      globals.redraw();
+    });
 
-  xLengths.sort(function(a, b) {
-    return a.length < b.length ? 1 : -1;
-  });
-  yLengths.sort(function(a, b) {
-    return a.length < b.length ? 1 : -1;
-  });
+  /* color mode switching */
+  d3.selectAll("#color-options input[name=color-options]")
+    .on("change", function() {
+      colorScale = colorScales[this.value];
+      globals.redraw();
+    });
 
-  var xNames = _.pluck(xLengths, 'name');
-  var yNames = _.pluck(yLengths, 'name');
-
-  var xCumBPCount = cumulative_counts(_.pluck(xLengths, 'length'));
-  var yCumBPCount = cumulative_counts(_.pluck(yLengths, 'length'));
-
-  var xShiftScale = d3.scale.ordinal().domain(xNames).range(xCumBPCount);
-  var yShiftScale = d3.scale.ordinal().domain(yNames).range(yCumBPCount);
-
-  // Compute absolute BP offset from chromosome and relative offset
-  for (var i = 0; i < data.length; i++) {
-    var group = data[i].data;
-    var aChrom = group[0].chr1;
-    var bChrom = group[0].chr2;
-    var xShift = xShiftScale(aChrom);
-    var yShift = yShiftScale(bChrom);
-    for (var j = 0; j < group.length; j++) {
-      var match = group[j];
-      match.x1 = Number(match.start1) + xShift;
-      match.x2 = Number(match.stop1) + xShift;
-      match.y1 = Number(match.start2) + yShift;
-      match.y2 = Number(match.stop2) + yShift;
-      match.xmin = Math.min(match.x1, match.x2);
-      match.xmax = Math.max(match.x1, match.x2);
-      match.ymin = Math.min(match.y1, match.y2);
-      match.ymax = Math.max(match.y1, match.y2);
-
-      match.logKs = Math.log(Number(match.Ks));
-    }
-  }
-
-  var xTotalBPs = _.last(xCumBPCount);
-  var yTotalBPs = _.last(yCumBPCount);
-  var width = 600;
-  var height = width * (yTotalBPs / xTotalBPs);
 
   var field = 'logKs';
+  var colorScale;
+  var type = 'average';
 
-  // Combine all chunks
-  data = _.flatten(_.pluck(data, 'data'));
-  // clean data
   data = _.filter(data, function(d) {
     return isFinite(d[field]);
   });
-  data = _.sortBy(data, function(d) {
-    return -d[field];
+
+  var dataExtent = d3.extent(_.pluck(data, field));
+  var dataMean = d3.mean(_.pluck(data, field));
+  var dataMedian = d3.median(_.pluck(data, field));
+  console.log('Mean', dataMean);
+  console.log('Median', dataMedian);
+
+  function domainPartition(values) {
+    return _.map(values, function(v) {
+      if (v === 'mean') {
+        var val = dataMean;
+      } else if (v === 'median') {
+        var val = dataMedian;
+      } else {
+        var val = dataExtent[0] + v * (dataExtent[1] - dataExtent[0]);
+      }
+      return val;
+    });
+  }
+
+  var colorScales = {};
+  _.each(_.pairs(colorScaleRanges), function(p) {
+    colorScales[p[0]] = p[1].quantized ? d3.scale.quantize() : d3.scale.linear();
+    colorScales[p[0]]
+      .domain(domainPartition(p[1].domain))
+      .range(p[1].range);
   });
+  colorScale = colorScales['rg'];
+
+  var bvh_nodes = bvh_build(data);
+
+  globals.getColorScale = function() {
+    return colorScale;
+  };
+  globals.getSummaryType = function() {
+    return type;
+  };
+
+  var funcs = [
+    synteny('#main', data, cumulative, field),
+    //synteny('#main2', data, cumulative, field),
+    //synteny('#main3', data, cumulative, field),
+    //synteny('#main4', data, cumulative, field),
+    histogram('#plot', bvh_nodes, field),
+    //histogram('#plot2', bvh_nodes, field),
+    //histogram('#plot3', bvh_nodes, field),
+    //histogram('#plot4', bvh_nodes, field)
+  ];
+
+  globals.filter = function(obj) {
+    _.each(funcs, function(o) {
+      o.filter(obj);
+    })
+  };
+
+  globals.redraw = function() {
+    _.each(funcs, function(o) {
+      o.redraw();
+    })
+  };
+
+  globals.zoomed = function() {
+    _.each(funcs, function(o) {
+      o.zoomed();
+    })
+  };
+
+  globals.setNavigationMode = function(mode) {
+    _.each(funcs, function(o) {
+      o.setNavigationMode(mode);
+    })
+  }
+}
+
+var globals = {};
+
+function synteny(id, data, cumulative, field) {
+  var unselectedClass = 'unselected-' + id.substring(1);
+
+  var xCumBPCount = cumulative.xCumBPCount;
+  var yCumBPCount = cumulative.yCumBPCount;
+
+  var xTotalBPs = _.last(xCumBPCount);
+  var yTotalBPs = _.last(yCumBPCount);
+  var height = syntenyPlotWidth;
+  var width = syntenyPlotWidth;
+  //var width = height * (xTotalBPs / yTotalBPs);
 
   var BPPerPixel = xTotalBPs / width;
-  var base = 4;
+  var base = 2;
   var numLevels = Math.ceil(Math.log(BPPerPixel) / Math.log(base));
-  var levels = [];
-  for (var i = 0; i < numLevels; i++) {
-    var level = BPPerPixel / Math.pow(base, i);
-    levels.push(level);
-  }
-  var merged = merge(data, field, levels);
-  var bvh_nodes = bvh_build(data);
-  var prevMergeIndex = 0;
-  data = merged[0].sets;
+  var levels = _.map(_.range(numLevels), function(i) {
+    return BPPerPixel / Math.pow(base, i);
+  });
+
+  var merged = merge(data, [field], levels, summaryFunctions);
 
   var xExtent = [0, xTotalBPs];
   var yExtent = [0, yTotalBPs];
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
-  var xScaleOriginal = d3.scale.linear().domain(xExtent).range([0, width]);
-  var yScaleOriginal = d3.scale.linear().domain(yExtent).range([height, 0]);
+  var xScaleOriginal = xScale.copy();
+  var yScaleOriginal = yScale.copy();
 
   var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 10000]).on('zoom', zoomed);
 
-  var wholePlotExtent = [
-    [0, 0],
-    [1e15, 1e15]
-  ];
-
   function resizeBrushBoundary() {
-    var s = scaling;
-    // Fix the brush extent cursor box sizes
-    d3.select('.resize.e').select('rect')
-      .attr('width', 6 / s).attr('x', -3 / s);
-    d3.select('.resize.w').select('rect')
-      .attr('width', 6 / s).attr('x', -3 / s);
-    d3.select('.resize.n').select('rect')
-      .attr('height', 6 / s).attr('y', -3 / s);
-    d3.select('.resize.s').select('rect')
-      .attr('height', 6 / s).attr('y', -3 / s);
+    var scaling = zoom.scale();
+    var corners = ['.nw', '.ne', '.se', '.sw'];
+    var vertical = ['.e', '.w'];
+    var horizontal = ['.n', '.s'];
+    var horizontalRescale = _.union(corners, vertical);
+    var verticalRescale = _.union(corners, horizontal);
 
-    d3.select('.resize.nw').select('rect')
-      .attr('width', 6 / s).attr('x', -3 / s)
-      .attr('height', 6 / s).attr('y', -3 / s);
-    d3.select('.resize.ne').select('rect')
-      .attr('width', 6 / s).attr('x', -3 / s)
-      .attr('height', 6 / s).attr('y', -3 / s);
-    d3.select('.resize.se').select('rect')
-      .attr('width', 6 / s).attr('x', -3 / s)
-      .attr('height', 6 / s).attr('y', -3 / s);
-    d3.select('.resize.sw').select('rect')
-      .attr('width', 6 / s).attr('x', -3 / s)
-      .attr('height', 6 / s).attr('y', -3 / s);
+    _.map(horizontalRescale, function(name) {
+      d3.select('.resize' + name).select('rect')
+        .attr('width', 6 / scaling).attr('x', -3 / scaling);
+    });
+
+    _.map(verticalRescale, function(name) {
+      d3.select('.resize' + name).select('rect')
+        .attr('height', 6 / scaling).attr('y', -3 / scaling);
+    });
+  }
+
+  function invert(e) {
+    return [
+      [xScaleOriginal.invert(e[0][0]), yScaleOriginal.invert(e[1][1])],
+      [xScaleOriginal.invert(e[1][0]), yScaleOriginal.invert(e[0][1])],
+    ];
+  }
+
+  function mainBrush() {
+    if (brush.empty()) return;
+    globals.filter({
+      extent: invert(brush.extent()),
+      yAxis: false,
+      selector: unselectedClass
+    });
+    resizeBrushBoundary();
+  }
+
+  function mainBrushEnd() {
+    globals.filter({
+      extent: brush.empty() ? wholePlot : invert(brush.extent()),
+      yAxis: true,
+      selector: unselectedClass
+    });
   }
 
   var brush = d3.svg.brush()
     .x(d3.scale.linear().domain([0, width]).range([0, width]))
     .y(d3.scale.linear().domain([0, height]).range([0, height]))
-    .on('brush', function() {
-      updatePlot(brush.extent(), false);
-      resizeBrushBoundary();
-    })
-    .on('brushend', function() {
-      if (brush.empty()) {
-        updatePlot(wholePlotExtent, true);
-      } else {
-        updatePlot(brush.extent(), true);
-      }
-    });
+    .on('brush', mainBrush)
+    .on('brushend', mainBrushEnd);
 
-  var svgPre = d3.select('body').append('svg')
+  var svgPre = d3.select(id)
     .attr('width', width)
     .attr('height', height)
     .classed('main', true)
@@ -214,90 +256,71 @@ q.await(function(error, data, aLengths, bLengths) {
     .call(zoom).on('mousedown.zoom', null); //disable panning
   var svg = svgPre.append('g').attr('id', 'data-group');
 
-  var plotWidth = 600;
-  var plotHeight = 600;
-  var plot = d3.select('body').append('svg').classed('plot', true)
-    .attr({
-      width: plotWidth,
-      height: plotHeight
-    });
-
   // Grid lines
-  svg.selectAll('.grid-vertical')
+  svg.append('g').classed('.grid-vertical', true)
+    .selectAll('path')
     .data(xCumBPCount).enter().append('path')
-    .classed('grid-vertical', true)
+    .classed('grid', true)
     .attr('d', function(d) {
       var x = xScale(d);
       var y1 = 0;
       var y2 = height;
       return 'M ' + x + ' ' + y1 + ' L ' + x + ' ' + y2;
-    });
+    })
+    .attr('stroke-width', gridLineStrokeWidth);
 
-  svg.selectAll('.grid-horizontal')
+  svg.append('g').classed('.grid-horizontal', true)
+    .selectAll('path')
     .data(yCumBPCount).enter().append('path')
-    .classed('grid-horizontal', true)
+    .classed('grid', true)
     .attr('d', function(d) {
       var y = yScale(d);
       var x1 = 0;
       var x2 = width;
       return 'M ' + x1 + ' ' + y + ' L ' + x2 + ' ' + y;
-    });
+    })
+    .attr('stroke-width', gridLineStrokeWidth);
 
-  var wholePlotBBox = {
-    xmin: 0,
-    ymin: 0,
-    xmax: 1e15,
-    ymax: 1e15
-  };
+  var dataSel;
 
-  var dataExtent = d3.extent(bvh_find(bvh_nodes, wholePlotBBox), function(d) { return d[field]; });
-  var colorScale = d3.scale.linear().domain(dataExtent)
-    .range(["red", "green"]);
+  function setSyntenyData(lines) {
+    var tempSel = svg.selectAll('.synteny').data(lines);
+    var colorScale = globals.getColorScale();
+    var type = globals.getSummaryType();
+    tempSel.enter().append('line').classed('synteny', true);
+    tempSel
+      .attr('x1', function(d) {
+        return xScaleOriginal(d.x1);
+      })
+      .attr('y1', function(d) {
+        return yScaleOriginal(d.y1);
+      })
+      .attr('x2', function(d) {
+        return xScaleOriginal(d.x2);
+      })
+      .attr('y2', function(d) {
+        return yScaleOriginal(d.y2);
+      })
+      .style('stroke', function(d) {
+        return colorScale(d.summary[field][type]);
+      })
+      .style('stroke-width', syntenyLineStrokeWidth);
+
+    tempSel.exit().remove();
+    dataSel = tempSel;
+  }
 
   // Data
-  var dataSel = svg.selectAll('.synteny').data(data).enter()
-    .append('line')
-    .classed('synteny', true)
-    .attr('x1', function(d) {
-      return xScale(d.x1);
-    })
-    .attr('y1', function(d) {
-      return yScale(d.y1);
-    })
-    .attr('x2', function(d) {
-      return xScale(d.x2);
-    })
-    .attr('y2', function(d) {
-      return yScale(d.y2);
-    })
-    .style('stroke', function(d) {
-      return colorScale(d.summary);
-    });
+  setSyntenyData(merged[0].sets);
 
   svgPre
     .append('g').attr('id', 'brush-group')
     .call(brush);
 
-  var strokeWidth = 3;
-  var lastScale = strokeWidth;
+  var prevMergeIndex = 0;
 
-  var panning = false;
-  var scaling = 1;
-  var translation = [0, 0];
-
-  function zoomed() {
-    var t = d3.event.translate;
-    var s = d3.event.scale;
-
-    var modifiedXExtent = xScale.domain();
-    var modifiedYExtent = yScale.domain();
-    var screenWidth = modifiedXExtent[1] - modifiedXExtent[0]; // Ratio is same using x or y
-    var original = xExtent[1] - xExtent[0];
-    var plotScaling = strokeWidth * screenWidth / original;
-    var gridScaling = screenWidth / original;
-
-
-    var BP = BPPerPixel * gridScaling;
+  function updateMergeLevel(s) {
+    var BP = 1/2 * BPPerPixel * s;
     var mergeIndex = 0;
     for (var i = levels.length - 1; i >= 0; i--) {
       if (BP < levels[i]) {
@@ -307,96 +330,115 @@ q.await(function(error, data, aLengths, bLengths) {
     }
     if (mergeIndex !== prevMergeIndex) {
       prevMergeIndex = mergeIndex;
-      data = merged[mergeIndex].sets;
-      var tempSel = svg.selectAll('.synteny').data(data);
 
-      tempSel.enter().append('line').classed('synteny', true);
+      setSyntenyData(merged[mergeIndex].sets);
 
-      tempSel
-        .attr('x1', function(d) {
-          return xScaleOriginal(d.x1);
-        })
-        .attr('y1', function(d) {
-          return yScaleOriginal(d.y1);
-        })
-        .attr('x2', function(d) {
-          return xScaleOriginal(d.x2);
-        })
-        .attr('y2', function(d) {
-          return yScaleOriginal(d.y2);
-        })
-        .style('stroke', function(d) {
-          return colorScale(d.summary);
-        });
+      // Update brushes
+      globals.zoomed();
 
-      tempSel.exit().remove();
-
-      dataSel = tempSel;
+      return true;
     }
-
-
-    t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
-    t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
-    translation = t;
-    scaling = s;
-    zoom.translate(t); // prevents the translate from growing large. This way, you don't have to "scroll back" onto the canvas if you go too far.
-
-    d3.select('#brush-group').attr("transform", "translate(" + t + ")scale(" + d3.event.scale + ")");
-    d3.select('#data-group').attr("transform", "translate(" + t + ")scale(" + d3.event.scale + ")");
-
-
-
-    /* 
-     * Two optimizations for semantic zooming:
-     *  - Only update the stroke-width if there is a large difference
-     *    between current width and ideal width.
-     *    This lowers the number of updates that are necessary at low
-     *    magnification, which are the most expensive because...
-     *  - We only update the svg elements that are visible.
-     *
-     * The parameter k controls how extreme the first optimization is.
-     * k = 1 means that 'large' means roughly an integer difference,
-     * k = 2 means that 'large' means roughly a half integer difference, etc.
-     * (I don't know what I am talking about here.)
-     * Bigger k, smoother. Smaller k, faster.
-     */
-    var k = 3;
-    if (Math.round(k / scaling) !== Math.round(k / lastScale)) {
-      lastScale = plotScaling;
-      var xMax = modifiedXExtent[1];
-      var xMin = modifiedXExtent[0];
-      var yMax = modifiedYExtent[1];
-      var yMin = modifiedYExtent[0];
-      var wMargin = 1e7; // fudge by a little bit to catch data that starts off screen and extends on screen
-      dataSel
-        .filter(function(d) {
-          return d.x1 < xMax + wMargin && d.x1 > xMin - wMargin && d.y1 < yMax + wMargin && d.y1 > yMin - wMargin;
-        })
-        .style('stroke-width', plotScaling);
-    }
-
-    // There are so few grid lines, we can afford to update all of them
-    // all of the time.
-    d3.selectAll('.grid-horizontal').style('stroke-width', gridScaling);
-    d3.selectAll('.grid-vertical').style('stroke-width', gridScaling);
+    return false;
   }
 
-  var numTicks = 20;
-  var margin = 50;
+  var lastScale = 1;
 
-  // What a mess... d3.scale.linear.ticks decides how many ticks you get.
-  // The param is only a hint. We need to get the right number of bars, 
-  // so we make an axis just for that purpose. slice(1) deals with the 
-  // fact that the histogram layout bins between the tick values: n ticks 
-  // goes to n - 1 bins
-  var tempScale = d3.scale.linear()
-    .domain(dataExtent)
-    .range([margin, plotWidth - margin]);
-  plot.selectAll('.dataBars')
-    .data(tempScale.ticks(numTicks).slice(1))
-    .enter()
-    .append('rect').classed('dataBars', true);
-  addBins(bvh_nodes, field, tempScale.ticks(numTicks));
+  function zoomed() {
+    var t = d3.event.translate;
+    var s = d3.event.scale;
+    t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
+    t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
+    // prevents the translate from growing large. This way, you don't 
+    // have to "scroll back" onto the canvas if you pan past the edge.
+    zoom.translate(t);
+
+    d3.select(id).select('#brush-group')
+      .attr("transform", "translate(" + t + ")scale(" + s + ")");
+    d3.select(id).select('#data-group')
+      .attr("transform", "translate(" + t + ")scale(" + s + ")");
+
+    var mergeUpdate = updateMergeLevel(1 / s);
+
+    // We only update the svg elements that are visible.
+    var e = 1.e7
+    var xMax = xScale.domain()[1] + e;
+    var xMin = xScale.domain()[0] - e;
+    var yMax = yScale.domain()[1] + e;
+    var yMin = yScale.domain()[0] - e;
+
+    dataSel
+      .filter(function(d) {
+        return !(d.xmin > xMax || xMin > d.xmax ||
+          d.ymin > yMax || yMin > d.ymin);
+      })
+      .style('stroke-width', syntenyLineStrokeWidth / s);
+
+    svg.selectAll('.grid')
+      .style('stroke-width', gridLineStrokeWidth / s);
+  }
+
+  function filterSyntenyByData(range, selField, selector) {
+    var type = globals.getSummaryType();
+    svg.selectAll('.synteny')
+      .classed(selector, function(d) {
+        return d.summary[selField][type] > range[1] || d.summary[selField][type] < range[0];
+      });
+  }
+
+  function filterSyntenyByExtent(e, selector) {
+    svg.selectAll('.synteny').classed(selector, function(d) {
+      return d.xmin > e[1][0] || d.xmax < e[0][0] ||
+        d.ymin > e[1][1] || d.ymax < e[0][1];
+    });
+  }
+
+  function filter(obj) {
+    if (obj.extent) {
+      filterSyntenyByExtent(obj.extent, obj.selector);
+    } else if (obj.data) {
+      filterSyntenyByData(obj.data, obj.field, obj.selector);
+    }
+  }
+
+  function reColorSyntenyLines() {
+    var colorScale = globals.getColorScale();
+    var type = globals.getSummaryType();
+    svg.selectAll('.synteny').transition().duration(500)
+      .style('stroke', function(d) {
+        return colorScale(d.summary[field][type]);
+      });
+  }
+
+  function setNavigationMode(mode) {
+    if (mode === 'pan') {
+      d3.select(id).select('#brush-group').on('mousedown.brush', null);
+      d3.select(id).select('#zoom-group').call(zoom);
+      d3.select(id).select('#brush-group').style('pointer-events', null);
+      d3.select(id).select('#zoom-group').style('pointer-events', 'all');
+    } else if (mode === 'brush') {
+      d3.select(id).select('#brush-group').call(brush);
+      d3.select(id).select('#brush-group').style('pointer-events', 'all');
+      d3.select(id).select('#zoom-group').on('mousedown.zoom', null);
+    }
+  }
+
+  return {
+    filter: filter,
+    redraw: reColorSyntenyLines,
+    zoomed: mainBrush,
+    setNavigationMode: setNavigationMode
+  };
+}
+
+function histogram(id, bvh_nodes, field) {
+  /* Histogram */
+  var unselectedClass = 'unselected-' + id.substring(1);
+
+  var dataExtent = d3.extent(_.pluck(bvh_find(bvh_nodes, wholePlot), field));
+
+  var plot = d3.select(id)
+    .attr('width', plotWidth)
+    .attr('height', plotHeight);
 
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
@@ -407,34 +449,47 @@ q.await(function(error, data, aLengths, bLengths) {
     .text(field);
 
   function plotBrushBrush() {
+    if (plotBrush.empty()) return;
     var e = plotBrush.extent();
-    // Rounding to include entire histogram bars at once
-    var min = Math.floor(numTicks * e[0]) / numTicks;
-    var max = Math.ceil(numTicks * e[1]) / numTicks;
-    svg.selectAll('.synteny').classed('selected', function(d) {
-      return d[field] <= max && d[field] >= min;
+    globals.filter({
+      data: e,
+      field: field,
+      selector: unselectedClass
     });
   }
 
   function plotBrushEnd() {
     if (plotBrush.empty()) {
-      svg.selectAll('.synteny').classed('selected', false);
-      //   plot.selectAll('.dataBars').attr('fill', 'steelblue');
+      globals.filter({
+        data: dataExtent,
+        field: field,
+        selector: unselectedClass
+      });
     }
   }
 
-  var lastYExtent = [0, bvh_nodes.data.length]; // Default--no reason why
   var plotBrush = d3.svg.brush()
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
-  var xPlotScale, yPlotScale;
 
-  function updatePlot(extent, shouldRescaleYAxis) {
+  lastYExtent = [0, bvh_nodes.data.length];
+  var xPlotScale = d3.scale.linear()
+    .domain(dataExtent)
+    .range([margin, plotWidth - margin]);
+  var yPlotScale;
+
+  plot.selectAll('.dataBars')
+    .data(xPlotScale.ticks(numHistogramTicks).slice(1))
+    .enter()
+    .append('rect').classed('dataBars', true);
+  computeBins(bvh_nodes, field, xPlotScale.ticks(numHistogramTicks));
+
+  var lastYExtent;
+
+  var filters = {}
+
+  function updatePlot(extent, shouldRescaleYAxis, selector) {
     var e = extent;
-    e = [
-      [xScaleOriginal.invert(e[0][0]), yScaleOriginal.invert(e[1][1])],
-      [xScaleOriginal.invert(e[1][0]), yScaleOriginal.invert(e[0][1])],
-    ];
 
     var bbox = {
       xmin: e[0][0],
@@ -443,7 +498,35 @@ q.await(function(error, data, aLengths, bLengths) {
       ymax: e[1][1]
     };
 
-    var filteredData = bvh_find_summary(bvh_nodes, bbox);
+    filters[selector] = bbox;
+
+    // Take the intersection of all the filters
+    var intersection = _.reduce(filters, function(a, b) {
+      return {
+        xmin: Math.max(a.xmin, b.xmin),
+        ymin: Math.max(a.ymin, b.ymin),
+        xmax: Math.min(a.xmax, b.xmax),
+        ymax: Math.min(a.ymax, b.ymax)
+      };
+    }, {
+      xmin: 0,
+      ymin: 0,
+      xmax: 1e20,
+      ymax: 1e20
+    });
+
+    if (intersection.xmin < intersection.xmax &&
+      intersection.ymin < intersection.ymax) {
+      filteredData = bvh_find_summary(bvh_nodes, intersection);
+    } else {
+      filteredData = bvh_find_summary(bvh_nodes, {
+        xmin: 0,
+        ymin: 0,
+        xmax: 0,
+        ymax: 0
+      });
+    }
+
 
     xPlotScale = d3.scale.linear()
       .domain(dataExtent)
@@ -462,22 +545,28 @@ q.await(function(error, data, aLengths, bLengths) {
       .call(plotBrush);
     gBrush.selectAll('rect').attr('height', plotHeight - 2 * margin);
 
+    function updatePlotAttrs(selection) {
+      var colorScale = globals.getColorScale();
+      selection
+        .attr('x', function(d) {
+          return xPlotScale(d.x);
+        })
+        .attr('width', function(d) {
+          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
+        })
+        .attr('y', function(d) {
+          return yPlotScale(d.y);
+        })
+        .attr('height', function(d) {
+          return plotHeight - margin - yPlotScale(d.y);
+        })
+        .attr('fill', function(d) {
+          return colorScale(d.x + d.dx / 2);
+        });
+    }
+
     plot.selectAll('.dataBars').data(filteredData)
-      .attr('x', function(d) {
-        return xPlotScale(d.x);
-      })
-      .attr('width', function(d) {
-        return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-      })
-      .attr('y', function(d) {
-        return yPlotScale(d.y);
-      })
-      .attr('height', function(d) {
-        return plotHeight - margin - yPlotScale(d.y);
-      })
-      .attr('fill', function(d) {
-        return colorScale(d.x + d.dx / 2);
-      });
+      .call(updatePlotAttrs);
 
     plotBrushBrush();
 
@@ -492,47 +581,52 @@ q.await(function(error, data, aLengths, bLengths) {
       .classed('yAxis', true).call(yAxis);
 
     if (shouldRescaleYAxis) {
-      var transitionLength = 750;
-
       lastYExtent = [0, 3 / 2 * d3.max(_.pluck(filteredData, 'y'))];
       yPlotScale = d3.scale.linear()
         .domain(lastYExtent)
         .range([plotHeight - margin, margin]);
       yAxis.scale(yPlotScale);
-      yAxisSel.transition().duration(transitionLength).call(yAxis);
-      plot.selectAll('.dataBars').transition().duration(transitionLength)
-        .attr('x', function(d) {
-          return xPlotScale(d.x);
-        })
-        .attr('width', function(d) {
-          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-        })
-        .attr('y', function(d) {
-          return yPlotScale(d.y);
-        })
-        .attr('height', function(d) {
-          return plotHeight - margin - yPlotScale(d.y);
-        });
+      yAxisSel.transition()
+        .duration(histogramYScaleTransitionLength)
+        .call(yAxis);
+      plot.selectAll('.dataBars').transition()
+        .duration(histogramYScaleTransitionLength)
+        .call(updatePlotAttrs);
     }
   }
 
-  updatePlot(wholePlotExtent, true); // Initialize histogram
+  updatePlot(wholePlot, true);
 
-  // zoom/pan switching
-  d3.selectAll("#mouse-options input[name=mouse-options]")
-    .on("change", function() {
-      if (this.value === 'pan') {
-        panning = true;
-        d3.select('#brush-group').on('mousedown.brush', null);
-        d3.select('#zoom-group').call(zoom);
-        d3.select('#brush-group').style('pointer-events', null);
-        d3.select('#zoom-group').style('pointer-events', 'all');
-      } else if (this.value === 'brush') {
-        panning = false;
-        d3.select('#brush-group').call(brush);
-        d3.select('#brush-group').style('pointer-events', 'all');
-        d3.select('#zoom-group').on('mousedown.zoom', null);
-      }
-    });
-});
+  function reColorDataBars() {
+    var colorScale = globals.getColorScale();
+    plot.selectAll('.dataBars')
+      .transition().duration(500)
+      .attr('fill', function(d) {
+        return colorScale(d.x + d.dx / 2);
+      });
+  }
+
+  function filterBarsByData(range, selField, selector) {
+    /* Broken -- doesn't properly filter on other plot fields */
+    plot.selectAll('.dataBars')
+      .classed(selector, function(d) {
+        return d.x > range[1] || d.x + d.dx < range[0];
+      });
+  }
+
+  function filter(obj) {
+    if (obj.extent) {
+      updatePlot(obj.extent, obj.yAxis, obj.selector);
+    } else if (obj.data) {
+      filterBarsByData(obj.data, obj.field, obj.selector);
+    }
+  }
+
+  return {
+    filter: filter,
+    zoomed: plotBrushBrush,
+    redraw: reColorDataBars,
+    setNavigationMode: function() {}
+  };
+}
 
