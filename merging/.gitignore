@@ -1,11 +1,8 @@
 CMakeCache.txt
 main
-
 Makefile
 CMakeFiles
 cmake_install.cmake
 csv
 pc
 tri
-
-web/*.combined
