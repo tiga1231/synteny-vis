@@ -13,6 +13,8 @@ class TestMinHeap(TestCase):
         m = MinHeap()
         m.insert(1)
         self.assertEqual(1, m.find_min())
+        self.assertEqual(1, m.size())
+        self.assertFalse(m.empty())
 
     def test_insert_on_several(self):
         m = MinHeap()
@@ -124,3 +126,13 @@ class TestMinHeap(TestCase):
         m.insert(1)
 
         self.assertRaises(MinHeapException, m.insert, 1)
+
+    def test_find_min_raises_on_empty(self):
+        m = MinHeap()
+
+        self.assertRaises(MinHeapException, m.find_min)
+
+    def test_extract_min_raises_on_empty(self):
+        m = MinHeap()
+
+        self.assertRaises(MinHeapException, m.extract_min)

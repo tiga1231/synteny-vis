@@ -57,12 +57,12 @@ class MinHeap:
 
     def find_min(self):
         if self.empty():
-            raise Exception('Heap underflow')
+            raise MinHeapException('Heap underflow')
         return self.__heap[0]
 
     def extract_min(self):
         if self.empty():
-            raise Exception('Heap underflow')
+            raise MinHeapException('Heap underflow')
         ret = self.__heap[0]
         self.__swap(0, -1)
         self.__heap.pop()
