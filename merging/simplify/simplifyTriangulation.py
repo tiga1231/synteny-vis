@@ -57,7 +57,7 @@ def collapse_point(p1idx, p2idx):
     new_x = .5 * (p1.x + p2.x)
     new_y = .5 * (p1.y + p2.y)
     new_point = pointedge.Point(new_x, new_y)
-    new_point.edges = p1.edges | p2.edges
+    new_point.__edges = p1.edges | p2.edges
     point_index = pointedge.add_global_point(new_point)
 
     pointedge.redirect_global_point(pointedge.get_real_point_index(p1idx), point_index)
@@ -93,16 +93,16 @@ def collapse_edge(edge_to_collapse):
     new_point = collapse_point(edge_to_collapse.p1, edge_to_collapse.p2)
 
     points_to_update = {new_point}
-    points_to_update |= {pointedge.get_global_point(x.p1) for x in new_point.edges}
-    points_to_update |= {pointedge.get_global_point(x.p2) for x in new_point.edges}
+    points_to_update |= {pointedge.get_global_point(x.p1) for x in new_point.__edges}
+    points_to_update |= {pointedge.get_global_point(x.p2) for x in new_point.__edges}
 
     for point in points_to_update:
-        new_edges = {edge for edge in point.edges if edge.len2() > 0}
+        new_edges = {edge for edge in point.__edges if edge.len2() > 0}
         new_edges = remove_real_virtual_pairs(new_edges)
 
         update_edges_in_heap(new_edges)
-        remove_edges_from_heap(point.edges - new_edges)
-        point.edges = new_edges
+        remove_edges_from_heap(point.__edges - new_edges)
+        point.__edges = new_edges
 
 
 def get_file_name(i):

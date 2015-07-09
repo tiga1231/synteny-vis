@@ -1,3 +1,5 @@
+from point import Point
+
 GLOBAL_POINTS = []
 INSERTION_INDEX_MAP = {}
 
@@ -66,40 +68,6 @@ def _reset():
     count = 0
 
 
-EPS = .001
-
-
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.edges = set()
-
-    def add_edge(self, edge_index):
-        self.edges.add(edge_index)
-
-    def __eq__(self, other):
-        return abs(self.x - other.x) < EPS and abs(self.y - other.y) < EPS
-
-    def __str__(self):
-        return repr(self)
-
-    def __repr__(self):
-        if len(self.edges) > 5:
-            return 'Point(%f, %f, w/edges:|%d|)' % (self.x, self.y, len(self.edges))
-        else:
-            return 'Point(%f, %f, w/edges:%s)' % (self.x, self.y, str(self.edges))
-
-    def len2(self, other):
-        return (self.x - other.x) ** 2 + (self.y - other.y) ** 2
-
-    def real_degree(self):
-        return len([x for x in self.edges if not x.virtual])
-
-    def __hash__(self):
-        return int(self.x * self.y)
-
-
 class Edge:
     def __init__(self, p1, p2, virtual):
         self.p1 = p1
@@ -150,7 +118,7 @@ class Edge:
 
 def _tests():
     p = Point(1, 1)
-    assert len(p.edges) == 0
+    assert len(p.__edges) == 0
     assert p.len2(p) == 0
 
     global GLOBAL_POINTS

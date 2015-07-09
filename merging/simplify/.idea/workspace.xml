@@ -6,8 +6,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="58a7fcde-de40-4b2c-b63d-ea7a77c8ad22" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/heap.py" afterPath="$PROJECT_DIR$/heap.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test_minheap.py" afterPath="$PROJECT_DIR$/test_minheap.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/point.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/test_point.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pointedge.py" afterPath="$PROJECT_DIR$/pointedge.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/simplifyTriangulation.py" afterPath="$PROJECT_DIR$/simplifyTriangulation.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="simplify.iws" />
@@ -31,11 +33,11 @@
     <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf>
-          <file leaf-file-name="heap.py" pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/heap.py">
+          <file leaf-file-name="point.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/point.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.88">
-                  <caret line="97" column="0" selection-start-line="97" selection-start-column="0" selection-end-line="97" selection-end-column="0" />
+                <state vertical-scroll-proportion="0.0">
+                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
                   <folding />
                 </state>
               </provider>
@@ -45,11 +47,11 @@
       </split-first>
       <split-second>
         <leaf>
-          <file leaf-file-name="test_minheap.py" pinned="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/test_minheap.py">
+          <file leaf-file-name="test_point.py" pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/test_point.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.44">
-                  <caret line="115" column="0" selection-start-line="115" selection-start-column="0" selection-end-line="115" selection-end-column="0" />
+                <state vertical-scroll-proportion="0.93914807">
+                  <caret line="46" column="45" selection-start-line="46" selection-start-column="45" selection-end-line="46" selection-end-column="45" />
                   <folding>
                     <element signature="e#0#29#0" expanded="true" />
                   </folding>
@@ -70,9 +72,11 @@
         <option value="$PROJECT_DIR$/ks2pc.py" />
         <option value="$PROJECT_DIR$/readks.py" />
         <option value="$PROJECT_DIR$/simplifyTriangulation.py" />
-        <option value="$PROJECT_DIR$/pointedge.py" />
         <option value="$PROJECT_DIR$/test_minheap.py" />
         <option value="$PROJECT_DIR$/heap.py" />
+        <option value="$PROJECT_DIR$/pointedge.py" />
+        <option value="$PROJECT_DIR$/test_point.py" />
+        <option value="$PROJECT_DIR$/point.py" />
       </list>
     </option>
   </component>
@@ -91,7 +95,7 @@
     <OptionsSetting value="true" id="Update" />
     <OptionsSetting value="true" id="Status" />
     <OptionsSetting value="true" id="Edit" />
-    <ConfirmationsSetting value="0" id="Add" />
+    <ConfirmationsSetting value="2" id="Add" />
     <ConfirmationsSetting value="0" id="Remove" />
   </component>
   <component name="ProjectView">
@@ -137,7 +141,7 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.buildout.BuildoutModulesConfigurable" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
-  <component name="RunManager" selected="Python tests.Unittests in test_minheap">
+  <component name="RunManager" selected="Python tests.Unittests in test_point">
     <configuration default="false" name="Unittests in test_minheap" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -214,6 +218,28 @@
       <option name="METHOD_NAME" value="test_notify_key_change_throws_on_no_key_after_key_was_in_heap" />
       <option name="FOLDER_NAME" value="" />
       <option name="TEST_TYPE" value="TEST_METHOD" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Unittests in test_point" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="simplify" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_point.py" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
       <option name="PATTERN" value="" />
       <option name="USE_PATTERN" value="false" />
       <option name="PUREUNITTEST" value="true" />
@@ -343,18 +369,20 @@
       <option name="USE_KEYWORD" value="false" />
       <method />
     </configuration>
-    <list size="4">
+    <list size="5">
       <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in test_minheap" />
       <item index="1" class="java.lang.String" itemvalue="Python.__init__" />
       <item index="2" class="java.lang.String" itemvalue="Python tests.Unittest TestMinHeap.test_empty" />
       <item index="3" class="java.lang.String" itemvalue="Python tests.Unittest TestMinHeap.test_notify_key_change_throws_on_no_key_after_key_was_in_heap" />
+      <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests in test_point" />
     </list>
     <recent_temporary>
-      <list size="4">
-        <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in test_minheap" />
-        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittest TestMinHeap.test_notify_key_change_throws_on_no_key_after_key_was_in_heap" />
-        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittest TestMinHeap.test_empty" />
-        <item index="3" class="java.lang.String" itemvalue="Python.__init__" />
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in test_point" />
+        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in test_minheap" />
+        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittest TestMinHeap.test_notify_key_change_throws_on_no_key_after_key_was_in_heap" />
+        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittest TestMinHeap.test_empty" />
+        <item index="4" class="java.lang.String" itemvalue="Python.__init__" />
       </list>
     </recent_temporary>
   </component>
@@ -387,27 +415,33 @@
       <option name="project" value="LOCAL" />
       <updated>1436423749691</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Add heap tests">
+      <created>1436427673807</created>
+      <option name="number" value="00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1436427673807</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="-4" width="1600" height="904" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32948717" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32948717" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="12" side_tool="true" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.0" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32948717" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24984147" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32820514" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32948717" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32948717" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -422,7 +456,8 @@
     <MESSAGE value="Clean up, Add tests for heap" />
     <MESSAGE value="Change line stroke-linecap" />
     <MESSAGE value="Re-implement heap, add tests:&#10;- Remove key-value object. elements now must have __lt__&#10;- Remove handle infrastructure. elements now must be hashable&#10;- Add notify_key_update, to signify state change in an object that may necessitate fixing the heap" />
-    <option name="LAST_COMMIT_MESSAGE" value="Re-implement heap, add tests:&#10;- Remove key-value object. elements now must have __lt__&#10;- Remove handle infrastructure. elements now must be hashable&#10;- Add notify_key_update, to signify state change in an object that may necessitate fixing the heap" />
+    <MESSAGE value="Add heap tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add heap tests" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -481,14 +516,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pointedge.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="141" column="24" selection-start-line="141" selection-start-column="24" selection-end-line="141" selection-end-column="24" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test_minheap.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.44">
@@ -501,8 +528,34 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/heap.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.88">
+        <state vertical-scroll-proportion="0.0">
           <caret line="97" column="0" selection-start-line="97" selection-start-column="0" selection-end-line="97" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pointedge.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.42">
+          <caret line="70" column="0" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test_point.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.93914807">
+          <caret line="46" column="45" selection-start-line="46" selection-start-column="45" selection-end-line="46" selection-end-column="45" />
+          <folding>
+            <element signature="e#0#29#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/point.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
