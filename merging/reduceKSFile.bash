@@ -1,8 +1,8 @@
 # Root of project
-BASE_DIR="$HOME/synteny2/"
+BASE_DIR="$HOME/code/synteny-vis/merging/"
 
 LENGTH_DIR="${BASE_DIR}/lengths/"
-PY_DIR="${BASE_DIR}/pystuff/"
+PY_DIR="${BASE_DIR}/simplify/"
 PC_TO_TRI="${BASE_DIR}/main"
 
 # These are the thresholds used by the reduction program
