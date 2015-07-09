@@ -2,7 +2,7 @@ import sys
 import time
 
 import heap
-import pointedge
+import edge
 
 PRINT_REAL_EDGES_ONLY = True
 MAX_CYCLES_PER_LEVEL = 100
@@ -29,20 +29,20 @@ for line in sys.stdin:
     x1, y1, x2, y2, edge_type = line.split(',')
     virtual = edge_type.strip() == 'virtual'
 
-    point_1 = pointedge.Point(float(x1), float(y1))
-    point_2 = pointedge.Point(float(x2), float(y2))
+    point_1 = edge.Point(float(x1), float(y1))
+    point_2 = edge.Point(float(x2), float(y2))
 
-    if pointedge.has_global_point(point_1):
-        point_1_index = pointedge.index_of_global_point(point_1)
+    if edge.has_global_point(point_1):
+        point_1_index = edge.index_of_global_point(point_1)
     else:
-        point_1_index = pointedge.add_global_point(point_1)
+        point_1_index = edge.add_global_point(point_1)
 
-    if pointedge.has_global_point(point_2):
-        point_2_index = pointedge.index_of_global_point(point_2)
+    if edge.has_global_point(point_2):
+        point_2_index = edge.index_of_global_point(point_2)
     else:
-        point_2_index = pointedge.add_global_point(point_2)
+        point_2_index = edge.add_global_point(point_2)
 
-    new_edge = pointedge.Edge(point_1_index, point_2_index, virtual)
+    new_edge = edge.Edge(point_1_index, point_2_index, virtual)
 
     new_edge.heapHandle = edgeHeap.insert(new_edge, new_edge.len2())
 
@@ -51,17 +51,17 @@ start = time.clock()
 
 
 def collapse_point(p1idx, p2idx):
-    p1 = pointedge.get_global_point(p1idx)
-    p2 = pointedge.get_global_point(p2idx)
+    p1 = edge.get_global_point(p1idx)
+    p2 = edge.get_global_point(p2idx)
 
     new_x = .5 * (p1.x + p2.x)
     new_y = .5 * (p1.y + p2.y)
-    new_point = pointedge.Point(new_x, new_y)
+    new_point = edge.Point(new_x, new_y)
     new_point.__edges = p1.edges | p2.edges
-    point_index = pointedge.add_global_point(new_point)
+    point_index = edge.add_global_point(new_point)
 
-    pointedge.redirect_global_point(pointedge.get_real_point_index(p1idx), point_index)
-    pointedge.redirect_global_point(pointedge.get_real_point_index(p2idx), point_index)
+    edge.redirect_global_point(edge.get_real_point_index(p1idx), point_index)
+    edge.redirect_global_point(edge.get_real_point_index(p2idx), point_index)
 
     return new_point
 
@@ -93,8 +93,8 @@ def collapse_edge(edge_to_collapse):
     new_point = collapse_point(edge_to_collapse.p1, edge_to_collapse.p2)
 
     points_to_update = {new_point}
-    points_to_update |= {pointedge.get_global_point(x.p1) for x in new_point.__edges}
-    points_to_update |= {pointedge.get_global_point(x.p2) for x in new_point.__edges}
+    points_to_update |= {edge.get_global_point(x.p1) for x in new_point.__edges}
+    points_to_update |= {edge.get_global_point(x.p2) for x in new_point.__edges}
 
     for point in points_to_update:
         new_edges = {edge for edge in point.__edges if edge.len2() > 0}
@@ -111,14 +111,14 @@ def get_file_name(i):
 
 def print_current_edges(max_edge_length):
     outfile = open(get_file_name(max_edge_length), 'w')
-    all_edges = {e for p in pointedge.get_all_global_points() for e in p.edges}
+    all_edges = {e for p in edge.get_all_global_points() for e in p.edges}
 
     outfile.write('x1,y1,x2,y2,type\n')
     for edge in all_edges:
         if PRINT_REAL_EDGES_ONLY and edge.virtual:
             continue
-        p1 = pointedge.get_global_point(edge.p1)
-        p2 = pointedge.get_global_point(edge.p2)
+        p1 = edge.get_global_point(edge.p1)
+        p2 = edge.get_global_point(edge.p2)
         kind = 'virtual' if edge.virtual else 'real'
         outfile.write('%f,%f,%f,%f,%s\n' % (p1.x, p1.y, p2.x, p2.y, kind))
     debug('There were', len(all_edges), 'edges')
