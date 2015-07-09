@@ -1,18 +1,3 @@
-class KV:
-    def __init__(self, k, v, i):
-        self.key = k
-        self.value = v
-        self.index = i
-        self.valid = True
-
-    def __repr__(self):
-        return '(' + repr(self.key) + ':' + repr(self.value) + \
-               ',index:' + repr(self.index) + ')'
-
-    def invalidate(self):
-        self.valid = False
-
-
 def left_child(i):
     """Return index of left child of i in a 0-based heap"""
     return 2 * (i + 1) - 1
@@ -28,80 +13,85 @@ def parent(i):
     return (i + 1) // 2 - 1
 
 
-def swap_handles(array, i, j):
-    temp = array[i]
-    array[i] = array[j]
-    array[j] = temp
-    array[i].index = i
-    array[j].index = j
+class MinHeapException(Exception):
+    pass
 
 
 class MinHeap:
     def __init__(self):
-        self.heap = []
+        self.__heap = []
+        self.__index_map = {}
 
     def empty(self):
-        return len(self.heap) == 0
+        return len(self.__heap) == 0
 
     def size(self):
-        return len(self.heap)
+        return len(self.__heap)
 
-    def insert(self, element, key):
-        handle = KV(key, element, len(self.heap))
-        self.heap.append(handle)
-        self.__decrease_key(handle.index, key)
-        return handle
+    def insert(self, element):
+        if element in self.__index_map.keys():
+            raise MinHeapException("Duplicate key added to heap")
+        self.__heap.append(element)
+        self.__index_map[element] = len(self.__heap) - 1
+        self.__sift_up(len(self.__heap) - 1)
 
-    def __decrease_key(self, index, new_key):
+    def __swap(self, i, j):
+        temp = self.__heap[i]
+        self.__heap[i] = self.__heap[j]
+        self.__heap[j] = temp
+        self.__index_map[self.__heap[i]] = i
+        self.__index_map[self.__heap[j]] = j
 
-        self.heap[index].key = new_key
-        while parent(index) >= 0 and self.heap[parent(index)].key > self.heap[index].key:
-            swap_handles(self.heap, index, parent(index))
+    def __get_index(self, element):
+        if element not in self.__index_map.keys():
+            raise MinHeapException('Element not in heap')
+        return self.__index_map[element]
+
+    def __remove_index(self, element):
+        del self.__index_map[element]
+
+    def __sift_up(self, index):
+        while parent(index) >= 0 and self.__heap[parent(index)] > self.__heap[index]:
+            self.__swap(index, parent(index))
             index = parent(index)
 
     def find_min(self):
         if self.empty():
             raise Exception('Heap underflow')
-        return self.heap[0].value
+        return self.__heap[0]
 
     def extract_min(self):
         if self.empty():
             raise Exception('Heap underflow')
-        ret = self.heap[0]
-        swap_handles(self.heap, 0, -1)
-        self.heap.pop()
+        ret = self.__heap[0]
+        self.__swap(0, -1)
+        self.__heap.pop()
         self.__min_heapify(0)
-        ret.invalidate()
-        return ret.value
+        self.__remove_index(ret)
+        return ret
 
     def __min_heapify(self, index):
         left = left_child(index)
         right = right_child(index)
-        heap = self.heap
-        if left < len(heap) and heap[left].key < heap[index].key:
+        heap = self.__heap
+        if left < len(heap) and heap[left] < heap[index]:
             smallest = left
         else:
             smallest = index
-        if right < len(heap) and heap[right].key < heap[smallest].key:
+        if right < len(heap) and heap[right] < heap[smallest]:
             smallest = right
         if smallest != index:
-            swap_handles(heap, smallest, index)
+            self.__swap(smallest, index)
             self.__min_heapify(smallest)
 
-    def change_key(self, handle, key):
-        if not handle.valid:
-            raise Exception('Stale handle')
-        if handle.key < key:
-            handle.key = key
-            self.__min_heapify(handle.index)
-        else:
-            self.__decrease_key(handle.index, key)
+    def notify_key_change(self, element):
+        index = self.__get_index(element)
+        self.__sift_up(index)
+        self.__min_heapify(index)
 
-    def remove_element(self, handle):
-        if not handle.valid:
-            raise Exception('Stale handle')
-        index = handle.index
-        swap_handles(self.heap, index, len(self.heap) - 1)
-        removed = self.heap.pop()
-        removed.invalidate()
+    def remove_element(self, element):
+        index = self.__get_index(element)
+        self.__swap(index, len(self.__heap) - 1)
+        self.__remove_index(element)
+        self.__heap.pop()
         self.__min_heapify(index)

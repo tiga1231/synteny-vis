@@ -155,7 +155,7 @@ for threshold in THRESHOLDS:
             break
         cull_short_edges(threshold)
 
-    debug('The size of the heap is', len(edgeHeap.heap))
+    debug('The size of the heap is', len(edgeHeap.__heap))
     print_current_edges(threshold)
 
 debug('rest took', time.clock() - start)
