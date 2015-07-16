@@ -40,4 +40,3 @@ class Point:
     def __hash__(self):
         return self.__hash
 
-

@@ -4,6 +4,8 @@ class Edge:
         self.__point_2 = point_2
         self.__points = {point_1, point_2}
         self.__virtual = virtual
+        point_1.add_edge(self)
+        point_2.add_edge(self)
 
     def virtual(self):
         return self.__virtual
@@ -25,3 +27,13 @@ class Edge:
 
     def __hash__(self):
         return sum(hash(x) for x in self.points())
+
+    def canBeCollapsed(self):
+        if self.__virtual:
+            return self.__point_1.real_degree() < 2 or self.__point_2.real_degree() < 2
+        return self.__point_1.real_degree() > 1 or self.__point_2.real_degree() > 1
+
+    def __lt__(self, other):
+        if self.canBeCollapsed() and other.canBeCollapsed():
+            return self.len2() < other.len2()
+        return self.canBeCollapsed()

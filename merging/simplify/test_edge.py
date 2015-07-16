@@ -92,3 +92,77 @@ class TestEdge(TestCase):
         self.assertEquals(hash(g), hash(f))
         self.assertEquals(hash(h), hash(f))
         self.assertEquals(hash(h), hash(g))
+
+
+    def test_inner_and_end_segments_of_real_line_can_be_merged(self):
+        p = Point(1, 1)
+        q = Point(2, 2)
+        r = Point(3, 3)
+        s = Point(4, 4)
+
+        e = Edge(p, q, False)
+        f = Edge(q, r, False)
+        g = Edge(r, s, False)
+
+        self.assertTrue(e.canBeCollapsed())
+        self.assertTrue(f.canBeCollapsed())
+        self.assertTrue(g.canBeCollapsed())
+
+    def test_single_real_edge_will_not_collapse(self):
+        p = Point(1, 1)
+        q = Point(2, 2)
+
+        e = Edge(p, q, False)
+
+        self.assertFalse(e.canBeCollapsed())
+
+    def test_single_real_edge_will_collapse(self):
+        p = Point(1, 1)
+        q = Point(2, 2)
+
+        e = Edge(p, q, True)
+
+        self.assertTrue(e.canBeCollapsed())
+
+    def test_virtual_edge_that_would_violate_topo_will_not_collapse(self):
+        p1 = Point(1, 1)
+        p2 = Point(1, 3)
+        p3 = Point(1, 2)
+        q1 = Point(2, 1)
+        q2 = Point(2, 2)
+        q3 = Point(2, 3)
+
+        pe1 = Edge(p1, p2, False)
+        pe2 = Edge(p2, p3, False)
+        qe1 = Edge(q1, q2, False)
+        qe2 = Edge(q2, q3, False)
+        ve = Edge(p2, q2, True)
+
+        self.assertFalse(ve.canBeCollapsed())
+
+    def test_lt_on_real_v_virtual(self):
+        p = Point(1, 1)
+        q = Point(2, 2)
+        r = Point(3, 3)
+
+        e = Edge(p, q, False)
+        f = Edge(q, r, True)
+        self.assertLess(f, e)
+
+    def test_lt_on_virtual_virtual(self):
+        p = Point(1, 1)
+        q = Point(2, 2)
+        r = Point(4, 4)
+
+        e = Edge(p, q, True)
+        f = Edge(q, r, True)
+        self.assertLess(e, f)
+
+    def test_lt_on_real_real(self):
+        p = Point(1, 1)
+        q = Point(2, 2)
+        r = Point(4, 4)
+
+        e = Edge(p, q, False)
+        f = Edge(q, r, False)
+        self.assertLess(e, f)
