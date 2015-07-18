@@ -1,9 +1,4 @@
-function plotLines(lines, thresholdIndex) {
-  var numberOfLines = _.filter(lines, function(x) {
-    return x.type == 'real'
-  }).length;
-  var cleanLines = convertStringFieldsToNumbers(lines);
-  var extents = getExtents(cleanLines);
+function plotLines(lines, extents, level) {
 
   var xScale = d3.scale.linear()
     .domain(extents.x)
@@ -13,8 +8,7 @@ function plotLines(lines, thresholdIndex) {
     .range([HEIGHT - BUFFER, BUFFER]);
 
   var unitsPerPixel = (extents.x[1] - extents.x[0]) / (WIDTH - 2 * BUFFER);
-
-  var thresholdFraction = levels[thresholdIndex] / unitsPerPixel;
+  var thresholdFraction = level / unitsPerPixel;
 
   var zoom = d3.behavior.zoom()
     .x(xScale).y(yScale).scaleExtent([1, 10000])
@@ -28,7 +22,7 @@ function plotLines(lines, thresholdIndex) {
   var container = svg.append('g');
 
   container.selectAll('line')
-    .data(cleanLines)
+    .data(lines)
     .enter()
     .append('line')
     .attr('x1', function(line) {
@@ -47,8 +41,8 @@ function plotLines(lines, thresholdIndex) {
       return line.type;
     });
 
-  var message = numberOfLines + ' lines ';
-  message += '(' + (levels[thresholdIndex] / unitsPerPixel) + ')';
+  var message = lines.length + ' lines ';
+  message += '(' + thresholdFraction + ')';
   svg.append('text')
     .attr('transform', 'translate(5,20)')
     .text(message);
@@ -62,37 +56,5 @@ function plotLines(lines, thresholdIndex) {
   }
 
   return container;
-}
-
-function convertStringFieldsToNumbers(lines) {
-  return _.map(lines, function(line) {
-    var converted = {
-      x1: Number(line.x1),
-      x2: Number(line.x2),
-      y1: Number(line.y1),
-      y2: Number(line.y2),
-      type: line.type
-    };
-    return converted;
-  });
-}
-
-function getExtents(lines) {
-  var xMax = d3.max(lines, function(line) {
-    return Math.max(line.x1, line.x2);
-  });
-  var yMax = d3.max(lines, function(line) {
-    return Math.max(line.y1, line.y2);
-  });
-  var xMin = d3.min(lines, function(line) {
-    return Math.min(line.x1, line.x2);
-  });
-  var yMin = d3.min(lines, function(line) {
-    return Math.min(line.y1, line.y2);
-  });
-  return {
-    x: [xMin, xMax],
-    y: [yMin, yMax]
-  };
 }
 

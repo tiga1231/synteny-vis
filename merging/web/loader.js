@@ -1,43 +1,70 @@
+// These are used by the plot_* files. Its awkward to put them here,
+// but this way they are only in one spot.
 var WIDTH = HEIGHT = 300;
 var BUFFER = 20
 var LINE_WIDTH = 3;
+
+var containers = []; // used for synchronized zooming, currently only svg
+var images = []; // used for image difference computations (canvas)
+var NUM_LEVELS;
+
+
 var DATA_DIR = 'data/';
 
 
-var containers = [];
-var levels;
-var images = []
-var num_lines = []
+d3.text('./fileList.txt', function(err, file_name_list) {
+  var file_names = _.compact(file_name_list.split('\n'));
 
-
-d3.text('./fileList.txt', function(err, data) {
-  var names = _.compact(data.split('\n'));
-  var groups = _.groupBy(names, function(x) {
+  var level_groups = _.groupBy(file_names, function(x) {
     return x.match(/tri\.(\d+)\.csv/)[1];
   });
-  levelsNames = _.sortBy(Object.keys(groups), function(g) {
+
+  var levels = _.sortBy(Object.keys(level_groups), function(g) {
     return Number(g);
   });
-  levels = _.map(levelsNames, Number);
-  for (var i = 0; i < levelsNames.length; i++) {
-    var level = levelsNames[i];
-    var name_set = groups[level];
 
-    (function getFiles(j) {
-      var q = queue();
-      _.each(name_set, function(name) {
-        q = q.defer(d3.text, DATA_DIR + name);
-      });
-      q.awaitAll(function(err, datas) {
-        if (err) {
-          console.log(err);
-          return;
-        }
-        datas = _.map(datas, convertToEdgeList);
-        datas = _.flatten(datas);
-        containers.push(plotLines(datas, j));
-      });
-    })(i);
-  }
+  NUM_LEVELS = levels.length;
+
+  _.each(levels, function(level) {
+    var name_set = level_groups[level];
+    loadFileSet(name_set, level);
+  });
 });
+
+function loadFileSet(name_set, level) {
+  var q = queue();
+
+  _.each(name_set, function(name) {
+    q = q.defer(d3.text, DATA_DIR + name);
+  });
+
+  q.awaitAll(function(err, datas) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    datas = _.map(datas, convertToEdgeList); // inline_edges.js
+    datas = _.flatten(datas);
+    containers.push(plotLines(datas, getExtents(datas), level));
+  });
+}
+
+function getExtents(lines) {
+  var xMax = d3.max(lines, function(line) {
+    return Math.max(line.x1, line.x2);
+  });
+  var yMax = d3.max(lines, function(line) {
+    return Math.max(line.y1, line.y2);
+  });
+  var xMin = d3.min(lines, function(line) {
+    return Math.min(line.x1, line.x2);
+  });
+  var yMin = d3.min(lines, function(line) {
+    return Math.min(line.y1, line.y2);
+  });
+  return {
+    x: [xMin, xMax],
+    y: [yMin, yMax]
+  };
+}
 

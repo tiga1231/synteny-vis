@@ -56,10 +56,10 @@ function inlineEdgesFromRawFormat(data, vertices) {
     var point_1 = vertices[point_1_index];
     var point_2 = vertices[point_2_index];
     return {
-      x1: point_1[0],
-      y1: point_1[1],
-      x2: point_2[0],
-      y2: point_2[1],
+      x1: Number(point_1[0]),
+      y1: Number(point_1[1]),
+      x2: Number(point_2[0]),
+      y2: Number(point_2[1]),
       type: type
     };
   });
