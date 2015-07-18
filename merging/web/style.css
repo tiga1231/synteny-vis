@@ -1,0 +1,14 @@
+svg, canvas {
+  border: solid;
+  margin: 5px;
+}
+.real {
+  stroke-width: 3px;
+  stroke: red;
+  stroke-linecap: round;
+}
+.virtual {
+  stroke-width: 3px;
+  stroke: grey;
+}
+
