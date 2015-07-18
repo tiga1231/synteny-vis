@@ -1,6 +1,7 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_conformer_2.h>
+#include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
 #include <CGAL/Constrained_triangulation_2.h>
 #include <CGAL/Constrained_triangulation_plus_2.h>
@@ -14,10 +15,20 @@
 
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 
+class IndexWrapper {
+    public:
+        static unsigned int next_index;
+        unsigned int index;
+        IndexWrapper() {
+            index = next_index++;
+        }
+};
+unsigned int IndexWrapper::next_index = 0;
+
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Exact_intersections_tag E;
 
-typedef CGAL::Triangulation_vertex_base_2<K> TVB2;
+typedef CGAL::Triangulation_vertex_base_with_info_2<IndexWrapper, K> TVB2;
 typedef CGAL::Constrained_triangulation_face_base_2<K> CTFB2;
 typedef CGAL::Triangulation_data_structure_2<TVB2, CTFB2> TDS2;
 
@@ -26,12 +37,14 @@ typedef CGAL::Constrained_triangulation_plus_2<CDTBefore> CDT;
 typedef CDT::Point Point;
 typedef CDT::Vertex_handle Vertex_handle;
 
-typedef CDT::Finite_edges_iterator EdgeIterator;
+typedef CDT::All_edges_iterator EdgeIterator;
+typedef CDT::All_vertices_iterator VertexIterator;
 typedef CDT::Edge Edge;
+typedef CDT::Vertex Vertex;
 
 namespace SMS = CGAL::Surface_mesh_simplification;
 
-#define DEBUG 0
+#define DEBUG 1
 void debug(std::string message) {
     if(DEBUG) {
         std::cerr << message << std::endl;
@@ -44,10 +57,12 @@ void debug(int val) {
     }
 }
 
-std::vector<double> splitLineIntoPoints(std::string line);
-std::vector<int> splitLineIntoConstraint(std::string line);
+Point convertToPoint(std::string line);
+std::pair<unsigned int, unsigned int> convertToEdge(std::string line);
+void printHeader(CDT cdt);
 void printEdges(CDT cdt);
-void printHeader();
+void printVertices(CDT cdt);
+void printVertex(CDT cdt, Vertex vertex);
 void printEdge(CDT cdt, Edge edge);
 
 
@@ -63,98 +78,124 @@ int main(int argc, char **argv)
     }
     getline(std::cin, input);
 
-    int index = 0;
-    std::unordered_map<int, Vertex_handle> points;
-
-    bool pointMode = true;
 
     debug("Loading points");
 
+    int index = 0;
+    std::vector<Vertex_handle> points;
     while(!std::cin.eof() && input != "CONSTRAINTS") {
-        std::vector<double> values = splitLineIntoPoints(input);
+        Point point = convertToPoint(input);
 
-        Vertex_handle point = cdt.insert(Point(values[0], values[1]));
-
-        std::pair<int, Vertex_handle> newPoint(index++, point);
-
-        points.insert(newPoint);
-
-        debug("Loaded point number");
-        debug(index);
+        Vertex_handle handle = cdt.insert(point);
+        index++;
+        points.push_back(handle);
 
         getline(std::cin, input);
     }
-    debug("Points loaded");
+    debug("This many points were added to the CDT:");
+    debug(index);
 
     index = 0;
     getline(std::cin, input);
     while(!std::cin.eof()) {
-        std::vector<int> values = splitLineIntoConstraint(input);
-        cdt.insert_constraint(points[values[0]], points[values[1]]);
+        std::pair<unsigned int, unsigned int> values = convertToEdge(input);
+        cdt.insert_constraint(points[values.first], points[values.second]);
 
-        debug("Loaded constraint number");
-        debug(index++);
+        index++;
 
         getline(std::cin, input);
     }
 
-    debug("All set up");
+    debug("This many constraints were added to the CDT");
+    debug(index);
 
     CGAL::make_conforming_Delaunay_2(cdt);
 
-    printEdges(cdt);
+    std::cout << cdt << std::endl;
+    //printHeader(cdt);
+    //printVertices(cdt);
+    //printEdges(cdt);
 }
 
-std::vector<double> splitLineIntoPoints(std::string line) {
-    std::vector<double> values;
-    int indexOfNextComma = 0;
+Point convertToPoint(std::string line) {
+    double a, b;
 
-    while(indexOfNextComma > -1) {
-        values.push_back(atof(line.data()));
-        indexOfNextComma = line.find(',');
-        line = line.substr(indexOfNextComma + 1);
-    }
+    a = atof(line.data());
+    int indexOfNextComma = line.find(',');
+    line = line.substr(indexOfNextComma + 1);
+    b = atof(line.data());
 
-    return values;
+    return Point(a, b);
 }
 
-std::vector<int> splitLineIntoConstraint(std::string line) {
-    std::vector<int> values;
-    int indexOfNextComma = 0;
+std::pair<unsigned int, unsigned int> convertToEdge(std::string line) {
+    int a, b;
 
-    while(indexOfNextComma > -1) {
-        values.push_back(atoi(line.data()));
-        indexOfNextComma = line.find(',');
-        line = line.substr(indexOfNextComma + 1);
+    a = atoi(line.data());
+    int indexOfNextComma = line.find(',');
+    line = line.substr(indexOfNextComma + 1);
+    b = atoi(line.data());
+
+    return std::pair<unsigned int, unsigned int>(a, b);
+}
+
+void printHeader(CDT cdt) {
+    int number_of_vertices = 0;
+    for(VertexIterator vertices = cdt.all_vertices_begin();
+            vertices != cdt.all_vertices_end(); vertices++) {
+        number_of_vertices++; 
     }
+    std::cout << number_of_vertices << " ";
 
-    return values;
+    int number_of_edges = 0;
+    for(EdgeIterator edges = cdt.all_edges_begin();
+            edges != cdt.all_edges_end(); edges++) {
+        number_of_edges++; 
+    }
+    std::cout << number_of_edges << std::endl;
 }
 
 void printEdges(CDT cdt) {
-    printHeader();
-    for(EdgeIterator edges = cdt.finite_edges_begin(); 
-            edges != cdt.finite_edges_end(); edges++) {
+    for(EdgeIterator edges = cdt.all_edges_begin(); 
+            edges != cdt.all_edges_end(); edges++) {
 
         printEdge(cdt, *edges);
     }
 }
 
-void printHeader() {
-    std::cout << "x1,y1,x2,y2,type" << std::endl;
-}
-
 void printEdge(CDT cdt, Edge edge) {
     bool realEdge = cdt.is_constrained(edge);
 
-    CDT::Segment segment = cdt.segment(edge);
-    Point p1 = segment.source();
-    Point p2 = segment.target();
-
     std::string type = realEdge ? "real" : "virtual";
+    int i1 = edge.first->vertex((edge.second + 1)%3)->info().index;
+    int i2 = edge.first->vertex((edge.second + 2)%3)->info().index;;
 
-    std::cout << p1.x() << "," << p1.y() << "," 
-        << p2.x() << "," << p2.y() << "," 
-        << type << std::endl;
+    std::cout << i1 << "," << i2 << "," << type << std::endl;
 }
 
+void printVertices(CDT cdt) {
+    int vertex_count = 0;
+    std::map<unsigned int, Vertex> m;
+    for(VertexIterator vertices = cdt.all_vertices_begin();
+            vertices != cdt.all_vertices_end(); vertices++) {
+        std::pair<unsigned int, Vertex> p((*vertices).info().index, *vertices);
+        m.insert(p); 
+        vertex_count++;
+    }
+    debug("Added this many vertices to the map:");
+    debug(vertex_count);
+
+    vertex_count = 0;
+    for(std::map<unsigned int, Vertex>::iterator it = m.begin();
+            it != m.end(); it++) {
+        printVertex(cdt, it->second);
+        vertex_count++;
+    }
+    debug("Got this many vertices back from the map:");
+    debug(vertex_count);
+}
+
+void printVertex(CDT cdt, Vertex vertex) {
+    Point p = vertex.point();
+    std::cout << p.x() << "," << p.y() << std::endl;
+}

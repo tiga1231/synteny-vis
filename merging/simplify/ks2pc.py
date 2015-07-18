@@ -15,6 +15,7 @@ def main(args):
     y_offsets = convert_length_file_to_offsets(y_lengths)
 
     data = readks.convert_ks_file_line_list_to_objects(sys.stdin)
+    data = compact(data)
     extract_points_and_constraints(x_offsets, y_offsets, data)
 
     return 0
@@ -43,17 +44,30 @@ def convert_lengths_to_cumulative_offsets(lengths):
         offset_map[chromosome['name']] = offset
     return offset_map
 
+def xy_of_chromosome(chromosome):
+    x_chromosome_id = chromosome['meta']['aID_c']
+    x_chromosome_name = ''.join(x_chromosome_id.split('_')[1:])
+    y_chromosome_id = chromosome['meta']['bID_c']
+    y_chromosome_name = ''.join(y_chromosome_id.split('_')[1:])
+    return x_chromosome_name, y_chromosome_name
+
+def compact(data):
+    keys = {'.'.join(xy_of_chromosome(c)) for c in data}
+    new_data = []
+    for key in keys:
+        matches = [c for c in data if '.'.join(xy_of_chromosome(c)) == key]
+        consolidated = matches[0]
+        for match in matches[1:]:
+            consolidated['data'] += match['data']
+        new_data.append(consolidated)
+    return new_data
 
 def extract_points_and_constraints(x_offsets, y_offsets, data):
     for chromosome in data:
         points = []
         constraints = []
 
-        x_chromosome_id = chromosome['meta']['aID_c']
-        x_chromosome_name = ''.join(x_chromosome_id.split('_')[1:])
-        y_chromosome_id = chromosome['meta']['bID_c']
-        y_chromosome_name = ''.join(y_chromosome_id.split('_')[1:])
-
+        x_chromosome_name, y_chromosome_name = xy_of_chromosome(chromosome)
         x_offset = x_offsets[x_chromosome_name]
         y_offset = y_offsets[y_chromosome_name]
 
@@ -68,7 +82,7 @@ def extract_points_and_constraints(x_offsets, y_offsets, data):
             points.append(p1)
             points.append(p2)
 
-        write_to_file(points, constraints, x_chromosome_id, y_chromosome_id)
+        write_to_file(points, constraints, x_chromosome_name, y_chromosome_name)
 
 
 def write_to_file(points, constraints, x_chromosome_name, y_chromosome_name):

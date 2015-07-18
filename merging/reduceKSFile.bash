@@ -51,12 +51,11 @@ echo "done. (${SECONDS} seconds, ${SECONDS} total)"
 
 echo -n "Generating conforming triangulations... "
 for pcFile in *.pc ; do
+    echo "$pcFile"
     $PC_TO_TRI < "$pcFile" > "${pcFile%.pc}.tri"
 done
 T2=$SECONDS
 echo "done. ($((T2 - T1)) seconds, ${SECONDS} total)"
-
-
 
 echo "Reducing triangulations at levels:"
 echo "$LEVELS"
@@ -67,23 +66,14 @@ done
 T3=$SECONDS
 echo "done. ($((T3 - T2)) seconds, ${SECONDS} total)"
 
-
-
-echo -n "Combining Files, cleaning up... "
-for level in $LEVELS ; do
-    COMBINED="${level}.csv.combined"
-    echo $HEADER > $COMBINED
-    for file in *.${level}.csv ; do 
-        tail -n+2 $file >> $COMBINED
-    done
-done
-
-mkdir -p pc tri csv
+mkdir -p pc tri
 mv *.pc pc
 mv *.tri tri
-mv *.csv csv
 
-mv *.csv.combined web
+mv *.csv web/data
+cd web/data
+ls *.csv > ../fileList.txt
+cd ..
 
 T4=$SECONDS
 echo "done. ($((T4 - T3)) seconds, ${SECONDS} total)"

@@ -17,10 +17,14 @@ class MinHeapException(Exception):
     pass
 
 
+class HeapAble:
+    def __init__(self):
+        self.heap_index = None
+
+
 class MinHeap:
     def __init__(self):
         self.__heap = []
-        self.__index_map = {}
 
     def empty(self):
         return len(self.__heap) == 0
@@ -29,26 +33,18 @@ class MinHeap:
         return len(self.__heap)
 
     def insert(self, element):
-        if element in self.__index_map.keys():
-            raise MinHeapException("Duplicate key added to heap")
+        if None != element.heap_index >= 0:
+            raise MinHeapException("Duplicate key " + str(element))
         self.__heap.append(element)
-        self.__index_map[element] = len(self.__heap) - 1
+        element.heap_index = len(self.__heap) - 1
         self.__sift_up(len(self.__heap) - 1)
 
     def __swap(self, i, j):
         temp = self.__heap[i]
         self.__heap[i] = self.__heap[j]
         self.__heap[j] = temp
-        self.__index_map[self.__heap[i]] = i
-        self.__index_map[self.__heap[j]] = j
-
-    def __get_index(self, element):
-        if element not in self.__index_map.keys():
-            raise MinHeapException('Element not in heap')
-        return self.__index_map[element]
-
-    def __remove_index(self, element):
-        del self.__index_map[element]
+        self.__heap[i].heap_index = i
+        self.__heap[j].heap_index = j
 
     def __sift_up(self, index):
         while parent(index) >= 0 and self.__heap[parent(index)] > self.__heap[index]:
@@ -64,10 +60,11 @@ class MinHeap:
         if self.empty():
             raise MinHeapException('Heap underflow')
         ret = self.__heap[0]
-        self.__swap(0, -1)
+        self.__swap(0, len(self.__heap) - 1)
         self.__heap.pop()
         self.__min_heapify(0)
-        self.__remove_index(ret)
+
+        ret.heap_index = None
         return ret
 
     def __min_heapify(self, index):
@@ -84,14 +81,24 @@ class MinHeap:
             self.__swap(smallest, index)
             self.__min_heapify(smallest)
 
+    def remove_element(self, element):
+        if None == element.heap_index:
+            raise MinHeapException("No such key " + str(element))
+        index = element.heap_index
+        self.__swap(index, len(self.__heap) - 1)
+        removed = self.__heap.pop()
+        removed.heap_index = None
+
+        if index < len(self.__heap):
+            self.__sift_up(index)
+            self.__min_heapify(index)
+
     def notify_key_change(self, element):
-        index = self.__get_index(element)
+        if None == element.heap_index:
+            raise MinHeapException("No such key " + str(element))
+        index = element.heap_index
         self.__sift_up(index)
         self.__min_heapify(index)
 
-    def remove_element(self, element):
-        index = self.__get_index(element)
-        self.__swap(index, len(self.__heap) - 1)
-        self.__remove_index(element)
-        self.__heap.pop()
-        self.__min_heapify(index)
+    def all_elements(self):
+        return self.__heap

@@ -1,50 +1,63 @@
 var WIDTH = HEIGHT = 300;
-var BUFFER = 0
+var BUFFER = 20
 var LINE_WIDTH = 3;
+var DATA_DIR = 'data/';
 
-THRESHOLDS = [
-  0,
-  100000, 
-  200000, 
-  400000, 
-  800000, 
-  1600000,
-  3200000,
-  6400000,
-  12800000,
-  25600000
-];
-//THRESHOLDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-var q = queue();
-for(var  i = 0; i < THRESHOLDS.length; i++) {
-  q = q.defer(d3.csv, THRESHOLDS[i] + '.csv.combined')
-}
+var containers = [];
+var levels;
 
-var maxNumberOfLines;
-var containers;
+d3.text('./fileList.txt', function(err, data) {
+  var names = _.compact(data.split('\n'));
+  var groups = _.groupBy(names, function(x) {
+    return x.match(/tri\.(\d+)\.csv/)[1];
+  });
+  levelsNames = _.sortBy(Object.keys(groups), function(g) {
+    return Number(g);
+  });
+  levels = _.map(levelsNames, Number);
+  for (var i = 0; i < levelsNames.length; i++) {
+    var level = levelsNames[i];
+    var name_set = groups[level];
 
-q.awaitAll(function(err, datas) {
-    if (err) {
-      console.log(err);
-      return;
-    }
-    maxNumberOfLines = _.max(datas, function(x) { return x.length; }).length;
-    containers = _.map(datas, plotLines);
-  })
+    (function getFiles(j) {
+      var q = queue();
+      _.each(name_set, function(name) {
+        q = q.defer(d3.text, DATA_DIR + name);
+      });
+      q.awaitAll(function(err, datas) {
+        if (err) {
+          console.log(err);
+          return;
+        }
+        datas = _.map(datas, convertToEdgeList);
+        datas = _.flatten(datas);
+        containers.push(plotLines(datas, j));
+      });
+    })(i);
+  }
+});
 
 function plotLines(lines, thresholdIndex) {
-  var numberOfLines = _.filter(lines, function(x) { return x.type == 'real'}).length;
+  var numberOfLines = _.filter(lines, function(x) {
+    return x.type == 'real'
+  }).length;
   var cleanLines = convertStringFieldsToNumbers(lines);
   var extents = getExtents(cleanLines);
 
-  var xScale = d3.scale.linear().domain(extents.x).range([BUFFER, WIDTH - BUFFER]);
-  var yScale = d3.scale.linear().domain(extents.y).range([HEIGHT - BUFFER, BUFFER]);
+  var xScale = d3.scale.linear()
+    .domain(extents.x)
+    .range([BUFFER, WIDTH - BUFFER]);
+  var yScale = d3.scale.linear()
+    .domain(extents.y)
+    .range([HEIGHT - BUFFER, BUFFER]);
 
-  var unitsPerPixel = (extents.x[1] - extents.x[0]) / (WIDTH - 2*BUFFER);
-  
-  var thresholdFraction = THRESHOLDS[thresholdIndex] / unitsPerPixel;  
+  var unitsPerPixel = (extents.x[1] - extents.x[0]) / (WIDTH - 2 * BUFFER);
 
-  var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 10000]).on('zoom', zoomed);
+  var thresholdFraction = levels[thresholdIndex] / unitsPerPixel;
+
+  var zoom = d3.behavior.zoom()
+    .x(xScale).y(yScale).scaleExtent([1, 10000])
+    .on('zoom', zoomed);
 
   var svg = d3.select('body').append('svg')
     .attr('width', WIDTH)
@@ -74,8 +87,7 @@ function plotLines(lines, thresholdIndex) {
     });
 
   var message = numberOfLines + ' lines ';
-  message += '(' + (Math.floor(numberOfLines / maxNumberOfLines * 1000)/10) + '%) ';
-  message += '(' + (Math.floor(thresholdFraction * 10000)/10000) + ')';
+  message += '(' + (levels[thresholdIndex] / unitsPerPixel) + ')';
   svg.append('text')
     .attr('transform', 'translate(5,20)')
     .text(message);
@@ -83,8 +95,8 @@ function plotLines(lines, thresholdIndex) {
   function zoomed() {
     _.each(containers, function(cont) {
       cont.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
-      cont.selectAll('.virtual').style('stroke-width', LINE_WIDTH/d3.event.scale);
-      cont.selectAll('.real').style('stroke-width', LINE_WIDTH/d3.event.scale);
+      cont.selectAll('.virtual').style('stroke-width', LINE_WIDTH / d3.event.scale);
+      cont.selectAll('.real').style('stroke-width', LINE_WIDTH / d3.event.scale);
     })
   }
 
