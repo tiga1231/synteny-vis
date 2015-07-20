@@ -3,6 +3,6 @@ main
 Makefile
 CMakeFiles
 cmake_install.cmake
-intermediate_data
+intermediate_files
 simplify/*.pyc
 simplify/__pycache__
