@@ -9,6 +9,7 @@ from middlemeshreader import read
 import point
 PRINT_REAL_EDGES_ONLY = True
 DEBUG = False
+SHOW_VIRTUAL = False
 pp = pprint.PrettyPrinter()
 
 
@@ -77,7 +78,7 @@ def get_file_name(i):
 def print_current_edges(max_edge_length):
     outfile = open(get_file_name(max_edge_length), 'w')
     all_edges = edgeHeap.all_elements()
-    write_mesh_to_stream_as_points_and_edges(all_edges, output=outfile, show_virtual=False)
+    write_mesh_to_stream_as_points_and_edges(all_edges, output=outfile, show_virtual=SHOW_VIRTUAL)
     outfile.close()
 
 
