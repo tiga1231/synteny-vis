@@ -40,41 +40,65 @@ if ! [[ -f "${Y_LENGTH_PATH}" ]] ; then
     exit 1
 fi
 
-
+SHORT_NAME="${X_ID}.${Y_ID}"
 
 echo -n "Generating points and constraints from ks file... "
-python3 ${PY_DIR}/ks2pc.py < "$INPUT_FILE_PATH" "$X_LENGTH_PATH" "$Y_LENGTH_PATH"
+bash ./ksToCsv.bash "$INPUT_FILE_PATH" "$X_LENGTH_PATH" "$Y_LENGTH_PATH" > "${SHORT_NAME}.ks-csv"
+# produces .csv.group files
+python3 ${PY_DIR}/group_by_chrom.py < "${SHORT_NAME}.ks-csv"
 T1=${SECONDS}
 echo "done. (${SECONDS} seconds, ${SECONDS} total)"
 
 
 
 echo -n "Generating conforming triangulations... "
-for pcFile in *.pc ; do
-    echo "$pcFile"
-    $PC_TO_TRI < "$pcFile" > "${pcFile%.pc}.tri"
+for f in *.csv.group ; do
+    bash ./csvToEdgeList.bash "$f" > "${f}.edgeList"
 done
+
+if which parallel > /dev/null ; then
+    ls -S *.edgeList | parallel --eta "$PC_TO_TRI < {} | python3 ./simplify/native_to_edge_list.py > {.}.reduced"
+else
+    for f in $(ls -S *.edgeList | tac | head) ; do
+        t=$SECONDS
+        $PC_TO_TRI < "${f}" | python3 ./simplify/native_to_edge_list.py > "${f%.edgeList}.reduced"
+        printf "%-20s %10s\n" "$(wc -l $f)" "$(( SECONDS - t))"
+    done
+fi
 T2=$SECONDS
 echo "done. ($((T2 - T1)) seconds, ${SECONDS} total)"
 
-echo "Reducing triangulations at levels:"
-echo "$LEVELS"
-echo -n "... "
-for triFile in *.tri ; do
-    python3 ${PY_DIR}/simplifyTriangulation.py < "$triFile" --name "$triFile" $LEVELS
-done
+
+echo -n "Reducing triangulations at levels: $LEVELS ... "
+if which parallel > /dev/null; then 
+    ls -S *.reduced | parallel --eta "python3 ${PY_DIR}/simplifyTriangulation.py < {} --name {} $LEVELS"
+else
+    for f in *.reduced ; do
+        python3 ${PY_DIR}/simplifyTriangulation.py < "$f" --name "$f" $LEVELS
+    done
+fi
 T3=$SECONDS
 echo "done. ($((T3 - T2)) seconds, ${SECONDS} total)"
 
-mkdir -p pc tri
-mv *.pc pc
-mv *.tri tri
 
-mv *.csv web/data
+
+echo -n "Cleaning up ... "
+
+for level in $LEVELS ; do
+    combined=${level}.combined.csv
+    for f in *.${level}.csv ; do
+        cat $f >> $combined
+        mv $f ${f}.pieces
+    done
+done
+
+mkdir -p intermediate_files
+mv *.edgeList *.reduced *.group *.ks-csv *.pieces intermediate_files
+
+rm web/data/*
+mv *.combined.csv web/data
 cd web/data
 ls *.csv > ../fileList.txt
 cd ..
-
 T4=$SECONDS
 echo "done. ($((T4 - T3)) seconds, ${SECONDS} total)"
-
