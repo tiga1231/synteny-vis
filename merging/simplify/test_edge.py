@@ -223,3 +223,19 @@ class TestEdge(TestCase):
         self.assertIsNotNone(W.edges()[0].heap_index)
         self.assertIsNotNone(E.edges()[0].heap_index)
 
+    def test_same_endpoints(self):
+        p = Point(1, 1)
+        q = Point(1, 2)
+        r = Point(1, 3)
+
+        e = Edge(p, q, False)
+        f = Edge(p, r, False)
+        g = Edge(p, q, True)
+
+        self.assertTrue(e.same_endpoints(g))
+        self.assertTrue(g.same_endpoints(e))
+        self.assertFalse(e.same_endpoints(f))
+        self.assertFalse(g.same_endpoints(f))
+        self.assertFalse(f.same_endpoints(e))
+        self.assertFalse(f.same_endpoints(g))
+

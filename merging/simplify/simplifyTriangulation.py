@@ -3,12 +3,12 @@ import time
 import pprint
 
 import heap
-from meshreader import stream_to_edge_list
 from meshwriter import write_mesh_to_stream_as_points_and_edges
-from nativemeshreader import read
+from middlemeshreader import read
 
+import point
 PRINT_REAL_EDGES_ONLY = True
-DEBUG = True
+DEBUG = False
 pp = pprint.PrettyPrinter()
 
 
@@ -39,6 +39,7 @@ start = time.clock()
 
 #initial_edges = stream_to_edge_list(sys.stdin)
 initial_edges = read(sys.stdin)
+debug("edges loaded")
 
 edgeHeap = heap.MinHeap()
 for e in initial_edges:
@@ -49,7 +50,6 @@ start = time.clock()
 
 
 def collapse_edge(edge_to_collapse):
-    print('Merging a', edge_to_collapse.virtual(), 'virtual edge')
     mesh_ok()
     new_point, removed_edges = edge_to_collapse.collapse()
 
@@ -82,8 +82,8 @@ def print_current_edges(max_edge_length):
 
 
 def cull_short_edges(max_length):
+    global num_removals
     while edgeHeap.size() > 0 and edgeHeap.find_min().len2() < max_length ** 2:
-        debug('The size of the heap is', len(edgeHeap.all_elements()))
         for edge in edgeHeap.all_elements():
             assert edge.heap_index is not None
         if not edgeHeap.find_min().can_be_collapsed():

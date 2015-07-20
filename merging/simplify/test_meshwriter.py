@@ -18,6 +18,21 @@ edges = [
     Edge(original_points[1], original_points[3], True)
 ]
 
+dup_points = [
+    Point(0, 0),
+    Point(0, 1),
+    Point(1, 1),
+    Point(1, 0)
+]
+
+dup_edges = [
+    Edge(original_points[0], original_points[1], False),
+    Edge(original_points[1], original_points[2], False),
+    Edge(original_points[2], original_points[3], False),
+    Edge(original_points[3], original_points[0], False),
+    Edge(original_points[1], original_points[3], True)
+]
+
 
 class TestMeshWriter(TestCase):
     class WriteStub:
@@ -55,3 +70,9 @@ class TestMeshWriter(TestCase):
         w = self.WriteStub()
         write_mesh_to_stream_as_points_and_edges(edges, output=w)
         self.assertEquals(w.content[-1], '\n')
+
+    def test_write_with_virtual_off(self):
+        w = self.WriteStub()
+        write_mesh_to_stream_as_points_and_edges(dup_edges, output=w, show_virtual=False)
+        header = w.content.split('\n')[0]
+        self.assertEquals('4 4', header)
