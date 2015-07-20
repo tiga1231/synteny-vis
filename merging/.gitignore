@@ -4,5 +4,6 @@ Makefile
 CMakeFiles
 cmake_install.cmake
 intermediate_files
+test_files
 simplify/*.pyc
 simplify/__pycache__

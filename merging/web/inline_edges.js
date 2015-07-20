@@ -20,17 +20,22 @@ function convertToEdgeList(raw_data) {
   // so we _.compact to discard it.
   var lines = _.compact(raw_data.split('\n'));
 
-  var meta = _.head(lines).split(' ');
-  var data = _.tail(lines);
+  var edges = []
+  while(lines.length > 0) {
+    var meta = _.head(lines).split(' ');
+    var data = _.tail(lines);
 
-  var num_vertices = Number(meta[0]);
-  var num_edges = Number(meta[1]);
+    var num_vertices = Number(meta[0]);
+    var num_edges = Number(meta[1]);
 
-  var raw_vertices = _.take(data, num_vertices);
-  var vertices = verticesFromCSV(raw_vertices);
+    var raw_vertices = _.take(data, num_vertices);
+    var vertices = verticesFromCSV(raw_vertices);
 
-  var raw_edges = _.chain(data).drop(num_vertices).take(num_edges).value();
-  var edges = inlineEdgesFromRawFormat(raw_edges, vertices);
+    var raw_edges = _.chain(data).drop(num_vertices).take(num_edges).value();
+
+    edges = edges.concat(inlineEdgesFromRawFormat(raw_edges, vertices));
+    lines = _.chain(data).drop(num_vertices).drop(num_edges).value();
+  }
   return edges;
 }
 

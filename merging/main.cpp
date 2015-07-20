@@ -1,4 +1,5 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Exact_predicates_exact_constructions_kernel_with_sqrt.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_conformer_2.h>
 #include <CGAL/Constrained_triangulation_plus_2.h>
@@ -8,7 +9,7 @@
 #include <vector>
 #include <cstdlib>
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt K;
 typedef CGAL::Exact_intersections_tag E;
 
 typedef CGAL::Triangulation_vertex_base_2<K> TVB2;
@@ -22,62 +23,47 @@ typedef CDT::Point Point;
 
 using namespace std;
 
-Point convertToPoint(string line);
-pair<unsigned int, unsigned int> convertToEdge(string line);
+pair<Point, Point> convertToPointPair(string line);
 
 int main(int argc, char **argv)
 {
     CDT cdt;
-
     string input;
-    getline(cin, input);
-    if(input != "POINTS") {
-        cerr << "This file doesn't look right" << endl;
-        return 1;
-    }
-
-    vector<Vertex_handle> points;
-
-    getline(cin, input);
-    while(!cin.eof() && input != "CONSTRAINTS") {
-        Point point = convertToPoint(input);
-
-        Vertex_handle handle = cdt.insert(point);
-        points.push_back(handle);
-
-        getline(cin, input);
-    }
 
     getline(cin, input);
     while(!cin.eof()) {
-        pair<unsigned int, unsigned int> values = convertToEdge(input);
-        cdt.insert_constraint(points[values.first], points[values.second]);
-
+        cdt.push_back(convertToPointPair(input));
         getline(cin, input);
     }
 
-    CGAL::make_conforming_Delaunay_2(cdt);
+    //cerr << "All constraints inserted." << endl;
+
+    CGAL::Triangulation_conformer_2<CDT> conf(cdt);
+    while(conf.step_by_step_conforming_Delaunay()) {
+        cerr << "working..." << endl; 
+    }
+
+    cout.precision(15);
     cout << cdt << endl;
 }
 
-Point convertToPoint(string line) {
-    double a, b;
+pair<Point, Point> convertToPointPair(string line) {
+    double x1, x2, y1, y2;
 
-    a = atof(line.data());
+    x1 = atof(line.data());
+
     int indexOfNextComma = line.find(',');
     line = line.substr(indexOfNextComma + 1);
-    b = atof(line.data());
+    x2 = atof(line.data());
 
-    return Point(a, b);
-}
-
-pair<unsigned int, unsigned int> convertToEdge(string line) {
-    int a, b;
-
-    a = atoi(line.data());
-    int indexOfNextComma = line.find(',');
+    indexOfNextComma = line.find(',');
     line = line.substr(indexOfNextComma + 1);
-    b = atoi(line.data());
+    y1 = atof(line.data());
 
-    return pair<unsigned int, unsigned int>(a, b);
+    indexOfNextComma = line.find(',');
+    line = line.substr(indexOfNextComma + 1);
+    y2 = atof(line.data());
+
+    cerr.precision(15);
+    return pair<Point, Point>(Point(x1, y1), Point(x2, y2));
 }

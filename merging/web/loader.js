@@ -16,7 +16,7 @@ d3.text('./fileList.txt', function(err, file_name_list) {
   var file_names = _.compact(file_name_list.split('\n'));
 
   var level_groups = _.groupBy(file_names, function(x) {
-    return x.match(/tri\.(\d+)\.csv/)[1];
+    return x.match(/(\d+)\.combined\.csv/)[1];
   });
 
   var levels = _.sortBy(Object.keys(level_groups), function(g) {

@@ -45,7 +45,7 @@ function plotLines(lines, extents, level) {
   }
 
   images.push({
-    'threshold': level,
+    'threshold': Number(level),
     'data': canvas.getImageData(0, 0, WIDTH, HEIGHT).data,
     'num_lines': lines.length
   });
@@ -58,14 +58,42 @@ function doComparison() {
   images = _.sortBy(images, 'threshold');
   var pad = '            ';
 
+  var values = []
   for (var i = 0; i < images.length; i++) {
     var value = imageNorm(images[0].data, images[i].data);
+    values.push({
+      level: images[i].threshold,
+      value: value
+    });
 
     var start = (pad + images[i].threshold).slice(-12);
     var mid = (pad + images[i].num_lines).slice(-12);
     var end = (pad + value).slice(-12);
     console.log('0 vs. ' + start + mid + end);
   }
+
+  var PLOT_WIDTH = 600;
+  var PLOT_HEIGHT = 300;
+  var PLOT_BUFFER = 10;
+  var x = d3.scale.linear().domain([0.1, d3.max(_.pluck(values, 'level'))]).range([PLOT_BUFFER, PLOT_WIDTH - PLOT_BUFFER]);
+  var y = d3.scale.linear().domain([0.1, d3.max(_.pluck(values, 'value'))]).range([PLOT_HEIGHT - PLOT_BUFFER, PLOT_BUFFER]);
+  d3.select('body').append('svg')
+    .attr('width', PLOT_WIDTH)
+    .attr('height', PLOT_HEIGHT)
+    .selectAll('circle')
+    .data(values)
+    .enter()
+    .append('circle')
+    .attr('cx', function(v) {
+      return v.level == 0 ? 0 : x(v.level);
+    })
+    .attr('cy', function(v) {
+      return v.value == 0 ? PLOT_HEIGHT - PLOT_BUFFER : y(v.value);
+    })
+    .attr('r', 5)
+    .attr('fill', 'steelblue')
+    .attr('stroke', 'black');
+
 }
 
 function imageNorm(a, b) {

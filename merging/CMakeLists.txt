@@ -13,9 +13,6 @@ if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 2.6)
   endif()
 endif()
 
-# Enable C++11
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-
 set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true )
  
 if ( COMMAND cmake_policy )
@@ -25,7 +22,7 @@ if ( COMMAND cmake_policy )
 endif()
 
 # CGAL and its components
-find_package( CGAL QUIET COMPONENTS  )
+find_package( CGAL QUIET COMPONENTS Core )
 
 if ( NOT CGAL_FOUND )
 
@@ -56,6 +53,9 @@ endif()
 
 # Creating entries for all .cpp/.C files with "main" routine
 # ##########################################################
+
 include( CGAL_CreateSingleSourceCGALProgram )
 
 create_single_source_cgal_program( "main.cpp" )
+
+
