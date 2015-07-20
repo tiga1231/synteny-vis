@@ -1,4 +1,4 @@
-function plotLines(lines, extents, level) {
+function plotLines(lines, extents, level, div) {
 
   var xScale = d3.scale.linear()
     .domain(extents.x)
@@ -14,7 +14,7 @@ function plotLines(lines, extents, level) {
     .x(xScale).y(yScale).scaleExtent([1, 10000])
     .on('zoom', zoomed);
 
-  var svg = d3.select('body').append('svg')
+  var svg = div.append('svg')
     .attr('width', WIDTH)
     .attr('height', HEIGHT)
     .call(zoom);

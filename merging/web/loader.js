@@ -32,6 +32,8 @@ d3.text('./fileList.txt', function(err, file_name_list) {
 });
 
 function loadFileSet(name_set, level) {
+  // We do this here to enforce plot ordering
+  var div = d3.select('body').append('div').classed('wrapper', true);
   var q = queue();
 
   _.each(name_set, function(name) {
@@ -45,7 +47,7 @@ function loadFileSet(name_set, level) {
     }
     datas = _.map(datas, convertToEdgeList); // inline_edges.js
     datas = _.flatten(datas);
-    containers.push(plotLines(datas, getExtents(datas), level));
+    containers.push(plotLines(datas, getExtents(datas), level, div));
   });
 }
 

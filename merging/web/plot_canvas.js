@@ -1,4 +1,4 @@
-function plotLines(lines, extents, level) {
+function plotLines(lines, extents, level, div) {
 
   var xScale = d3.scale.linear()
     .domain(extents.x)
@@ -11,7 +11,7 @@ function plotLines(lines, extents, level) {
 
   var thresholdFraction = level / unitsPerPixel;
 
-  var canvas = d3.select("body").append("canvas")
+  var canvas = div.append("canvas")
     .attr("width", WIDTH)
     .attr("height", HEIGHT)
     .call(d3.behavior.zoom()

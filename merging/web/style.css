@@ -11,4 +11,6 @@ svg, canvas {
   stroke-width: 3px;
   stroke: grey;
 }
-
+.wrapper {
+  display: inline-block;
+}
