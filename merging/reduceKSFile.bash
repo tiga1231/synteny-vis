@@ -95,10 +95,10 @@ done
 mkdir -p intermediate_files
 mv *.edgeList *.reduced *.group *.ks-csv *.pieces intermediate_files
 
-rm web/data/*
+rm -f web/data/*
 mv *.combined.csv web/data
 cd web/data
 ls *.csv > ../fileList.txt
-cd ..
+cd ../..
 T4=$SECONDS
 echo "done. ($((T4 - T3)) seconds, ${SECONDS} total)"
