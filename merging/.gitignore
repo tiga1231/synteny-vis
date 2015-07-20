@@ -8,4 +8,4 @@ test_files
 test.bash
 simplify/*.pyc
 simplify/__pycache__
-simplify/.idea
+simplify/.idea/*
