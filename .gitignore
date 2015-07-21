@@ -10,3 +10,4 @@ test.bash
 simplify/*.pyc
 simplify/__pycache__
 simplify/.idea/*
+dups.txt
