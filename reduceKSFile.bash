@@ -9,6 +9,12 @@ PC_TO_TRI="${BASE_DIR}/genCDT"
 LEVELS="0 100000 200000 400000 800000 1600000 3200000 6400000 12800000 25600000"
 HEADER="x1,y1,x2,y2,type"
 
+# Check that you have GNU parallel -- its worth it.
+if ! which parallel > /dev/null ; then
+    echo "Please install GNU parallel"
+    exit 1
+fi
+
 INPUT_FILE_PATH=$1
 if [[ -z "$INPUT_FILE_PATH" ]] ; then
     echo "Specify an input file"
@@ -56,38 +62,18 @@ for f in *.csv.group ; do
     bash ./csvToEdgeList.bash "$f" > "${f}.edgeList"
 done
 
-if which parallel > /dev/null ; then
-    ls -S *.edgeList | parallel --eta "$PC_TO_TRI < {} | python3 ./simplify/native_to_edge_list.py > {.}.reduced"
-else
-    for f in $(ls -S *.edgeList | tac | head) ; do
-        t=$SECONDS
-        $PC_TO_TRI < "${f}" | python3 ./simplify/native_to_edge_list.py > "${f%.edgeList}.reduced"
-        printf "%-20s %10s\n" "$(wc -l $f)" "$(( SECONDS - t))"
-    done
-fi
+ls -S *.edgeList | parallel --eta "$PC_TO_TRI < {} | python3 ./simplify/native_to_edge_list.py > {.}.reduced"
 
-for f in *.reduced ; do
-    if ! python3 ./simplify/annotate_edges.py < "$f" "${SHORT_NAME}.ks-csv" > "${f}.annotated" ; then
-        exit 1
-    fi
-done
+ls -S *.reduced | parallel --eta "python3 ./simplify/annotate_edges.py < {} ${SHORT_NAME}.ks-csv > {}.annotated"
+
 T2=$SECONDS
 echo "done. ($((T2 - T1)) seconds, ${SECONDS} total)"
 
 
 echo -n "Reducing triangulations at levels: $LEVELS ... "
-if which parallel > /dev/null; then 
-    ls -S *.annotated | parallel --eta "python3 ${PY_DIR}/simplifyTriangulation.py < {} --name {} $LEVELS"
-else
-    for f in *.annotated ; do
-        python3 ${PY_DIR}/simplifyTriangulation.py < "$f" --name "$f" $LEVELS
-    done
-fi
+ls -S *.annotated | parallel --eta "python3 ${PY_DIR}/simplifyTriangulation.py < {} --name {} $LEVELS"
 
-for i in *.csv ; do
-    echo $i
-    python3 ./simplify/convert_annotations_to_data.py < "$i" "${SHORT_NAME}.ks-csv" > "${i}.polylined"
-done
+ls -S *.csv | parallel --eta "python3 ./simplify/convert_annotations_to_data.py < {} ${SHORT_NAME}.ks-csv > {}.polylined ; mv {} {}.un-polylined"
 
 T3=$SECONDS
 echo "done. ($((T3 - T2)) seconds, ${SECONDS} total)"
@@ -105,7 +91,7 @@ for level in $LEVELS ; do
 done
 
 mkdir -p intermediate_files
-mv *.edgeList *.reduced *.group *.ks-csv *.pieces *.annotated intermediate_files
+mv *.edgeList *.reduced *.group *.ks-csv *.pieces *.annotated *.un-polylined intermediate_files
 
 rm -f web/data/*
 mv *.combined.csv web/data
