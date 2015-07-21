@@ -1,5 +1,5 @@
 var FIELD = 'ks';
-var WIDTH = HEIGHT = 1000;
+var WIDTH = HEIGHT = 400;
 var BUFFER = 20
 var LINE_WIDTH = 5;
 
