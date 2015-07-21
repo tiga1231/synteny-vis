@@ -2,6 +2,8 @@ loadFileList('../fileList.txt', function(datas) {
   _.each(datas, function(data) {
     _.each(data.data, function(d) {
       d.logks = Math.log(d.ks) / Math.log(10);
+      d.minlogks = Math.log(d.minks) / Math.log(10);
+      d.maxlogks = Math.log(d.maxks) / Math.log(10);
       d.xmin = Math.min(d.x1, d.x2);
       d.xmax = Math.max(d.x1, d.x2);
       d.ymin = Math.min(d.y1, d.y2);
@@ -11,7 +13,7 @@ loadFileList('../fileList.txt', function(datas) {
 
   datas = _.map(datas, function(data) {
     data.data = _.filter(data.data, function(d) {
-      return isFinite(d.logks); 
+      return isFinite(d.logks);
     });
     return data;
   });

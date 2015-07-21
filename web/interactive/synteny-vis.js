@@ -65,7 +65,13 @@ function controller(datas, cumulative) {
   /* summary mode switching */
   d3.selectAll("#summary-options input[name=summary-options]")
     .on("change", function() {
-      type = this.value;
+      console.log(this.value);
+      var map = {
+        'average': 'logks',
+        'minimum': 'minlogks',
+        'maximum': 'maxlogks'
+      };
+      field = map[this.value];
       globals.redraw();
     });
 
@@ -119,7 +125,7 @@ function controller(datas, cumulative) {
     return colorScale;
   };
   globals.getSummaryType = function() {
-    return type;
+    return field;
   };
 
   var funcs = [
@@ -388,7 +394,8 @@ function synteny(id, datas, cumulative, field) {
 
   function reColorSyntenyLines() {
     var colorScale = globals.getColorScale();
-    var type = globals.getSummaryType();
+    field = globals.getSummaryType();
+    console.log(field);
     svg.selectAll('.synteny').transition().duration(500)
       .style('stroke', function(d) {
         return colorScale(d[field]);

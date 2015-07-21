@@ -23,10 +23,17 @@
     .xAxis > line {
       stroke-width: 2;
     }
-    .unselected-main, .unselected-main2, .unselected-main3, .unselected-main4,
-    .unselected-plot, .unselected-plot2, .unselected-plot3, .unselected-plot4 {
+    .unselected-main,
+    .unselected-main2,
+    .unselected-main3,
+    .unselected-main4,
+    .unselected-plot,
+    .unselected-plot2,
+    .unselected-plot3,
+    .unselected-plot4 {
       opacity: .1;
-    } /*.synteny {
+    }
+    /*.synteny {
       stroke-linecap: round; 
     }*/
   </style>
@@ -47,6 +54,12 @@
   <form id="mouse-options">
     <input type="radio" name="mouse-options" value="brush" checked>Brushing
     <input type="radio" name="mouse-options" value="pan">Panning
+  </form>
+
+  <form id="summary-options">
+    <input type="radio" name="summary-options" value="average" checked>Average
+    <input type="radio" name="summary-options" value="minimum">Minimum
+    <input type="radio" name="summary-options" value="maximum">Maximum
   </form>
 
   <form id="color-options">

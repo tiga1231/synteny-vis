@@ -77,9 +77,21 @@ def main(args):
             # Just taking an average, all segments weighted equally
             kss = [float_or_zero(x[0]) for x in data]
             kns = [float_or_zero(x[1]) for x in data]
+            non_zero_kss = [x for x in kss if x > 0]
+            non_zero_kns = [x for x in kns if x > 0]
+            if len(non_zero_kns) > 0:
+                min_kn, max_kn= min(non_zero_kns), max(non_zero_kns)
+            else:
+                min_kn, max_kn= 0, 0
+            if len(non_zero_kss) > 0:
+                min_ks, max_ks = min(non_zero_kss), max(non_zero_kss)
+            else:
+                min_ks, max_ks = 0, 0
+
+
             avg_ks = sum(kss)/len(kss)
             avg_kn = sum(kns)/len(kns)
-            return "kn=%f,ks=%f" % (avg_kn, avg_ks)
+            return "kn=%f,ks=%f,minkn=%f,maxkn=%f,minks=%f,maxks=%f" % (avg_kn, avg_ks, min_kn, max_kn, min_ks, max_ks)
 
         rep = merge(data_to_merge)
 
