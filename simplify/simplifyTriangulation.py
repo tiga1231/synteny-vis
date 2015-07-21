@@ -83,10 +83,7 @@ def print_current_edges(max_edge_length):
 
 
 def cull_short_edges(max_length):
-    global num_removals
     while edgeHeap.size() > 0 and edgeHeap.find_min().len2() < max_length ** 2:
-        for edge in edgeHeap.all_elements():
-            assert edge.heap_index is not None
         if not edgeHeap.find_min().can_be_collapsed():
             return
         collapse_edge(edgeHeap.extract_min())
@@ -97,5 +94,10 @@ for threshold in THRESHOLDS:
     cull_short_edges(threshold)
     debug('The size of the heap is', len(edgeHeap.all_elements()))
     print_current_edges(threshold)
+    new_heap = heap.MinHeap()
+    for e in edgeHeap.all_elements():
+        e.heap_index = None
+        new_heap.insert(e)
+    edgeHeap = new_heap
 
 debug('rest took', time.clock() - start)

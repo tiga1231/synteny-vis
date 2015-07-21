@@ -6,7 +6,7 @@ PY_DIR="${BASE_DIR}/simplify/"
 PC_TO_TRI="${BASE_DIR}/genCDT"
 
 # These are the thresholds used by the reduction program
-LEVELS="0 100000 200000 400000 800000 1600000 3200000 6400000 12800000 25600000"
+LEVELS="0 25000 50000 100000 200000 400000 800000 1600000 3200000 6400000 12800000 25600000 51200000"
 HEADER="x1,y1,x2,y2,type"
 
 # Check that you have GNU parallel -- its worth it.

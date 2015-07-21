@@ -160,7 +160,7 @@ function controller(datas, cumulative) {
 
 var globals = {};
 
-function synteny(id, data, cumulative, field) {
+function synteny(id, datas, cumulative, field) {
   var unselectedClass = 'unselected-' + id.substring(1);
 
   var xCumBPCount = cumulative.xCumBPCount;
@@ -294,34 +294,33 @@ function synteny(id, data, cumulative, field) {
   }
 
   // Data
-  setSyntenyData(datas[0].data);
-  console.log(datas[0].threshold)
+  var prevMergeIndex = -1;
+  updateMergeLevel(1, true);
 
   svgPre
     .append('g').attr('id', 'brush-group')
     .call(brush);
 
-  var prevMergeIndex = 0;
 
-  function updateMergeLevel(s) {
-    //var BP = 1 / 2 * BPPerPixel * s;
+  function updateMergeLevel(s, initial) {
     var BP = 2 * BPPerPixel * s;
-    var mergeIndex = 0;
-    for (var i = datas.length - 1; i >= 0; i--) {
+    var mergeIndex = -1;
+    for (var i = 0; i < datas.length; i++) {
       if (BP < datas[i].threshold) {
         mergeIndex = i;
         break;
       }
     }
     if (mergeIndex !== prevMergeIndex) {
-      console.log('changing to ', datas[mergeIndex].threshold);
-      console.log('with', datas[mergeIndex].data.length, 'lines');
+      console.log('changing to level-of-detail with threshold ' + datas[mergeIndex].threshold,
+        ', which has ' + datas[mergeIndex].data.length, ' lines');
       prevMergeIndex = mergeIndex;
 
       setSyntenyData(datas[mergeIndex].data);
 
       // Update brushes
-      globals.zoomed();
+      if (!initial)
+        globals.zoomed();
 
       return true;
     }
