@@ -6,9 +6,10 @@ pp = PrettyPrinter()
 
 class Edge(HeapAble):
     next_id = 0
-    def __init__(self, point_1, point_2, virtual, safe=True):
+    def __init__(self, point_1, point_2, virtual, safe=True, extra_data=None):
         self.id = Edge.next_id
         Edge.next_id += 1
+        self._extra_data = extra_data
         self.heap_index = None
         self._point_1 = point_1
         self._point_2 = point_2
@@ -86,6 +87,9 @@ class Edge(HeapAble):
         for edge in edges_to_change:
             if edge.len2() > 0:
                 new_point.add_edge(edge)
+
+        for edge in new_point.edges():
+            edge._extra_data |= self._extra_data
 
         p1.clear_edges()
         p2.clear_edges()

@@ -65,18 +65,30 @@ else
         printf "%-20s %10s\n" "$(wc -l $f)" "$(( SECONDS - t))"
     done
 fi
+
+for f in *.reduced ; do
+    if ! python3 ./simplify/annotate_edges.py < "$f" "${SHORT_NAME}.ks-csv" > "${f}.annotated" ; then
+        exit 1
+    fi
+done
 T2=$SECONDS
 echo "done. ($((T2 - T1)) seconds, ${SECONDS} total)"
 
 
 echo -n "Reducing triangulations at levels: $LEVELS ... "
 if which parallel > /dev/null; then 
-    ls -S *.reduced | parallel --eta "python3 ${PY_DIR}/simplifyTriangulation.py < {} --name {} $LEVELS"
+    ls -S *.annotated | parallel --eta "python3 ${PY_DIR}/simplifyTriangulation.py < {} --name {} $LEVELS"
 else
-    for f in *.reduced ; do
+    for f in *.annotated ; do
         python3 ${PY_DIR}/simplifyTriangulation.py < "$f" --name "$f" $LEVELS
     done
 fi
+
+for i in *.csv ; do
+    echo $i
+    python3 ./simplify/convert_annotations_to_data.py < "$i" "${SHORT_NAME}.ks-csv" > "${i}.polylined"
+done
+
 T3=$SECONDS
 echo "done. ($((T3 - T2)) seconds, ${SECONDS} total)"
 
@@ -86,14 +98,14 @@ echo -n "Cleaning up ... "
 
 for level in $LEVELS ; do
     combined=${level}.combined.csv
-    for f in *.${level}.csv ; do
+    for f in *.${level}.csv.polylined ; do
         cat $f >> $combined
         mv $f ${f}.pieces
     done
 done
 
 mkdir -p intermediate_files
-mv *.edgeList *.reduced *.group *.ks-csv *.pieces intermediate_files
+mv *.edgeList *.reduced *.group *.ks-csv *.pieces *.annotated intermediate_files
 
 rm -f web/data/*
 mv *.combined.csv web/data

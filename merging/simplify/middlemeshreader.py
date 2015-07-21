@@ -21,8 +21,9 @@ def read(input):
         fields = next(input).strip().split(' ')
         v1, v2 = int(fields[0]), int(fields[1])
         virtual = fields[2] == 'virtual'
+        dataLink = {int(fields[3])} if fields[3] != '-1' else set()
         v1, v2 = min(v1, v2), max(v1, v2)
-        realEdges.append(Edge(vertices[v1], vertices[v2], virtual, safe=False))
+        realEdges.append(Edge(vertices[v1], vertices[v2], virtual, safe=False, extra_data=dataLink))
 
     for vertex in vertices:
         vertex.fix_edges()

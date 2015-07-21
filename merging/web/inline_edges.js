@@ -60,13 +60,22 @@ function inlineEdgesFromRawFormat(data, vertices) {
     var type = pieces[2];
     var point_1 = vertices[point_1_index];
     var point_2 = vertices[point_2_index];
-    return {
+    var ret = {
       x1: Number(point_1[0]),
       y1: Number(point_1[1]),
       x2: Number(point_2[0]),
       y2: Number(point_2[1]),
       type: type
     };
+
+    for(var i = 3; i < pieces.length; i++) {
+      var kv = pieces[i].split('=');
+      var key = kv[0];
+      var val = Number(kv[1]);
+      ret[key] = val;
+    }
+    return ret; 
+
   });
 }
 

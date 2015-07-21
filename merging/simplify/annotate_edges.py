@@ -17,18 +17,23 @@ def read_streamed_file():
 def diff(a):
     return (a[2] - a[0], a[3] - a[1])
 
-def parallel(a, b):
-    adiff = diff(a)
-    bdiff = diff(b)
-    alen2 = sum(x**2 for x in adiff)
-    blen2 = sum(x**2 for x in bdiff)
-    dot = sum(x*y for x, y in zip(adiff, bdiff))
-    return abs(dot**2 - alen2 * blen2) < .001
+def len2(a):
+    return sum(x**2 for x in a)
 
-def inside(a, b):
-    adiff = (0,0) + diff(a)
-    sep = a[:2] + b[2:]
-    return parallel(adiff, sep)
+def contained(a, b):
+    e = 1
+    axmin, axmax = min(a[0], a[2]), max(a[0], a[2])
+    aymin, aymax = min(a[1], a[3]), max(a[1], a[3])
+    bxmin, bxmax = min(b[0], b[2]), max(b[0], b[2])
+    bymin, bymax = min(b[1], b[3]), max(b[1], b[3])
+    return axmin - e <= bxmin and bxmax <= axmax + e \
+            and aymin - e <= bymin and bymax <= aymax + e
+
+def min_ep_dist2(a, b):
+    a1, a2 = a[:2], a[2:]
+    b1, b2 = b[:2], b[2:]
+    pairs = [(x, y) for x in [a1, a2] for y in [b1, b2]]
+    return min(len2(diff(x + y)) for x, y in pairs)
 
 def main(args):
     if len(args) < 2:
@@ -50,11 +55,11 @@ def main(args):
     verts, edges = read_streamed_file()    
     print(len(verts), len(edges))
     for v in verts:
-        print(','.join([str(x) for x in v]))
+        print(' '.join([str(x) for x in v]))
 
     for edge in edges:
         if edge[2] == 'virtual':
-            print(",".join([str(x) for x in edge] + ['-1']))
+            print(" ".join([str(x) for x in edge] + ['-1']))
             continue
         thisOne = verts[edge[0]] + verts[edge[1]]
 
@@ -64,51 +69,28 @@ def main(args):
         low = bisect.bisect_left(original, lowMarker)
         hi = bisect.bisect_right(original, hiMarker)
 
+        low = max(low - 10, 0)
+        hi = min(hi + 10, len(original))
+
         index = -1
         for i in range(low, hi):
             orig = original[i]
-            if parallel(thisOne, orig) and inside(orig, thisOne):
+
+            if contained(orig, thisOne):
                 if index != -1:
-                    raise Exception("duplicate")
-                index = i
+                    if min_ep_dist2(orig, thisOne) < \
+                            min_ep_dist2(original[index], thisOne):
+                        index = i
+                else:
+                    index = i
 
         if index == -1:
+            print(thisOne)
+            print(original[low:hi])
             raise Exception('None')
 
-        print(",".join([str(x) for x in edge] + [str(index)]))
+        print(" ".join([str(x) for x in edge] + [str(index)]))
 
-#tests
-e1 = (0, 0, 6, 6)
-e2 = (1, 1, 3, 3)
-assert parallel(e1, e2) and parallel(e2, e1)
-
-e1 = (0, 0, 6, 6)
-e2 = (1, 1, 2, 3)
-assert not parallel(e1, e2) and not parallel(e2, e1)
-
-e1 = (0, 0, 6, 6)
-e2 = (1, 1, 3, 3)
-assert parallel(e1, e2) and inside(e1, e2)
-
-e1 = (0, 0, 6, 6)
-e2 = (1, 2, 3, 4)
-assert parallel(e1, e2) and not inside(e1, e2)
-
-e1 = (0, 0, 0, 1)
-e2 = (0, 0, 0, 2)
-assert parallel(e1, e2) and parallel(e2, e1)
-
-e1 = (0, 0, 0, 1)
-e2 = (0, 0, 0, 2)
-assert inside(e1, e2)
-
-e1 = (0, 0, 1, 0)
-e2 = (0, 0, 2, 0)
-assert parallel(e1, e2) and parallel(e2, e1)
-
-e1 = (0, 0, 1, 0)
-e2 = (0, 0, 2, 0)
-assert inside(e1, e2)
 
 if __name__ == '__main__':
     exit(main(sys.argv))

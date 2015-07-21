@@ -24,5 +24,5 @@ def write_mesh_to_stream_as_points_and_edges(edge_list, output=sys.stdout, show_
         i1 = vertex_map[p1]
         i2 = vertex_map[p2]
         kind = 'virtual' if edge.virtual() else 'real'
-        output.write('%d,%d,%s' % (i1, i2, kind))
+        output.write('%d,%d,%s,%s' % (i1, i2, kind, ",".join([str(x) for x in edge._extra_data])))
     output.write('\n')

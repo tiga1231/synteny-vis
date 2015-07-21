@@ -39,7 +39,11 @@ function plotLines(lines, extents, level, div) {
     })
     .attr('class', function(line) {
       return line.type;
-    });
+    })
+    .attr('stroke', function(line) {
+      return colorScale(line[FIELD]);
+    })
+    .attr('stroke-width', LINE_WIDTH);
 
   var message = lines.length + ' lines ';
   message += '(' + thresholdFraction + ')';

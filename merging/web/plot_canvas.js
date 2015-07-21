@@ -34,7 +34,7 @@ function plotLines(lines, extents, level, div) {
       x2 = xScale(d.x2);
       y2 = yScale(d.y2);
       canvas.beginPath();
-      canvas.strokeStyle = 'red';
+      canvas.strokeStyle = colorScale(lines[FIELD]);
       canvas.lineWidth = LINE_WIDTH;
       canvas.lineCap = 'round';
       canvas.moveTo(x1, y1);
