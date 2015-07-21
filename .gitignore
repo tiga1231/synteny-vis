@@ -1,1 +1,12 @@
 *~
+CMakeCache.txt
+genCDT
+Makefile
+CMakeFiles
+cmake_install.cmake
+intermediate_files
+test_files
+test.bash
+simplify/*.pyc
+simplify/__pycache__
+simplify/.idea/*
