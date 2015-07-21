@@ -1,4 +1,5 @@
 import sys
+import bisect
 
 def read_streamed_file():
     meta = next(sys.stdin).strip().split(' ')
@@ -44,6 +45,7 @@ def main(args):
         y1 = float(fields[16])
         y2 = float(fields[17])
         original.append((x1, y1, x2, y2))
+    original.sort()
 
     verts, edges = read_streamed_file()    
     print(len(verts), len(edges))
@@ -55,15 +57,24 @@ def main(args):
             print(",".join([str(x) for x in edge] + ['-1']))
             continue
         thisOne = verts[edge[0]] + verts[edge[1]]
+
+        lowX, highX = min(thisOne[0], thisOne[2]), max(thisOne[0], thisOne[2])
+        lowMarker = (lowX, 0, 0, 0)
+        hiMarker = (highX, 1e20, 1e20, 1e20)
+        low = bisect.bisect_left(original, lowMarker)
+        hi = bisect.bisect_right(original, hiMarker)
+
         index = -1
-        for i, orig in enumerate(original):
+        for i in range(low, hi):
+            orig = original[i]
             if parallel(thisOne, orig) and inside(orig, thisOne):
                 if index != -1:
-                    raise Exception('Duplicate')
+                    raise Exception("duplicate")
                 index = i
-        
-        #if index == -1:
-        #    raise Exception('None')
+
+        if index == -1:
+            raise Exception('None')
+
         print(",".join([str(x) for x in edge] + [str(index)]))
 
 #tests
