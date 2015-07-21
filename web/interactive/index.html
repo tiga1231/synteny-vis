@@ -2,9 +2,9 @@
 
 <head>
   <meta charset='utf-8'>
-  <script src="lib/d3.js"></script>
-  <script src="lib/queue.js"></script>
-  <script src="lib/underscore.js"></script>
+  <script src="../lib/d3.js"></script>
+  <script src="../lib/queue.js"></script>
+  <script src="../lib/underscore.js"></script>
   <style>
     svg {
       border: 1px solid black;
@@ -26,7 +26,9 @@
     .unselected-main, .unselected-main2, .unselected-main3, .unselected-main4,
     .unselected-plot, .unselected-plot2, .unselected-plot3, .unselected-plot4 {
       opacity: .1;
-    }
+    } /*.synteny {
+      stroke-linecap: round; 
+    }*/
   </style>
 </head>
 
@@ -47,12 +49,6 @@
     <input type="radio" name="mouse-options" value="pan">Panning
   </form>
 
-  <form id="summary-options">
-    <input type="radio" name="summary-options" value="average" checked>Average
-    <input type="radio" name="summary-options" value="minimum">Minimum
-    <input type="radio" name="summary-options" value="maximum">Maximum
-  </form>
-
   <form id="color-options">
     <input type="radio" name="color-options" value="rg" checked>red-green
     <input type="radio" name="color-options" value="rg_quantized">rg_quantized
@@ -63,9 +59,10 @@
   </form>
 
   <script src="bvh.js"></script>
-  <script src="merge.js"></script>
   <script src="synteny-vis.js"></script>
-  <script src="load.js"></script>
+  <script src="../loader.js"></script>
+  <script src="load_lengths.js"></script>
+  <script src="main.js"></script>
 </body>
 
 </html>

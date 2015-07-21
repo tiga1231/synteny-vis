@@ -10,19 +10,6 @@ var plotHeight = 600;
 var numHistogramTicks = 80;
 var histogramYScaleTransitionLength = 750;
 
-/* Don't forget to add a corresponding button in index.html */
-var summaryFunctions = {
-  average: function(a, b, field) {
-    return (a.summary[field].average * a.count + b.summary[field].average * b.count) / (a.count + b.count);
-  },
-  minimum: function(a, b, field) {
-    return Math.min(a.summary[field].minimum, b.summary[field].minimum);
-  },
-  maximum: function(a, b, field) {
-    return Math.max(a.summary[field].maximum, b.summary[field].maximum);
-  }
-};
-
 /* Again -- Don't forget to add a corresponding button in index.html */
 var colorScaleRanges = {
   rg: {
@@ -63,7 +50,12 @@ var wholePlot = {
   ymax: 1e15
 };
 
-function controller(data, cumulative) {
+function controller(datas, cumulative) {
+  datas = _.sortBy(datas, function(d) {
+    return d.threshold;
+  });
+  console.log(datas);
+
   /* zoom/pan switching */
   d3.selectAll("#mouse-options input[name=mouse-options]")
     .on("change", function() {
@@ -85,11 +77,11 @@ function controller(data, cumulative) {
     });
 
 
-  var field = 'logKs';
+  var field = 'logks';
   var colorScale;
   var type = 'average';
 
-  data = _.filter(data, function(d) {
+  data = _.filter(datas[0].data, function(d) {
     return isFinite(d[field]);
   });
 
@@ -121,7 +113,7 @@ function controller(data, cumulative) {
   });
   colorScale = colorScales['rg'];
 
-  var bvh_nodes = bvh_build(data);
+  var bvh_nodes = bvh_build(datas[0].data);
 
   globals.getColorScale = function() {
     return colorScale;
@@ -131,7 +123,7 @@ function controller(data, cumulative) {
   };
 
   var funcs = [
-    synteny('#main', data, cumulative, field),
+    synteny('#main', datas, cumulative, field),
     //synteny('#main2', data, cumulative, field),
     //synteny('#main3', data, cumulative, field),
     //synteny('#main4', data, cumulative, field),
@@ -178,16 +170,8 @@ function synteny(id, data, cumulative, field) {
   var yTotalBPs = _.last(yCumBPCount);
   var height = syntenyPlotWidth;
   var width = syntenyPlotWidth;
-  //var width = height * (xTotalBPs / yTotalBPs);
 
   var BPPerPixel = xTotalBPs / width;
-  var base = 2;
-  var numLevels = Math.ceil(Math.log(BPPerPixel) / Math.log(base));
-  var levels = _.map(_.range(numLevels), function(i) {
-    return BPPerPixel / Math.pow(base, i);
-  });
-
-  var merged = merge(data, [field], levels, summaryFunctions);
 
   var xExtent = [0, xTotalBPs];
   var yExtent = [0, yTotalBPs];
@@ -286,7 +270,6 @@ function synteny(id, data, cumulative, field) {
   function setSyntenyData(lines) {
     var tempSel = svg.selectAll('.synteny').data(lines);
     var colorScale = globals.getColorScale();
-    var type = globals.getSummaryType();
     tempSel.enter().append('line').classed('synteny', true);
     tempSel
       .attr('x1', function(d) {
@@ -302,7 +285,7 @@ function synteny(id, data, cumulative, field) {
         return yScaleOriginal(d.y2);
       })
       .style('stroke', function(d) {
-        return colorScale(d.summary[field][type]);
+        return colorScale(d[field]);
       })
       .style('stroke-width', syntenyLineStrokeWidth);
 
@@ -311,7 +294,8 @@ function synteny(id, data, cumulative, field) {
   }
 
   // Data
-  setSyntenyData(merged[0].sets);
+  setSyntenyData(datas[0].data);
+  console.log(datas[0].threshold)
 
   svgPre
     .append('g').attr('id', 'brush-group')
@@ -320,18 +304,21 @@ function synteny(id, data, cumulative, field) {
   var prevMergeIndex = 0;
 
   function updateMergeLevel(s) {
-    var BP = 1/2 * BPPerPixel * s;
+    //var BP = 1 / 2 * BPPerPixel * s;
+    var BP = 2 * BPPerPixel * s;
     var mergeIndex = 0;
-    for (var i = levels.length - 1; i >= 0; i--) {
-      if (BP < levels[i]) {
+    for (var i = datas.length - 1; i >= 0; i--) {
+      if (BP < datas[i].threshold) {
         mergeIndex = i;
         break;
       }
     }
     if (mergeIndex !== prevMergeIndex) {
+      console.log('changing to ', datas[mergeIndex].threshold);
+      console.log('with', datas[mergeIndex].data.length, 'lines');
       prevMergeIndex = mergeIndex;
 
-      setSyntenyData(merged[mergeIndex].sets);
+      setSyntenyData(datas[mergeIndex].data);
 
       // Update brushes
       globals.zoomed();
@@ -381,7 +368,7 @@ function synteny(id, data, cumulative, field) {
     var type = globals.getSummaryType();
     svg.selectAll('.synteny')
       .classed(selector, function(d) {
-        return d.summary[selField][type] > range[1] || d.summary[selField][type] < range[0];
+        return d[selField] > range[1] || d[selField] < range[0];
       });
   }
 
@@ -405,7 +392,7 @@ function synteny(id, data, cumulative, field) {
     var type = globals.getSummaryType();
     svg.selectAll('.synteny').transition().duration(500)
       .style('stroke', function(d) {
-        return colorScale(d.summary[field][type]);
+        return colorScale(d[field]);
       });
   }
 
