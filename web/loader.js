@@ -54,7 +54,6 @@ function loadFileSet(name_set, level) {
       }).value()))
       .range(['red', 'green']);
 
-    console.log(getExtents(datas).x)
     containers.push(plotLines(datas, getExtents(datas), level, div));
   });
 }
