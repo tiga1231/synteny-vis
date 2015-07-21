@@ -1,3 +1,5 @@
+var containers = [];
+
 function plotLines(lines, extents, level, div) {
 
   var xScale = d3.scale.linear()
@@ -59,6 +61,6 @@ function plotLines(lines, extents, level, div) {
     })
   }
 
-  return container;
+  containers.push(container);
 }
 

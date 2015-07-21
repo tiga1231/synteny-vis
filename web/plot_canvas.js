@@ -1,3 +1,5 @@
+var images = []; // used for image difference computations (canvas)
+
 function plotLines(lines, extents, level, div) {
 
   var xScale = d3.scale.linear()
@@ -34,7 +36,7 @@ function plotLines(lines, extents, level, div) {
       x2 = xScale(d.x2);
       y2 = yScale(d.y2);
       canvas.beginPath();
-      canvas.strokeStyle = colorScale(lines[FIELD]);
+      canvas.strokeStyle = colorScale(d[FIELD]);
       canvas.lineWidth = LINE_WIDTH;
       canvas.lineCap = 'round';
       canvas.moveTo(x1, y1);

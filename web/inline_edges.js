@@ -1,13 +1,14 @@
 /*
  * As of right now, the python simplification code emits a file that looks like:
  *
- *   <num_vertices> <num_headers>
+ *   <num_vertices> <num_edges>
  *   vert1_x,vert1_y
  *   ...
  *   vertn_x,vertn_y
- *   edge1_1,edge1_2
+ *   edge1_1,edge1_2,type,k1=v1,...,kn=vn
  *   ...
- *   edgen_1,edgen_2
+ *   edgen_1,edgen_2,type,k1=v1,...,kn=vn
+ *   <Above can be repeated many times>
  *
  *   The d3 code was originally written to handle objects with x1, y1, x2, y2,
  *   and type fields, so we convert to that form here. It might make sense to
@@ -68,6 +69,11 @@ function inlineEdgesFromRawFormat(data, vertices) {
       type: type
     };
 
+    /*
+     * The rest of CSV values are key-value pairs for various data about 
+     * a match -- it might change in the future, but this should work 
+     * generally.
+     */
     for(var i = 3; i < pieces.length; i++) {
       var kv = pieces[i].split('=');
       var key = kv[0];
