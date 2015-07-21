@@ -1,9 +1,9 @@
 # Root of project
-BASE_DIR="$HOME/code/synteny-vis/merging/"
+BASE_DIR="$HOME/code/synteny-vis/"
 
 LENGTH_DIR="${BASE_DIR}/lengths/"
 PY_DIR="${BASE_DIR}/simplify/"
-PC_TO_TRI="${BASE_DIR}/getCDT"
+PC_TO_TRI="${BASE_DIR}/genCDT"
 
 # These are the thresholds used by the reduction program
 LEVELS="0 100000 200000 400000 800000 1600000 3200000 6400000 12800000 25600000"
