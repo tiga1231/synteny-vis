@@ -18,8 +18,8 @@ d3.text('data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.
     .value();
 
   var q = queue();
-  q = q.defer(d3.json, '../lengths/11691.json');
-  q = q.defer(d3.json, '../lengths/25577.json');
+  q = q.defer(d3.json, 'lengths/11691.json');
+  q = q.defer(d3.json, 'lengths/25577.json');
   q.await(function(err, a, b) {
     if (err) {
       console.log(err);
