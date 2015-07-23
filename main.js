@@ -1,4 +1,4 @@
-d3.text('../data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', function(err, text) {
+d3.text('data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', function(err, text) {
 
   /* 
    * .ks files are delimited with a combination of tabs and double bars.
