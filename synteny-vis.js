@@ -122,13 +122,7 @@ function controller(datas, cumulative) {
 
   var funcs = [
     synteny('#main', data, cumulative, field),
-    //synteny('#main2', data, cumulative, field),
-    //synteny('#main3', data, cumulative, field),
-    //synteny('#main4', data, cumulative, field),
     histogram('#plot', bvh_nodes, field),
-    //histogram('#plot2', bvh_nodes, field),
-    //histogram('#plot3', bvh_nodes, field),
-    //histogram('#plot4', bvh_nodes, field)
   ];
 
   globals.filter = function(obj) {

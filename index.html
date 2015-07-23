@@ -23,15 +23,13 @@
     .xAxis > line {
       stroke-width: 2;
     }
-    .unselected-main,
-    .unselected-main2,
-    .unselected-main3,
-    .unselected-main4,
-    .unselected-plot,
-    .unselected-plot2,
-    .unselected-plot3,
-    .unselected-plot4 {
+    circle.unselected-main,
+    circle.unselected-plot {
       opacity: .01;
+    }
+    rect.unselected-main,
+    rect.unselected-plot {
+      opacity: .2;
     }
   </style>
 </head>
@@ -39,14 +37,6 @@
 <body>
   <svg id="main"></svg>
   <svg id="plot"></svg>
-  <!--
-  <svg id="main2"></svg>
-  <svg id="plot2"></svg>
-  <svg id="main3"></svg>
-  <svg id="plot3"></svg>
-  <svg id="main4"></svg>
-  <svg id="plot4"></svg>
-  -->
 
   <form id="mouse-options">
     <input type="radio" name="mouse-options" value="brush" checked>Brushing
