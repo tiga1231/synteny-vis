@@ -1,12 +1,12 @@
 /* synteny plot settings */
 var syntenyLineStrokeWidth = 2;
 var gridLineStrokeWidth = 1;
-var syntenyPlotWidth = 600; /* height is computed to maintain aspect ratio */
+var syntenyPlotWidth = 400; /* height is computed to maintain aspect ratio */
 
 /* Histogram settings */
 var margin = 50; /* padding around graph */
-var plotWidth = 600;
-var plotHeight = 600;
+var plotWidth = 400;
+var plotHeight = 400;
 var numHistogramTicks = 80;
 var histogramYScaleTransitionLength = 750;
 
