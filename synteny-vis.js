@@ -265,6 +265,8 @@ function synteny(id, data, cumulative, field) {
 
   function setSyntenyData(lines) {
     var colorScale = globals.getColorScale();
+    console.log(lastScale);
+    var s = lastScale || 1;
 
     if (dataSel) {
       dataSel.remove();
@@ -280,7 +282,7 @@ function synteny(id, data, cumulative, field) {
       .attr('cy', function(d) {
         return yScaleOriginal(d.nt.y_relative_offset);
       })
-      .attr('r', syntenyLineStrokeWidth)
+      .attr('r', syntenyLineStrokeWidth / s)
       .style('stroke', 'none')
       .style('fill', function(d) {
         return colorScale(d[field]);
@@ -318,6 +320,7 @@ function synteny(id, data, cumulative, field) {
       .attr("transform", "translate(" + t + ")scale(" + s + ")");
 
     globals.zoomed();
+    lastScale = s;
 
     // We only update the svg elements that are visible.
     var e = 1.e7
