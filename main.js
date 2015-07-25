@@ -25,65 +25,48 @@ var loadksData = function(ks_filename, x_lengths_file_name, y_lengths_file_name,
       console.log(err);
       return;
     }
-    /* 
-     * .ks files are delimited with a combination of tabs and double bars.
-     * We convert that to just commas.
-     */
-    var lines = ks.replace(/\|\|/g, ',')
-      .replace(/\t/g, ',')
-      .replace(' ', '')
-      .split('\n');
+
+    /* .ks files are delimited with a combination of tabs and double bars. */
+    var lines = ks.replace(/\|\|/g, ',').replace(/\t/g, ',').replace(' ', '').split('\n');
 
     var data = _.chain(lines)
       .compact()
-      .filter(function(line) {
-        return line[0] !== '#'
+      .reject(function(line) {
+        return line[0] === '#'
       })
       .map(ksLineToSyntenyDot)
       .value();
 
-    function convertLengthToNumber(list) {
-      return _.map(list, function(d) {
-        d.length = Number(d.length);
-        return d;
-      });
+    function lengthsToCumulativeBPCounts(len_list) {
+      return _.chain(len_list)
+        .sortBy('length')
+        .reverse()
+        .reduce(function(map, kv) {
+          map.total += kv.length;
+          map[kv.name] = map.total;
+          return map;
+        }, {
+          total: 0
+        })
+        .value();
     }
 
-    function cumulative_counts(data) {
-      return _.reduce(data, function(vals, d) {
-        vals.push(_.last(vals) + d);
-        return vals;
-      }, [0]);
-    }
-
-    var aNumericLengths = convertLengthToNumber(x_len.lengths);
-    var bNumericLengths = convertLengthToNumber(y_len.lengths);
-    var xLengths = _.sortBy(aNumericLengths, 'length').reverse();
-    var yLengths = _.sortBy(bNumericLengths, 'length').reverse();
-
-    var xNames = _.pluck(xLengths, 'name');
-    var yNames = _.pluck(yLengths, 'name');
-    var xCumBPCount = cumulative_counts(_.pluck(xLengths, 'length'));
-    var yCumBPCount = cumulative_counts(_.pluck(yLengths, 'length'));
-
-    var xShiftScale = d3.scale.ordinal().domain(xNames).range(xCumBPCount);
-    var yShiftScale = d3.scale.ordinal().domain(yNames).range(yCumBPCount);
+    var xCumLenMap = lengthsToCumulativeBPCounts(x_len);
+    var yCumLenMap = lengthsToCumulativeBPCounts(y_len);
 
     // Compute absolute BP offset from chromosome and relative offset
     for (var i = 0; i < data.length; i++) {
-      var match = data[i];
-      var aChrom = match.x_chromosome_id;
-      var bChrom = match.y_chromosome_id;
-      var xShift = xShiftScale(aChrom);
-      var yShift = yShiftScale(bChrom);
-      match.nt.x_relative_offset += xShift;
-      match.nt.y_relative_offset += yShift;
-      match.logks = Math.log(Number(match.ks)) / Math.log(10);
+      var dot = data[i];
+      var xShift = xCumLenMap[dot.x_chromosome_id];
+      var yShift = yCumLenMap[dot.y_chromosome_id];
+      dot.nt.x_relative_offset += xShift;
+      dot.nt.y_relative_offset += yShift;
+      dot.logks = Math.log(Number(dot.ks)) / Math.log(10);
     }
 
     cb(data, {
-      xCumBPCount: xCumBPCount,
-      yCumBPCount: yCumBPCount
+      xCumBPCount: xCumLenMap,
+      yCumBPCount: yCumLenMap
     });
 
   });

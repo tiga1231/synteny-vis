@@ -159,19 +159,16 @@ function synteny(id, data, cumulative, field) {
     return d.ks;
   });
 
-
   var xCumBPCount = cumulative.xCumBPCount;
   var yCumBPCount = cumulative.yCumBPCount;
 
-  var xTotalBPs = _.last(xCumBPCount);
-  var yTotalBPs = _.last(yCumBPCount);
   var height = syntenyPlotWidth;
   var width = syntenyPlotWidth;
 
-  var BPPerPixel = xTotalBPs / width;
+  var BPPerPixel = xCumBPCount.total / width;
 
-  var xExtent = [0, xTotalBPs];
-  var yExtent = [0, yTotalBPs];
+  var xExtent = [0, xCumBPCount.total];
+  var yExtent = [0, yCumBPCount.total];
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
   var xScaleOriginal = xScale.copy();
@@ -242,7 +239,7 @@ function synteny(id, data, cumulative, field) {
   // Grid lines
   svg.append('g').classed('.grid-vertical', true)
     .selectAll('path')
-    .data(xCumBPCount).enter().append('path')
+    .data(_.chain(xCumBPCount).values().sortBy().value()).enter().append('path')
     .classed('grid', true)
     .attr('d', function(d) {
       var x = xScale(d);
@@ -254,7 +251,7 @@ function synteny(id, data, cumulative, field) {
 
   svg.append('g').classed('.grid-horizontal', true)
     .selectAll('path')
-    .data(yCumBPCount).enter().append('path')
+    .data(_.chain(yCumBPCount).values().sortBy().value()).enter().append('path')
     .classed('grid', true)
     .attr('d', function(d) {
       var y = yScale(d);
