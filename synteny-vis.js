@@ -265,7 +265,6 @@ function synteny(id, data, cumulative, field) {
 
   function setSyntenyData(lines) {
     var colorScale = globals.getColorScale();
-    console.log(lastScale);
     var s = lastScale || 1;
 
     if (dataSel) {

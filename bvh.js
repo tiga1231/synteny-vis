@@ -66,6 +66,16 @@ function bvh_find(nodes, bbox) {
   }
 }
 
+function bvh_find_complement(nodes, bbox) {
+  if (intersect(nodes, bbox)) {
+    var left = nodes.left ? bvh_find_complement(nodes.left, bbox) : [];
+    var right = nodes.right ? bvh_find_complement(nodes.right, bbox) : [];
+    return _.flatten([left, right]);
+  } else {
+    return nodes.data;
+  }
+}
+
 function emptyBins(bins) {
   return _.map(bins, function(d) {
     return {

@@ -15,6 +15,7 @@ var loadksData = function(ks_filename, x_lengths_file_name, y_lengths_file_name,
       var yCumLenMap = lengthsToCumulativeBPCounts(y_len);
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
+      var ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
       cb(inlinedKSData, {
         xCumBPCount: xCumLenMap,
         yCumBPCount: yCumLenMap
@@ -52,6 +53,7 @@ function ksLineToSyntenyDot(line) {
   };
 }
 
+var i = 0;
 function lengthsToCumulativeBPCounts(len_list) {
   return _.chain(len_list)
     .sortBy('length')
@@ -76,5 +78,71 @@ function inlineKSData(ks, xmap, ymap) {
     ksObj.logks = Math.log(Number(ksObj.ks)) / Math.log(10);
   });
   return ks;
+}
+
+function createDataObj(ks, xmap, ymap) {
+  ret = {};
+  var currentData = ks;
+  _.each(ks, function(d) {
+    d.xmin = d.xmax = d.nt.x_relative_offset;
+    d.ymin = d.ymax = d.nt.y_relative_offset;
+  });
+  var bvh = bvh_build(ks);
+
+  var spatialFilter = null;
+  var dataFilter = null;
+
+
+  ret.getXLineOffsets = function() {
+    return _.values(xmap);
+  };
+
+  ret.getYLineOffsets = function() {
+    return _.values(ymap);
+  };
+
+  ret.currentData = function() {
+    return currentData;
+  };
+
+  ret.addSpatialFilter = function(extents) {
+    spatialFilter = extents;
+    updateData();
+  };
+
+  ret.removeSpatialFilter = function() {
+    spatialFilter = null;
+    updateData();
+  };
+
+  ret.addDataFilter = function(extent) {
+    dataFilter = extent;
+    updateData();
+  };
+
+  ret.removeDataFilter = function() {
+    dataFilter = null;
+    updateData();
+  }
+
+  function updateData() {
+    var failing = [];
+    var passing = [];
+    if(spatialFilter) {
+      passing = bvh_find(bvh, spatialFilter);
+      failing = bvh_find_complement(bvh, spatialFilter);
+    }
+    if(dataFilter) {
+      var dataSplit = _.partition(currentData, function(x) {
+        return x.ks < dataFilter[1] && x.ks > dataFilter[0];
+      });
+      passing = _.flatten(passing, dataSplit[0]);
+      failing = _.flatten(failing, dataSplit[1]);
+    }
+    _.each(passing, function(x) { x.active = true; });
+    _.each(failing, function(x) { x.active = false; });
+  }
+
+  return ret;
 }
 
