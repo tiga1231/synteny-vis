@@ -1,101 +1,102 @@
-var scaleMargin = 50;
+var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
+var HISTOGRAM_MARGIN = 50; /* Padding around histogram */
+var HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
+var COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 
-/* Histogram settings */
-var margin = 50; /* padding around graph */
-var plotWidth = 400;
-var plotHeight = 400;
-var histogramYScaleTransitionLength = 750;
-var colorScaleTransitionLength = 500;
+var globalColorScale;
 
 function controller(dataObj, cumulative) {
   /* zoom/pan switching */
   d3.selectAll("#mouse-options input[name=mouse-options]")
     .on("change", function() {
-      globals.setNavigationMode(this.value);
+      dataObj.setNavMode(this.value);
     });
 
   /* summary mode switching */
   var order = 'minimum'
   d3.selectAll("#summary-options input[name=summary-options]")
     .on("change", function() {
-      console.log(this.value);
-      order = this.value;
-      globals.redraw();
+      dataObj.setOrder(this.value);
+    });
+
+  /* Plot variable switching */
+  d3.selectAll("#plot-var-options input[name=plot-var-options]")
+    .on("change", function() {
+      dataObj.setSummaryField(this.value);
+      dataObj.setOrder(order);
+      globalColorScale = colorScales[dataObj.getSummaryField()][cs];
+      dataObj.notifyListeners('color-scale-change');
     });
 
   /* color mode switching */
+  var cs = 'rg';
   d3.selectAll("#color-options input[name=color-options]")
     .on("change", function() {
-      colorScale = colorScales[this.value];
-      dataObj.notifyListeners();
+      globalColorScale = colorScales[dataObj.getSummaryField()][this.value];
+      cs = this.value;
+      dataObj.notifyListeners('color-scale-change');
     });
 
+  var ksDataMax = d3.max(_.pluck(dataObj.currentData(), 'logks'));
+  var ksDataMin = d3.min(_.pluck(dataObj.currentData(), 'logks'));
+  var knDataMax = d3.max(_.pluck(dataObj.currentData(), 'logkn'));
+  var knDataMin = d3.min(_.pluck(dataObj.currentData(), 'logkn'));
 
-  var colorScale;
-
-  var field = 'logks';
-  var dataMax = d3.max(_.pluck(dataObj.currentData(), field));
-  var dataMin = d3.min(_.pluck(dataObj.currentData(), field));
-  var diff = dataMax - dataMin;
-
-  function partitionedExtent(n) {
+  function partitionedExtent(min, max, n) {
+    var diff = max - min;
     var step = diff / (n - 1);
-    return _.range(dataMin, dataMax + .5 * step, step);
+    return _.range(min, max + .5 * step, step);
   }
 
-  var colorScales = {
+  var ksColorScales = {
     rg: d3.scale.linear()
-      .domain(partitionedExtent(2))
+      .domain(partitionedExtent(ksDataMin, ksDataMax, 2))
       .range(['red', 'green']),
-
     rg_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(11))
+      .domain(partitionedExtent(ksDataMin, ksDataMax, 11))
       .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
-
-    ryb: d3.scale.linear()
-      .domain(partitionedExtent(3))
-      .range(['#fc8d59', '#ffffbf', '#91bfdb']),
-
     rainbow: d3.scale.linear()
-      .domain(partitionedExtent(7))
+      .domain(partitionedExtent(ksDataMin, ksDataMax, 7))
       .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
-
     rainbow_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(7))
+      .domain(partitionedExtent(ksDataMin, ksDataMax, 7))
       .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
   };
-  colorScale = colorScales['rg'];
-
-  globals.getColorScale = function() {
-    return colorScale;
+  var knColorScales = {
+    rg: d3.scale.linear()
+      .domain(partitionedExtent(knDataMin, knDataMax, 2))
+      .range(['red', 'green']),
+    rg_quantized: d3.scale.quantize()
+      .domain(partitionedExtent(knDataMin, knDataMax, 11))
+      .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
+    rainbow: d3.scale.linear()
+      .domain(partitionedExtent(knDataMin, knDataMax, 7))
+      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
+    rainbow_quantized: d3.scale.quantize()
+      .domain(partitionedExtent(knDataMin, knDataMax, 7))
+      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
   };
-  globals.getSummaryType = function() {
-    return order;
+  var colorScales = {
+    logks: ksColorScales,
+    logkn: knColorScales
   };
+  globalColorScale = colorScales['logks']['rg'];
 
   var funcs = [
-    synteny('#main', dataObj, field),
-    histogram('#plot', dataObj, field),
+    synteny('#main', dataObj),
+    histogram('#plot', dataObj),
   ];
-
-  globals.zoomed = function() {};
-
-  globals.setNavigationMode = function(mode) {
-    _.each(_.compact(funcs), function(o) {
-      o.setNavigationMode(mode);
-    });
-  }
 }
 
 var globals = {};
 
-function synteny(id, dataObj, field) {
+function synteny(id, dataObj) {
 
   var xExtent = [0, _.last(dataObj.getXLineOffsets())];
   var yExtent = [0, _.last(dataObj.getYLineOffsets())];
 
-  var width = d3.select(id).attr('width') - 2*scaleMargin;
-  var height = yExtent[1] / xExtent[1] * width + 2*scaleMargin;
+  var width = d3.select(id).attr('width') - 2 * SYNTENY_MARGIN;
+  var height = yExtent[1] / xExtent[1] * width + 2 * SYNTENY_MARGIN;
   d3.select(id).attr('height', height);
 
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
@@ -103,7 +104,7 @@ function synteny(id, dataObj, field) {
   var xScaleOriginal = xScale.copy();
   var yScaleOriginal = yScale.copy();
 
-  
+
   var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 100]).on('zoom', zoomed);
 
   function resizeBrushBoundary() {
@@ -134,19 +135,15 @@ function synteny(id, dataObj, field) {
 
   function mainBrush() {
     if (brush.empty()) return;
-    dataObj.addSpatialFilter(invert(brush.extent()));
+    dataObj.addSpatialFilter(invert(brush.extent()), 'spatial');
     resizeBrushBoundary();
   }
 
   function mainBrushEnd() {
     if (brush.empty()) {
-      dataObj.removeSpatialFilter({
-        stopping: true
-      });
+      dataObj.removeSpatialFilter('spatial-stop');
     } else {
-      dataObj.addSpatialFilter(invert(brush.extent()), {
-        stopping: true
-      });
+      dataObj.addSpatialFilter(invert(brush.extent()), 'spatial-stop');
     }
   }
 
@@ -161,13 +158,24 @@ function synteny(id, dataObj, field) {
     .on('brushend', mainBrushEnd);
 
   var canvas = d3.select(id + '-canvas')
-    .attr('width', width + 2 * scaleMargin)
-    .attr('height', height + 2 * scaleMargin);
+    .attr('width', width + 2 * SYNTENY_MARGIN)
+    .attr('height', height + 2 * SYNTENY_MARGIN);
   var context = document.getElementById('main-canvas').getContext('2d');
 
   var svgPre = d3.select(id)
-    .attr('width', width + 2 * scaleMargin)
-    .attr('height', height + 2 * scaleMargin);
+    .attr('width', width + 2 * SYNTENY_MARGIN)
+    .attr('height', height + 2 * SYNTENY_MARGIN);
+
+  svgPre
+    .append('defs')
+    .append('clipPath')
+    .attr('id', 'plot-clip-box')
+    .attr('clipPathUnits', 'objectBoundingBox')
+    .append('rect')
+    .attr('x', SYNTENY_MARGIN)
+    .attr('width', width)
+    .attr('y', SYNTENY_MARGIN)
+    .attr('height', height)
 
   var xOffsets = dataObj.getXLineOffsets();
   var xPairs = _.zip(_.initial(xOffsets), _.rest(xOffsets));
@@ -196,11 +204,11 @@ function synteny(id, dataObj, field) {
 
   var xAxisGapGroup = svgPre
     .append('g').classed('xAxis', true)
-    .attr('transform', 'translate(' + scaleMargin + ',' + (height + scaleMargin) + ')')
+    .attr('transform', 'translate(' + SYNTENY_MARGIN + ',' + (height + SYNTENY_MARGIN) + ')')
     .call(xGapAxis);
   var xAxisLineGroup = svgPre
     .append('g').classed('xAxis', true)
-    .attr('transform', 'translate(' + scaleMargin + ',' + (height + scaleMargin) + ')')
+    .attr('transform', 'translate(' + SYNTENY_MARGIN + ',' + (height + SYNTENY_MARGIN) + ')')
     .call(xLineAxis);
 
   var yOffsets = dataObj.getYLineOffsets();
@@ -230,48 +238,49 @@ function synteny(id, dataObj, field) {
 
   var yAxisGapGroup = svgPre
     .append('g').classed('yAxis', true)
-    .attr('transform', 'translate(' + scaleMargin + ',' + scaleMargin + ')')
+    .attr('transform', 'translate(' + SYNTENY_MARGIN + ',' + SYNTENY_MARGIN + ')')
     .call(yGapAxis);
   var yAxisLineGroup = svgPre
     .append('g').classed('yAxis', true)
-    .attr('transform', 'translate(' + scaleMargin + ',' + scaleMargin + ')')
+    .attr('transform', 'translate(' + SYNTENY_MARGIN + ',' + SYNTENY_MARGIN + ')')
     .call(yLineAxis);
 
   svgPre = svgPre
     .append('g')
-    .attr('transform', 'translate(' + scaleMargin + ',' + scaleMargin + ')')
+    .attr('transform', 'translate(' + SYNTENY_MARGIN + ',' + SYNTENY_MARGIN + ')')
     .append('g').attr('id', 'zoom-group')
     .call(zoom).on('mousedown.zoom', null); //disable panning
 
   var lastColorScale;
 
   function setSyntenyData() {
-    var colorScale = globals.getColorScale();
+    var colorScale = globalColorScale;
 
     function draw(n, a, b) {
       var start = Date.now();
       var d = dataObj.currentData();
-      context.clearRect(0, 0, width + 2 * scaleMargin, height + 2 * scaleMargin);
+      context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+      var field = dataObj.getSummaryField();
       for (var i = 0; i < d.length; ++i) {
         var e = d[i].nt;
-        var cx = scaleMargin + xScale(e.x_relative_offset);
-        var cy = scaleMargin + yScale(e.y_relative_offset);
+        var cx = SYNTENY_MARGIN + xScale(e.x_relative_offset);
+        var cy = SYNTENY_MARGIN + yScale(e.y_relative_offset);
         context.beginPath();
         context.moveTo(cx, cy);
-        var color = d[i].active ? b(d[i].logks) : '#E6E6E6';
-        //var color = d[i].active ? d3.interpolateRgb(a(d[i].logks), b(d[i].logks))((colorScaleTransitionLength - n) / colorScaleTransitionLength) : '#E6E6E6';
+        var color = d[i].active ? b(d[i][field]) : '#E6E6E6';
+        //var color = d[i].active ? d3.interpolateRgb(a(d[i][]), b(d[i][field]))((COLOR_TRANS_LEN - n) / COLOR_TRANS_LEN) : '#E6E6E6';
         context.fillStyle = color;
         context.arc(cx, cy, 2, 0, 2 * Math.PI);
         context.fill();
       }
-      context.clearRect(0, 0, scaleMargin, height + 2 * scaleMargin);
-      context.clearRect(0, 0, width + 2 * scaleMargin, scaleMargin);
-      context.clearRect(0, height + scaleMargin, width + 2 * scaleMargin, height + 2 * scaleMargin);
-      context.clearRect(width + scaleMargin, 0, width + 2 * scaleMargin, height + 2 * scaleMargin);
+      context.clearRect(0, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+      context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
+      context.clearRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+      context.clearRect(width + SYNTENY_MARGIN, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 
       if (n > 0) {
         var diff = Date.now() - start;
-        console.log(diff);
+        //console.log(diff);
         setTimeout(draw, 60, n - 60 - diff, a, b);
       }
     }
@@ -279,7 +288,7 @@ function synteny(id, dataObj, field) {
     if (lastColorScale === colorScale) {
       draw(0, colorScale, colorScale);
     } else {
-      draw(colorScaleTransitionLength,
+      draw(COLOR_TRANS_LEN,
         lastColorScale ? lastColorScale : colorScale, colorScale);
     }
     lastColorScale = colorScale;
@@ -331,7 +340,8 @@ function synteny(id, dataObj, field) {
     setSyntenyData();
   }
 
-  function setNavigationMode(mode) {
+  function setNavigationMode(typeHint) {
+    var mode = dataObj.getNavMode();
     if (mode === 'pan') {
       d3.select(id).select('#brush-group').on('mousedown.brush', null);
       d3.select(id).select('#zoom-group').call(zoom);
@@ -343,18 +353,15 @@ function synteny(id, dataObj, field) {
       d3.select(id).select('#zoom-group').on('mousedown.zoom', null);
     }
   }
-
-  return {
-    setNavigationMode: setNavigationMode
-  };
+  dataObj.addListener(setNavigationMode);
 }
 
-function histogram(id, dataObj, field) {
-  var dataExtent = d3.extent(_.pluck(dataObj.currentData(), field));
+function histogram(id, dataObj) {
+  var dataExtent = d3.extent(_.pluck(dataObj.currentData(), dataObj.getSummaryField()));
 
-  var plot = d3.select(id)
-    .attr('width', plotWidth)
-    .attr('height', plotHeight);
+  var plot = d3.select(id);
+  var plotWidth = plot.attr('width');
+  var plotHeight = plot.attr('height');
 
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
@@ -362,7 +369,7 @@ function histogram(id, dataObj, field) {
     .attr('y', 50)
     .attr('height', 50)
     .classed('textInPlot', true)
-    .text(field);
+    .text(dataObj.getSummaryField());
 
   function plotBrushBrush() {
     if (plotBrush.empty()) {
@@ -380,8 +387,8 @@ function histogram(id, dataObj, field) {
 
   var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(), 'y'))];
 
-  var xPlotScale = d3.scale.linear().domain(dataExtent).range([margin, plotWidth - margin]);
-  var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - margin, margin]);
+  var xPlotScale = d3.scale.linear().domain(dataExtent).range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
+  var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
   var plotBrush = d3.svg.brush()
     .x(xPlotScale)
@@ -389,13 +396,13 @@ function histogram(id, dataObj, field) {
     .on('brushend', plotBrushEnd);
 
   plot.append('g').attr('id', 'plotbrush-group')
-    .attr('transform', 'translate(0,' + margin + ')')
+    .attr('transform', 'translate(0,' + HISTOGRAM_MARGIN + ')')
     .call(plotBrush)
-    .selectAll('rect').attr('height', plotHeight - 2 * margin);
+    .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
 
-  var numTicks = xPlotScale.ticks(dataObj.currentDataSummary().length).slice(1);
+  var ticks = xPlotScale.ticks(dataObj.currentDataSummary().length).slice(1);
   plot.selectAll('.dataBars')
-    .data(numTicks)
+    .data(ticks)
     .enter()
     .append('rect').classed('dataBars', true);
 
@@ -409,12 +416,21 @@ function histogram(id, dataObj, field) {
     .attr('transform', 'translate(50,0)')
     .classed('yAxis', true).call(yAxis);
 
+  function updatePlot(typeHint) {
+    if (typeHint === 'variable-change') {
+      dataExtent = d3.extent(
+        _.pluck(dataObj.currentData(),
+          dataObj.getSummaryField()));
+      xPlotScale.domain(dataExtent)
+      var ticks = xPlotScale.ticks(dataObj.currentDataSummary().length).slice(1);
+      var temp = plot.selectAll('.dataBars').data(ticks);
+      temp.exit().remove();
+      temp.enter().append('rect').classed('dataBars', true);
+      typeHint = 'spatial-stop';
+    }
 
-  var firstTime = true;
-
-  function updatePlot(shouldRescaleYAxis) {
     function updatePlotAttrs(selection) {
-      var colorScale = globals.getColorScale();
+      var colorScale = globalColorScale;
       var temp = selection
         .attr('x', function(d) {
           return xPlotScale(d.x);
@@ -426,40 +442,39 @@ function histogram(id, dataObj, field) {
           return yPlotScale(d.y);
         })
         .attr('height', function(d) {
-          return plotHeight - margin - yPlotScale(d.y);
+          return plotHeight - HISTOGRAM_MARGIN - yPlotScale(d.y);
         })
 
-      if (!firstTime) {
-        temp = temp.transition().duration(colorScaleTransitionLength);
+      if (typeHint.indexOf('initial') === -1 && typeHint.indexOf('data') === -1) {
+        temp = temp.transition().duration(COLOR_TRANS_LEN);
       }
       temp
         .attr('fill', function(d) {
-          return colorScale(d.x + d.dx / 2);
+          return d.active ? colorScale(d.x + d.dx / 2) : 'grey';
         });
     }
 
     plot.selectAll('.dataBars').data(dataObj.currentDataSummary())
       .call(updatePlotAttrs);
 
-    if (shouldRescaleYAxis) {
+    if (typeHint.indexOf('spatial-stop') >= 0) {
       lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(), 'y'))];
       yPlotScale.domain(lastYExtent);
       yAxisSel.transition()
-        .duration(histogramYScaleTransitionLength)
+        .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(yAxis);
       plot.selectAll('.dataBars').transition()
-        .duration(histogramYScaleTransitionLength)
+        .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(updatePlotAttrs);
     }
   }
 
-  updatePlot(true);
-  firstTime = false;
+  updatePlot('initial');
   dataObj.addListener(updatePlot);
 
 
   function reColorDataBars() {
-    var colorScale = globals.getColorScale();
+    var colorScale = globalColorScale;
     plot.selectAll('.dataBars')
       .transition().duration(500)
       .attr('fill', function(d) {
@@ -473,14 +488,6 @@ function histogram(id, dataObj, field) {
       .classed(selector, function(d) {
         return d.x > range[1] || d.x + d.dx < range[0];
       });
-  }
-
-  function filter(obj) {
-    if (obj.extent) {
-      updatePlot(obj.extent, obj.yAxis, obj.selector);
-    } else if (obj.data) {
-      filterBarsByData(obj.data, obj.field, obj.selector);
-    }
   }
 }
 

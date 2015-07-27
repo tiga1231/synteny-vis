@@ -13,6 +13,9 @@
       fill: grey;
       opacity: .2;
     }
+    #main > .extent {
+      clip-path: url(#plot-clip-box);
+    }
     .textInPlot {
       font-family: Verdana, geneva, sans-serif;
       font-size: 14pt;
@@ -49,9 +52,9 @@
     <canvas id="main-canvas"></canvas>
   </div>
   <div id="main-svg-wrapper">
-    <svg id="main" width="600"></svg>
+    <svg id="main" width="500"></svg>
   </div>
-  <svg id="plot"></svg>
+  <svg id="plot" width="500" height="450"></svg>
 
   <div>
     <form id="mouse-options">
@@ -64,10 +67,14 @@
       <input type="radio" name="summary-options" value="maximum">Low to High
     </form>
 
+    <form id="plot-var-options">
+      <input type="radio" name="plot-var-options" value="logks" checked>logks
+      <input type="radio" name="plot-var-options" value="logkn">logkn
+    </form>
+
     <form id="color-options">
       <input type="radio" name="color-options" value="rg" checked>red-green
       <input type="radio" name="color-options" value="rg_quantized">rg_quantized
-      <input type="radio" name="color-options" value="ryb">ryb
       <input type="radio" name="color-options" value="rainbow">rainbow
       <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
     </form>

@@ -33,7 +33,7 @@ function ksTextToObjects(text) {
     })
     .map(ksLineToSyntenyDot)
     .filter(function(line) {
-      return isFinite(line.logks);
+      return isFinite(line.logks) && isFinite(line.logkn);
     })
     .value();
 }
@@ -44,6 +44,7 @@ function ksLineToSyntenyDot(line) {
     ks: Number(fields[0]),
     logks: Math.log(Number(fields[0])) / Math.log(10),
     kn: Number(fields[1]),
+    logkn: Math.log(Number(fields[1])) / Math.log(10),
     x_chromosome_id: fields[3],
     y_chromosome_id: fields[15],
     ge: {
@@ -56,8 +57,6 @@ function ksLineToSyntenyDot(line) {
     }
   };
 }
-
-var i = 0;
 
 function lengthsToCumulativeBPCounts(len_list) {
   return _.chain(len_list)
@@ -80,7 +79,6 @@ function inlineKSData(ks, xmap, ymap) {
     var yShift = ymap[ksObj.y_chromosome_id];
     ksObj.nt.x_relative_offset += xShift;
     ksObj.nt.y_relative_offset += yShift;
-    ksObj.logks = Math.log(Number(ksObj.ks)) / Math.log(10);
   });
   return ks;
 }
@@ -91,23 +89,28 @@ function createDataObj(ks, xmap, ymap) {
   ret = {};
   var currentData = ks;
   data = _.sortBy(currentData, function(d) {
-    return d.ks;
+    return d.logks;
   });
 
   _.each(ks, function(d) {
     d.xmin = d.xmax = d.nt.x_relative_offset;
     d.ymin = d.ymax = d.nt.y_relative_offset;
   });
-  var bvh = bvh_build(ks);
 
+  var ks_bvh = bvh_build(ks);
   var plotScale = d3.scale.linear()
     .domain(d3.extent(_.pluck(currentData, 'logks')))
+  computeBins(ks_bvh, 'logks', plotScale.ticks(NUM_HISTOGRAM_TICKS));
 
-  computeBins(bvh, 'logks', plotScale.ticks(NUM_HISTOGRAM_TICKS));
+  var kn_bvh = bvh_build(ks);
+  var plotScale = d3.scale.linear()
+    .domain(d3.extent(_.pluck(currentData, 'logkn')))
+  computeBins(kn_bvh, 'logkn', plotScale.ticks(NUM_HISTOGRAM_TICKS));
+
+  var bvh = ks_bvh;
 
   var spatialFilter = null;
   var dataFilter = null;
-
 
   ret.getXLineOffsets = function() {
     return _.chain(xmap).values().sortBy().value();
@@ -117,26 +120,54 @@ function createDataObj(ks, xmap, ymap) {
     return _.chain(ymap).values().sortBy().value();
   };
 
+  var order = 'minimum';
+  ret.setOrder = function(newOrder) {
+    order = newOrder;
+    currentData = _.sortBy(currentData, ret.getSummaryField());
+    if(order === 'minimum'){
+      currentData.reverse();
+    }
+    ret.notifyListeners('order-change');
+  };
+
+  var sumField = 'logks';;
+  ret.setSummaryField = function(field) {
+    sumField = field;
+    if (field === 'logks') {
+      bvh = ks_bvh;
+    } else if (field === 'logkn') {
+      bvh = kn_bvh;
+    } else {
+      console.log('did not recognize that field name');
+    }
+    ret.removeDataFilter();
+      ret.notifyListeners('variable-change');
+  }
+
+  ret.getSummaryField = function() {
+    return sumField;
+  }
+
   ret.getXLineNames = function() {
     return _.chain(xmap)
-    .pairs()
-    .sortBy('1')
-    .pluck('0')
-    .reject(function(x) {
-      return x === 'total';
-    })
-    .value();
+      .pairs()
+      .sortBy('1')
+      .pluck('0')
+      .reject(function(x) {
+        return x === 'total';
+      })
+      .value();
   };
 
   ret.getYLineNames = function() {
     return _.chain(ymap)
-    .pairs()
-    .sortBy('1')
-    .pluck('0')
-    .reject(function(x) {
-      return x === 'total';
-    })
-    .value();
+      .pairs()
+      .sortBy('1')
+      .pluck('0')
+      .reject(function(x) {
+        return x === 'total';
+      })
+      .value();
   };
 
   ret.currentData = function() {
@@ -150,38 +181,46 @@ function createDataObj(ks, xmap, ymap) {
       xmax: 1e15,
       ymax: 1e15
     };
+    var summary;
     if (spatialFilter) {
-      return bvh_find_summary(bvh, spatialFilter);
+      summary = bvh_find_summary(bvh, spatialFilter);
     } else {
-      return bvh_find_summary(bvh, wholePlot);
+      summary = bvh_find_summary(bvh, wholePlot);
     }
+    if (dataFilter) {
+      _.each(summary, function(x) {
+        x.active = x.x + x.dx >= dataFilter[0] && x.x < dataFilter[1];
+      });
+    } else {
+      _.each(summary, function(x) {
+        x.active = true;
+      });
+    }
+    return summary;
   }
 
-  var shouldStop;
-  ret.addSpatialFilter = function(extents, hints) {
-    shouldStop = hints && hints.stopping;
+  ret.addSpatialFilter = function(extents, typeHint) {
     extents.xmin = extents[0][0];
     extents.xmax = extents[1][0];
     extents.ymin = extents[0][1];
     extents.ymax = extents[1][1];
     spatialFilter = extents;
-    updateData();
+    updateData(typeHint ? typeHint : 'spatial');
   };
 
-  ret.removeSpatialFilter = function(hints) {
-    shouldStop = hints && hints.stopping;
+  ret.removeSpatialFilter = function(typeHint) {
     spatialFilter = null;
-    updateData();
+    updateData(typeHint ? typeHint : 'spatial');
   };
 
   ret.addDataFilter = function(extent) {
     dataFilter = extent;
-    updateData();
+    updateData('data');
   };
 
   ret.removeDataFilter = function() {
     dataFilter = null;
-    updateData();
+    updateData('data');
   }
 
   var listeners = [];
@@ -189,7 +228,17 @@ function createDataObj(ks, xmap, ymap) {
     listeners.push(x);
   }
 
-  function updateData() {
+  var navMode = 'brush';
+  ret.getNavMode = function() {
+    return navMode;
+  }
+
+  ret.setNavMode = function(mode) {
+    navMode = mode;
+    ret.notifyListeners('nav-mode-update');
+  }
+
+  function updateData(typeOfChange) {
     var failing = [];
     var passing = currentData;
     if (spatialFilter) {
@@ -198,6 +247,7 @@ function createDataObj(ks, xmap, ymap) {
     }
     if (dataFilter) {
       var dataSplit = _.partition(passing, function(x) {
+        // XXX
         return x.logks < dataFilter[1] && x.logks > dataFilter[0];
       });
       passing = dataSplit[0];
@@ -212,16 +262,17 @@ function createDataObj(ks, xmap, ymap) {
     _.each(failing, function(x) {
       x.active = false;
     });
-    ret.notifyListeners();
+    ret.notifyListeners(typeOfChange);
   };
 
-  ret.notifyListeners = function() {
+  ret.notifyListeners = function(typeOfChange) {
     _.each(listeners, function(x) {
-      x(shouldStop);
+      x(typeOfChange);
     });
   };
 
   updateData();
+  ret.setOrder(order);
   return ret;
 }
 
