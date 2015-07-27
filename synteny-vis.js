@@ -170,12 +170,12 @@ function synteny(id, dataObj) {
     .append('defs')
     .append('clipPath')
     .attr('id', 'plot-clip-box')
-    .attr('clipPathUnits', 'objectBoundingBox')
     .append('rect')
-    .attr('x', SYNTENY_MARGIN)
+    .attr('x', 0)
     .attr('width', width)
-    .attr('y', SYNTENY_MARGIN)
+    .attr('y', 0)
     .attr('height', height)
+    .attr('fill', 'black')
 
   var xOffsets = dataObj.getXLineOffsets();
   var xPairs = _.zip(_.initial(xOffsets), _.rest(xOffsets));
@@ -268,7 +268,6 @@ function synteny(id, dataObj) {
         context.beginPath();
         context.moveTo(cx, cy);
         var color = d[i].active ? b(d[i][field]) : '#E6E6E6';
-        //var color = d[i].active ? d3.interpolateRgb(a(d[i][]), b(d[i][field]))((COLOR_TRANS_LEN - n) / COLOR_TRANS_LEN) : '#E6E6E6';
         context.fillStyle = color;
         context.arc(cx, cy, 2, 0, 2 * Math.PI);
         context.fill();
@@ -298,8 +297,10 @@ function synteny(id, dataObj) {
   dataObj.addListener(setSyntenyData);
 
   var brushGroup = svgPre
+    .append('g').attr('clip-path', 'url(#plot-clip-box)')
     .append('g').attr('id', 'brush-group')
     .call(brush);
+
 
   setSyntenyData();
 
