@@ -1,56 +1,13 @@
-/* synteny plot settings */
-var syntenyLineStrokeWidth = 2;
-var gridLineStrokeWidth = 1;
-var syntenyPlotWidth = 400; /* height is computed to maintain aspect ratio */
+var scaleMargin = 50;
 
 /* Histogram settings */
 var margin = 50; /* padding around graph */
 var plotWidth = 400;
 var plotHeight = 400;
-var numHistogramTicks = 80;
 var histogramYScaleTransitionLength = 750;
+var colorScaleTransitionLength = 500;
 
-/* Again -- Don't forget to add a corresponding button in index.html */
-var colorScaleRanges = {
-  rg: {
-    domain: [0, 1],
-    range: ['red', 'green']
-  },
-  rg_quantized: {
-    quantized: true,
-    domain: [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1],
-    range: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']
-  },
-  ryb_mean: {
-    domain: [0, 'mean', 1],
-    range: ['#fc8d59', '#ffffbf', '#91bfdb']
-  },
-  ryb_median: {
-    domain: [0, 'median', 1],
-    range: ['#fc8d59', '#ffffbf', '#91bfdb']
-  },
-  rainbow: {
-    domain: [0, .20, .35, .5, .75, 1],
-    range: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
-  },
-  rainbow_quantized: {
-    quantized: true,
-    domain: [0, .20, .35, .5, .75, 1],
-    range: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
-  }
-};
-
-// Can be used as array or by bvh/merge stuff
-var wholePlot = {
-  0: [0, 0],
-  1: [1e15, 1e15],
-  xmin: 0,
-  ymin: 0,
-  xmax: 1e15,
-  ymax: 1e15
-};
-
-function controller(datas, cumulative) {
+function controller(dataObj, cumulative) {
   /* zoom/pan switching */
   d3.selectAll("#mouse-options input[name=mouse-options]")
     .on("change", function() {
@@ -70,48 +27,44 @@ function controller(datas, cumulative) {
   d3.selectAll("#color-options input[name=color-options]")
     .on("change", function() {
       colorScale = colorScales[this.value];
-      globals.redraw();
+      dataObj.notifyListeners();
     });
 
 
-  var field = 'logks';
   var colorScale;
 
-  var data = _.filter(datas, function(d) {
-    return isFinite(d[field]);
-  });
+  var field = 'logks';
+  var dataMax = d3.max(_.pluck(dataObj.currentData(), field));
+  var dataMin = d3.min(_.pluck(dataObj.currentData(), field));
+  var diff = dataMax - dataMin;
 
-  var dataExtent = d3.extent(_.pluck(data, field));
-  var dataMean = d3.mean(_.pluck(data, field));
-  var dataMedian = d3.median(_.pluck(data, field));
-
-  function domainPartition(values) {
-    return _.map(values, function(v) {
-      if (v === 'mean') {
-        var val = dataMean;
-      } else if (v === 'median') {
-        var val = dataMedian;
-      } else {
-        var val = dataExtent[0] + v * (dataExtent[1] - dataExtent[0]);
-      }
-      return val;
-    });
+  function partitionedExtent(n) {
+    var step = diff / (n - 1);
+    return _.range(dataMin, dataMax + .5 * step, step);
   }
 
-  var colorScales = {};
-  _.each(_.pairs(colorScaleRanges), function(p) {
-    colorScales[p[0]] = p[1].quantized ? d3.scale.quantize() : d3.scale.linear();
-    colorScales[p[0]]
-      .domain(domainPartition(p[1].domain))
-      .range(p[1].range);
-  });
-  colorScale = colorScales['rg'];
+  var colorScales = {
+    rg: d3.scale.linear()
+      .domain(partitionedExtent(2))
+      .range(['red', 'green']),
 
-  _.each(data, function(d) {
-    d.xmin = d.xmax = d.nt.x_relative_offset;
-    d.ymin = d.ymax = d.nt.y_relative_offset;
-  });
-  var bvh_nodes = bvh_build(data);
+    rg_quantized: d3.scale.quantize()
+      .domain(partitionedExtent(11))
+      .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
+
+    ryb: d3.scale.linear()
+      .domain(partitionedExtent(3))
+      .range(['#fc8d59', '#ffffbf', '#91bfdb']),
+
+    rainbow: d3.scale.linear()
+      .domain(partitionedExtent(7))
+      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
+
+    rainbow_quantized: d3.scale.quantize()
+      .domain(partitionedExtent(7))
+      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
+  };
+  colorScale = colorScales['rg'];
 
   globals.getColorScale = function() {
     return colorScale;
@@ -121,59 +74,36 @@ function controller(datas, cumulative) {
   };
 
   var funcs = [
-    synteny('#main', data, cumulative, field),
-    histogram('#plot', bvh_nodes, field),
+    synteny('#main', dataObj, field),
+    histogram('#plot', dataObj, field),
   ];
 
-  globals.filter = function(obj) {
-    _.each(funcs, function(o) {
-      o.filter(obj);
-    })
-  };
-
-  globals.redraw = function() {
-    _.each(funcs, function(o) {
-      o.redraw();
-    })
-  };
-
-  globals.zoomed = function() {
-    _.each(funcs, function(o) {
-      o.zoomed();
-    })
-  };
+  globals.zoomed = function() {};
 
   globals.setNavigationMode = function(mode) {
-    _.each(funcs, function(o) {
+    _.each(_.compact(funcs), function(o) {
       o.setNavigationMode(mode);
-    })
+    });
   }
 }
 
 var globals = {};
 
-function synteny(id, data, cumulative, field) {
-  var unselectedClass = 'unselected-' + id.substring(1);
+function synteny(id, dataObj, field) {
 
-  data = _.sortBy(data, function(d) {
-    return d.ks;
-  });
+  var xExtent = [0, _.last(dataObj.getXLineOffsets())];
+  var yExtent = [0, _.last(dataObj.getYLineOffsets())];
 
-  var xCumBPCount = cumulative.xCumBPCount;
-  var yCumBPCount = cumulative.yCumBPCount;
+  var width = d3.select(id).attr('width') - 2*scaleMargin;
+  var height = yExtent[1] / xExtent[1] * width + 2*scaleMargin;
+  d3.select(id).attr('height', height);
 
-  var height = syntenyPlotWidth;
-  var width = syntenyPlotWidth;
-
-  var BPPerPixel = xCumBPCount.total / width;
-
-  var xExtent = [0, xCumBPCount.total];
-  var yExtent = [0, yCumBPCount.total];
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
   var xScaleOriginal = xScale.copy();
   var yScaleOriginal = yScale.copy();
 
+  
   var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 100]).on('zoom', zoomed);
 
   function resizeBrushBoundary() {
@@ -204,105 +134,165 @@ function synteny(id, data, cumulative, field) {
 
   function mainBrush() {
     if (brush.empty()) return;
-    console.log(invert(brush.extent())[0])
-    console.log(invert(brush.extent())[1])
-    globals.filter({
-      extent: invert(brush.extent()),
-      yAxis: false,
-      selector: unselectedClass
-    });
+    dataObj.addSpatialFilter(invert(brush.extent()));
     resizeBrushBoundary();
   }
 
   function mainBrushEnd() {
-    globals.filter({
-      extent: brush.empty() ? wholePlot : invert(brush.extent()),
-      yAxis: true,
-      selector: unselectedClass
-    });
+    if (brush.empty()) {
+      dataObj.removeSpatialFilter({
+        stopping: true
+      });
+    } else {
+      dataObj.addSpatialFilter(invert(brush.extent()), {
+        stopping: true
+      });
+    }
   }
 
   var brush = d3.svg.brush()
-    .x(d3.scale.linear().domain([0, width]).range([0, width]))
-    .y(d3.scale.linear().domain([0, height]).range([0, height]))
+    .x(d3.scale.linear()
+      .domain([0, width])
+      .range([0, width]))
+    .y(d3.scale.linear()
+      .domain([0, height])
+      .range([0, height]))
     .on('brush', mainBrush)
     .on('brushend', mainBrushEnd);
 
+  var canvas = d3.select(id + '-canvas')
+    .attr('width', width + 2 * scaleMargin)
+    .attr('height', height + 2 * scaleMargin);
+  var context = document.getElementById('main-canvas').getContext('2d');
+
   var svgPre = d3.select(id)
-    .attr('width', width)
-    .attr('height', height)
-    .classed('main', true)
+    .attr('width', width + 2 * scaleMargin)
+    .attr('height', height + 2 * scaleMargin);
+
+  var xOffsets = dataObj.getXLineOffsets();
+  var xPairs = _.zip(_.initial(xOffsets), _.rest(xOffsets));
+  var xAxisTickValues = _.map(xPairs, function(p) {
+    return (p[0] + p[1]) / 2;
+  });
+  var xOffsetToNameMap = _.object(xAxisTickValues, dataObj.getXLineNames());
+
+  var xLineAxis = d3.svg.axis()
+    .scale(xScale)
+    .tickValues(xOffsets)
+    .tickFormat(function(x) {
+      return '';
+    })
+    .orient('bottom')
+    .tickSize(-height);
+
+  var xGapAxis = d3.svg.axis()
+    .scale(xScale)
+    .tickValues(xAxisTickValues)
+    .tickFormat(function(x) {
+      return xOffsetToNameMap[x];
+    })
+    .orient('bottom')
+    .tickSize(0);
+
+  var xAxisGapGroup = svgPre
+    .append('g').classed('xAxis', true)
+    .attr('transform', 'translate(' + scaleMargin + ',' + (height + scaleMargin) + ')')
+    .call(xGapAxis);
+  var xAxisLineGroup = svgPre
+    .append('g').classed('xAxis', true)
+    .attr('transform', 'translate(' + scaleMargin + ',' + (height + scaleMargin) + ')')
+    .call(xLineAxis);
+
+  var yOffsets = dataObj.getYLineOffsets();
+  var yPairs = _.zip(_.initial(yOffsets), _.rest(yOffsets));
+  var yAxisTickValues = _.map(yPairs, function(p) {
+    return (p[0] + p[1]) / 2;
+  });
+  var yOffsetToNameMap = _.object(yAxisTickValues, dataObj.getYLineNames());
+
+  var yLineAxis = d3.svg.axis()
+    .scale(yScale)
+    .tickValues(yOffsets)
+    .tickFormat(function(x) {
+      return '';
+    })
+    .orient('left')
+    .tickSize(-width);
+
+  var yGapAxis = d3.svg.axis()
+    .scale(yScale)
+    .tickValues(yAxisTickValues)
+    .tickFormat(function(x) {
+      return yOffsetToNameMap[x].length > 3 ? '' : yOffsetToNameMap[x];
+    })
+    .orient('left')
+    .tickSize(0);
+
+  var yAxisGapGroup = svgPre
+    .append('g').classed('yAxis', true)
+    .attr('transform', 'translate(' + scaleMargin + ',' + scaleMargin + ')')
+    .call(yGapAxis);
+  var yAxisLineGroup = svgPre
+    .append('g').classed('yAxis', true)
+    .attr('transform', 'translate(' + scaleMargin + ',' + scaleMargin + ')')
+    .call(yLineAxis);
+
+  svgPre = svgPre
+    .append('g')
+    .attr('transform', 'translate(' + scaleMargin + ',' + scaleMargin + ')')
     .append('g').attr('id', 'zoom-group')
     .call(zoom).on('mousedown.zoom', null); //disable panning
-  var svg = svgPre.append('g').attr('id', 'data-group');
 
-  // Grid lines
-  svg.append('g').classed('.grid-vertical', true)
-    .selectAll('path')
-    .data(_.chain(xCumBPCount).values().sortBy().value()).enter().append('path')
-    .classed('grid', true)
-    .attr('d', function(d) {
-      var x = xScale(d);
-      var y1 = 0;
-      var y2 = height;
-      return 'M ' + x + ' ' + y1 + ' L ' + x + ' ' + y2;
-    })
-    .attr('stroke-width', gridLineStrokeWidth);
+  var lastColorScale;
 
-  svg.append('g').classed('.grid-horizontal', true)
-    .selectAll('path')
-    .data(_.chain(yCumBPCount).values().sortBy().value()).enter().append('path')
-    .classed('grid', true)
-    .attr('d', function(d) {
-      var y = yScale(d);
-      var x1 = 0;
-      var x2 = width;
-      return 'M ' + x1 + ' ' + y + ' L ' + x2 + ' ' + y;
-    })
-    .attr('stroke-width', gridLineStrokeWidth);
-
-  var dataSel;
-
-  function setSyntenyData(lines) {
+  function setSyntenyData() {
     var colorScale = globals.getColorScale();
-    var s = lastScale || 1;
 
-    if (dataSel) {
-      dataSel.remove();
-    }
-    dataSel = svg.selectAll('.synteny')
-      .data(lines)
-      .enter()
-      .append('circle')
-      .classed('synteny', true)
-      .attr('cx', function(d) {
-        return xScaleOriginal(d.nt.x_relative_offset);
-      })
-      .attr('cy', function(d) {
-        return yScaleOriginal(d.nt.y_relative_offset);
-      })
-      .attr('r', syntenyLineStrokeWidth / s)
-      .style('stroke', 'none')
-      .style('fill', function(d) {
-        return colorScale(d[field]);
-      });
+    function draw(n, a, b) {
+      var start = Date.now();
+      var d = dataObj.currentData();
+      context.clearRect(0, 0, width + 2 * scaleMargin, height + 2 * scaleMargin);
+      for (var i = 0; i < d.length; ++i) {
+        var e = d[i].nt;
+        var cx = scaleMargin + xScale(e.x_relative_offset);
+        var cy = scaleMargin + yScale(e.y_relative_offset);
+        context.beginPath();
+        context.moveTo(cx, cy);
+        var color = d[i].active ? b(d[i].logks) : '#E6E6E6';
+        //var color = d[i].active ? d3.interpolateRgb(a(d[i].logks), b(d[i].logks))((colorScaleTransitionLength - n) / colorScaleTransitionLength) : '#E6E6E6';
+        context.fillStyle = color;
+        context.arc(cx, cy, 2, 0, 2 * Math.PI);
+        context.fill();
+      }
+      context.clearRect(0, 0, scaleMargin, height + 2 * scaleMargin);
+      context.clearRect(0, 0, width + 2 * scaleMargin, scaleMargin);
+      context.clearRect(0, height + scaleMargin, width + 2 * scaleMargin, height + 2 * scaleMargin);
+      context.clearRect(width + scaleMargin, 0, width + 2 * scaleMargin, height + 2 * scaleMargin);
 
-    if (lastSyntenyFilter) {
-      filterSyntenyByExtent(lastSyntenyFilter.extent, lastSyntenyFilter.selector);
+      if (n > 0) {
+        var diff = Date.now() - start;
+        console.log(diff);
+        setTimeout(draw, 60, n - 60 - diff, a, b);
+      }
     }
-    if (lastDataFilter) {
-      filterSyntenyByData(lastDataFilter.range, lastDataFilter.selField, lastDataFilter.selector);
+
+    if (lastColorScale === colorScale) {
+      draw(0, colorScale, colorScale);
+    } else {
+      draw(colorScaleTransitionLength,
+        lastColorScale ? lastColorScale : colorScale, colorScale);
     }
+    lastColorScale = colorScale;
+
+
   }
+  dataObj.addListener(setSyntenyData);
 
-  svgPre
+  var brushGroup = svgPre
     .append('g').attr('id', 'brush-group')
     .call(brush);
 
-
-  setSyntenyData(data);
-
-  var lastScale = 1;
+  setSyntenyData();
 
   function zoomed() {
     var t = d3.event.translate;
@@ -313,91 +303,32 @@ function synteny(id, data, cumulative, field) {
     // have to "scroll back" onto the canvas if you pan past the edge.
     zoom.translate(t);
 
-    d3.select(id).select('#brush-group')
-      .attr("transform", "translate(" + t + ")scale(" + s + ")");
-    d3.select(id).select('#data-group')
-      .attr("transform", "translate(" + t + ")scale(" + s + ")");
+    brushGroup.attr("transform", "translate(" + t + ")scale(" + s + ")");
 
-    globals.zoomed();
-    lastScale = s;
-
-    // We only update the svg elements that are visible.
-    var e = 1.e7
-    var xMax = xScale.domain()[1] + e;
-    var xMin = xScale.domain()[0] - e;
-    var yMax = yScale.domain()[1] + e;
-    var yMin = yScale.domain()[0] - e;
-
-    dataSel
-      .filter(function(d) {
-        return !(d.xmin > xMax || xMin > d.xmax ||
-          d.ymin > yMax || yMin > d.ymin);
-      })
-      .attr('r', syntenyLineStrokeWidth / s);
-
-    svg.selectAll('.grid')
-      .style('stroke-width', gridLineStrokeWidth / s);
-  }
-
-  var lastDataFilter;
-
-  function filterSyntenyByData(range, selField, selector) {
-    lastDataFilter = {
-      range: range,
-      selField: selField,
-      selector: selector
-    };
-    var cs = globals.getColorScale();
-    console.log(selField);
-    console.log(range);
-    svg.selectAll('.synteny')
-      .classed(selector, function(d) {
-        return d[selField] > range[1] || d[selField] < range[0];
-      });
-  }
-
-  var lastSyntenyFilter;
-
-  function filterSyntenyByExtent(e, selector) {
-    lastSyntenyFilter = {
-      extent: e,
-      selector: selector
-    }
-    svg.selectAll('.synteny').classed(selector, function(d) {
-      return d.xmin > e[1][0] || d.xmax < e[0][0] ||
-        d.ymin > e[1][1] || d.ymax < e[0][1];
+    var tempXOffsets = _.filter(xOffsets, function(x) {
+      return 0 <= xScale(x) && xScale(x) <= width;
     });
-  }
+    var tempXGaps = _.filter(xAxisTickValues, function(x) {
+      return 0 <= xScale(x) && xScale(x) <= width;
+    });
+    var tempYOffsets = _.filter(yOffsets, function(y) {
+      return 0 <= yScale(y) && yScale(y) <= height;
+    });
+    var tempYGaps = _.filter(yAxisTickValues, function(y) {
+      return 0 <= yScale(y) && yScale(y) <= height;
+    });
 
-  function filter(obj) {
-    if (obj.extent) {
-      filterSyntenyByExtent(obj.extent, obj.selector);
-    } else if (obj.data) {
-      filterSyntenyByData(obj.data, obj.field, obj.selector);
-    }
-  }
+    xLineAxis.tickValues(tempXOffsets);
+    xGapAxis.tickValues(tempXGaps);
+    yLineAxis.tickValues(tempYOffsets);
+    yGapAxis.tickValues(tempYGaps);
 
-  var lastOrder = 'minimum';
-  var minSort = data;
-  var maxSort = _.sortBy(data, function(d) {
-    return -d.ks
-  });
+    xAxisGapGroup.call(xGapAxis);
+    yAxisGapGroup.call(yGapAxis);
+    xAxisLineGroup.call(xLineAxis);
+    yAxisLineGroup.call(yLineAxis);
 
-  function reColorSyntenyLines() {
-    var colorScale = globals.getColorScale();
-    var order = globals.getSummaryType();
-    if (order !== lastOrder) {
-      if (order === 'minimum') {
-        setSyntenyData(minSort);
-      } else {
-        setSyntenyData(maxSort);
-      }
-      lastOrder = order;
-    }
-    svg.selectAll('.synteny').transition().duration(500)
-      .style('fill', function(d) {
-        return colorScale(d[field]);
-      });
+    setSyntenyData();
   }
 
   function setNavigationMode(mode) {
@@ -414,18 +345,12 @@ function synteny(id, data, cumulative, field) {
   }
 
   return {
-    filter: filter,
-    redraw: reColorSyntenyLines,
-    zoomed: mainBrush,
     setNavigationMode: setNavigationMode
   };
 }
 
-function histogram(id, bvh_nodes, field) {
-  /* Histogram */
-  var unselectedClass = 'unselected-' + id.substring(1);
-
-  var dataExtent = d3.extent(_.pluck(bvh_find(bvh_nodes, wholePlot), field));
+function histogram(id, dataObj, field) {
+  var dataExtent = d3.extent(_.pluck(dataObj.currentData(), field));
 
   var plot = d3.select(id)
     .attr('width', plotWidth)
@@ -440,105 +365,57 @@ function histogram(id, bvh_nodes, field) {
     .text(field);
 
   function plotBrushBrush() {
-    if (plotBrush.empty()) return;
-    var e = plotBrush.extent();
-    globals.filter({
-      data: e,
-      field: field,
-      selector: unselectedClass
-    });
+    if (plotBrush.empty()) {
+      dataObj.removeDataFilter();
+    } else {
+      dataObj.addDataFilter(plotBrush.extent());
+    }
   }
 
   function plotBrushEnd() {
     if (plotBrush.empty()) {
-      globals.filter({
-        data: dataExtent,
-        field: field,
-        selector: unselectedClass
-      });
+      dataObj.removeDataFilter();
     }
   }
 
+  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(), 'y'))];
+
+  var xPlotScale = d3.scale.linear().domain(dataExtent).range([margin, plotWidth - margin]);
+  var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - margin, margin]);
+
   var plotBrush = d3.svg.brush()
+    .x(xPlotScale)
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
 
-  lastYExtent = [0, bvh_nodes.data.length];
-  var xPlotScale = d3.scale.linear()
-    .domain(dataExtent)
-    .range([margin, plotWidth - margin]);
-  var yPlotScale;
+  plot.append('g').attr('id', 'plotbrush-group')
+    .attr('transform', 'translate(0,' + margin + ')')
+    .call(plotBrush)
+    .selectAll('rect').attr('height', plotHeight - 2 * margin);
 
+  var numTicks = xPlotScale.ticks(dataObj.currentDataSummary().length).slice(1);
   plot.selectAll('.dataBars')
-    .data(xPlotScale.ticks(numHistogramTicks).slice(1))
+    .data(numTicks)
     .enter()
     .append('rect').classed('dataBars', true);
-  computeBins(bvh_nodes, field, xPlotScale.ticks(numHistogramTicks));
 
-  var lastYExtent;
+  var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
+  var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
-  var filters = {}
-
-  function updatePlot(extent, shouldRescaleYAxis, selector) {
-    var e = extent;
-
-    var bbox = {
-      xmin: e[0][0],
-      ymin: e[0][1],
-      xmax: e[1][0],
-      ymax: e[1][1]
-    };
-
-    filters[selector] = bbox;
-
-    // Take the intersection of all the filters
-    var intersection = _.reduce(filters, function(a, b) {
-      return {
-        xmin: Math.max(a.xmin, b.xmin),
-        ymin: Math.max(a.ymin, b.ymin),
-        xmax: Math.min(a.xmax, b.xmax),
-        ymax: Math.min(a.ymax, b.ymax)
-      };
-    }, {
-      xmin: 0,
-      ymin: 0,
-      xmax: 1e20,
-      ymax: 1e20
-    });
-
-    if (intersection.xmin < intersection.xmax &&
-      intersection.ymin < intersection.ymax) {
-      filteredData = bvh_find_summary(bvh_nodes, intersection);
-    } else {
-      filteredData = bvh_find_summary(bvh_nodes, {
-        xmin: 0,
-        ymin: 0,
-        xmax: 0,
-        ymax: 0
-      });
-    }
+  plot.append('g')
+    .attr('transform', 'translate(0,' + (plotHeight - 50) + ')')
+    .classed('xAxis', true).call(xAxis);
+  var yAxisSel = plot.append('g')
+    .attr('transform', 'translate(50,0)')
+    .classed('yAxis', true).call(yAxis);
 
 
-    xPlotScale = d3.scale.linear()
-      .domain(dataExtent)
-      .range([margin, plotWidth - margin]);
-    yPlotScale = d3.scale.linear()
-      .domain(lastYExtent)
-      .range([plotHeight - margin, margin]);
+  var firstTime = true;
 
-    var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
-    var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
-
-    plotBrush.x(xPlotScale);
-    plot.selectAll('#plotbrush-group').remove();
-    var gBrush = plot.append('g').attr('id', 'plotbrush-group')
-      .attr('transform', 'translate(0,' + margin + ')')
-      .call(plotBrush);
-    gBrush.selectAll('rect').attr('height', plotHeight - 2 * margin);
-
+  function updatePlot(shouldRescaleYAxis) {
     function updatePlotAttrs(selection) {
       var colorScale = globals.getColorScale();
-      selection
+      var temp = selection
         .attr('x', function(d) {
           return xPlotScale(d.x);
         })
@@ -551,32 +428,22 @@ function histogram(id, bvh_nodes, field) {
         .attr('height', function(d) {
           return plotHeight - margin - yPlotScale(d.y);
         })
+
+      if (!firstTime) {
+        temp = temp.transition().duration(colorScaleTransitionLength);
+      }
+      temp
         .attr('fill', function(d) {
           return colorScale(d.x + d.dx / 2);
         });
     }
 
-    plot.selectAll('.dataBars').data(filteredData)
+    plot.selectAll('.dataBars').data(dataObj.currentDataSummary())
       .call(updatePlotAttrs);
 
-    plotBrushBrush();
-
-    plot.selectAll('.xAxis').remove();
-    plot.selectAll('.yAxis').remove();
-
-    plot.append('g')
-      .attr('transform', 'translate(0,' + (plotHeight - 50) + ')')
-      .classed('xAxis', true).call(xAxis);
-    var yAxisSel = plot.append('g')
-      .attr('transform', 'translate(50,0)')
-      .classed('yAxis', true).call(yAxis);
-
     if (shouldRescaleYAxis) {
-      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(filteredData, 'y'))];
-      yPlotScale = d3.scale.linear()
-        .domain(lastYExtent)
-        .range([plotHeight - margin, margin]);
-      yAxis.scale(yPlotScale);
+      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(), 'y'))];
+      yPlotScale.domain(lastYExtent);
       yAxisSel.transition()
         .duration(histogramYScaleTransitionLength)
         .call(yAxis);
@@ -586,7 +453,10 @@ function histogram(id, bvh_nodes, field) {
     }
   }
 
-  updatePlot(wholePlot, true);
+  updatePlot(true);
+  firstTime = false;
+  dataObj.addListener(updatePlot);
+
 
   function reColorDataBars() {
     var colorScale = globals.getColorScale();
@@ -612,12 +482,5 @@ function histogram(id, bvh_nodes, field) {
       filterBarsByData(obj.data, obj.field, obj.selector);
     }
   }
-
-  return {
-    filter: filter,
-    zoomed: plotBrushBrush,
-    redraw: reColorDataBars,
-    setNavigationMode: function() {}
-  };
 }
 

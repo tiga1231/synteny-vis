@@ -15,8 +15,8 @@ var loadksData = function(ks_filename, x_lengths_file_name, y_lengths_file_name,
       var yCumLenMap = lengthsToCumulativeBPCounts(y_len);
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
-      var ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
-      cb(inlinedKSData, {
+      ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
+      cb(ksDataObject, {
         xCumBPCount: xCumLenMap,
         yCumBPCount: yCumLenMap
       });
@@ -32,6 +32,9 @@ function ksTextToObjects(text) {
       return line[0] === '#'
     })
     .map(ksLineToSyntenyDot)
+    .filter(function(line) {
+      return isFinite(line.logks);
+    })
     .value();
 }
 
@@ -39,6 +42,7 @@ function ksLineToSyntenyDot(line) {
   var fields = line.split(',');
   return {
     ks: Number(fields[0]),
+    logks: Math.log(Number(fields[0])) / Math.log(10),
     kn: Number(fields[1]),
     x_chromosome_id: fields[3],
     y_chromosome_id: fields[15],
@@ -54,6 +58,7 @@ function ksLineToSyntenyDot(line) {
 }
 
 var i = 0;
+
 function lengthsToCumulativeBPCounts(len_list) {
   return _.chain(len_list)
     .sortBy('length')
@@ -81,36 +86,90 @@ function inlineKSData(ks, xmap, ymap) {
 }
 
 function createDataObj(ks, xmap, ymap) {
+  var NUM_HISTOGRAM_TICKS = 80;
+
   ret = {};
   var currentData = ks;
+  data = _.sortBy(currentData, function(d) {
+    return d.ks;
+  });
+
   _.each(ks, function(d) {
     d.xmin = d.xmax = d.nt.x_relative_offset;
     d.ymin = d.ymax = d.nt.y_relative_offset;
   });
   var bvh = bvh_build(ks);
 
+  var plotScale = d3.scale.linear()
+    .domain(d3.extent(_.pluck(currentData, 'logks')))
+
+  computeBins(bvh, 'logks', plotScale.ticks(NUM_HISTOGRAM_TICKS));
+
   var spatialFilter = null;
   var dataFilter = null;
 
 
   ret.getXLineOffsets = function() {
-    return _.values(xmap);
+    return _.chain(xmap).values().sortBy().value();
   };
 
   ret.getYLineOffsets = function() {
-    return _.values(ymap);
+    return _.chain(ymap).values().sortBy().value();
+  };
+
+  ret.getXLineNames = function() {
+    return _.chain(xmap)
+    .pairs()
+    .sortBy('1')
+    .pluck('0')
+    .reject(function(x) {
+      return x === 'total';
+    })
+    .value();
+  };
+
+  ret.getYLineNames = function() {
+    return _.chain(ymap)
+    .pairs()
+    .sortBy('1')
+    .pluck('0')
+    .reject(function(x) {
+      return x === 'total';
+    })
+    .value();
   };
 
   ret.currentData = function() {
     return currentData;
   };
 
-  ret.addSpatialFilter = function(extents) {
+  ret.currentDataSummary = function() {
+    var wholePlot = {
+      xmin: 0,
+      ymin: 0,
+      xmax: 1e15,
+      ymax: 1e15
+    };
+    if (spatialFilter) {
+      return bvh_find_summary(bvh, spatialFilter);
+    } else {
+      return bvh_find_summary(bvh, wholePlot);
+    }
+  }
+
+  var shouldStop;
+  ret.addSpatialFilter = function(extents, hints) {
+    shouldStop = hints && hints.stopping;
+    extents.xmin = extents[0][0];
+    extents.xmax = extents[1][0];
+    extents.ymin = extents[0][1];
+    extents.ymax = extents[1][1];
     spatialFilter = extents;
     updateData();
   };
 
-  ret.removeSpatialFilter = function() {
+  ret.removeSpatialFilter = function(hints) {
+    shouldStop = hints && hints.stopping;
     spatialFilter = null;
     updateData();
   };
@@ -125,24 +184,44 @@ function createDataObj(ks, xmap, ymap) {
     updateData();
   }
 
+  var listeners = [];
+  ret.addListener = function(x) {
+    listeners.push(x);
+  }
+
   function updateData() {
     var failing = [];
-    var passing = [];
-    if(spatialFilter) {
+    var passing = currentData;
+    if (spatialFilter) {
       passing = bvh_find(bvh, spatialFilter);
       failing = bvh_find_complement(bvh, spatialFilter);
     }
-    if(dataFilter) {
-      var dataSplit = _.partition(currentData, function(x) {
-        return x.ks < dataFilter[1] && x.ks > dataFilter[0];
+    if (dataFilter) {
+      var dataSplit = _.partition(passing, function(x) {
+        return x.logks < dataFilter[1] && x.logks > dataFilter[0];
       });
-      passing = _.flatten(passing, dataSplit[0]);
-      failing = _.flatten(failing, dataSplit[1]);
+      passing = dataSplit[0];
+      failing = _.flatten([failing, dataSplit[1]], true);
     }
-    _.each(passing, function(x) { x.active = true; });
-    _.each(failing, function(x) { x.active = false; });
-  }
+    if (!spatialFilter && !dataFilter) {
+      passing = currentData;
+    }
+    _.each(passing, function(x) {
+      x.active = true;
+    });
+    _.each(failing, function(x) {
+      x.active = false;
+    });
+    ret.notifyListeners();
+  };
 
+  ret.notifyListeners = function() {
+    _.each(listeners, function(x) {
+      x(shouldStop);
+    });
+  };
+
+  updateData();
   return ret;
 }
 
