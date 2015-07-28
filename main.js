@@ -203,11 +203,11 @@ function createDataObj(ks, xmapPair, ymapPair) {
           dot[gentMode].y_relative_offset <= spatialFilter[1][1];
       });
     }
-    if (dataFilter) {
-      summary = _.filter(summary, function(dot) {
-        return dot[sumField] <= dataFilter[1] && dot[sumField] >= dataFilter[0];
-      });
-    }
+    //if (dataFilter) {
+    //  summary = _.filter(summary, function(dot) {
+    //    return dot[sumField] <= dataFilter[1] && dot[sumField] >= dataFilter[0];
+    //  });
+    //}
     if (dataFilter) {
       _.each(bins, function(x) {
         x.active = x.x + x.dx >= dataFilter[0] && x.x < dataFilter[1];

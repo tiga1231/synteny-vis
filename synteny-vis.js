@@ -271,7 +271,7 @@ function synteny(id, dataObj) {
         var cy = SYNTENY_MARGIN + yScale(e.y_relative_offset);
         context.beginPath();
         context.moveTo(cx, cy);
-        var color = d[i].active ? b(d[i][field]) : '#E6E6E6';
+        var color = d[i].active ? b(d[i][field]) : 'rgba(200, 200, 200, .2)';
         context.fillStyle = color;
         context.arc(cx, cy, 2, 0, 2 * Math.PI);
         context.fill();
