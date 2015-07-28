@@ -2,6 +2,8 @@ var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
 var HISTOGRAM_MARGIN = 50; /* Padding around histogram */
 var HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
 var COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
+var NUM_HISTOGRAM_TICKS = 80;
+
 
 var globalColorScale;
 
@@ -13,7 +15,6 @@ function controller(dataObj, cumulative) {
     });
 
   /* summary mode switching */
-  var order = 'minimum'
   d3.selectAll("#summary-options input[name=summary-options]")
     .on("change", function() {
       dataObj.setOrder(this.value);
@@ -23,7 +24,6 @@ function controller(dataObj, cumulative) {
   d3.selectAll("#plot-var-options input[name=plot-var-options]")
     .on("change", function() {
       dataObj.setSummaryField(this.value);
-      dataObj.setOrder(order);
       globalColorScale = colorScales[dataObj.getSummaryField()][cs];
       dataObj.notifyListeners('color-scale-change');
     });
@@ -386,9 +386,12 @@ function histogram(id, dataObj) {
     }
   }
 
-  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(), 'y'))];
 
   var xPlotScale = d3.scale.linear().domain(dataExtent).range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
+
+  var bins = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
+  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins), 'y'))];
+
   var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
   var plotBrush = d3.svg.brush()
@@ -401,7 +404,7 @@ function histogram(id, dataObj) {
     .call(plotBrush)
     .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
 
-  var ticks = xPlotScale.ticks(dataObj.currentDataSummary().length).slice(1);
+  var ticks = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
   plot.selectAll('.dataBars')
     .data(ticks)
     .enter()
@@ -423,7 +426,7 @@ function histogram(id, dataObj) {
         _.pluck(dataObj.currentData(),
           dataObj.getSummaryField()));
       xPlotScale.domain(dataExtent)
-      var ticks = xPlotScale.ticks(dataObj.currentDataSummary().length).slice(1);
+      var ticks = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
       var temp = plot.selectAll('.dataBars').data(ticks);
       temp.exit().remove();
       temp.enter().append('rect').classed('dataBars', true);
@@ -455,11 +458,11 @@ function histogram(id, dataObj) {
         });
     }
 
-    plot.selectAll('.dataBars').data(dataObj.currentDataSummary())
+    plot.selectAll('.dataBars').data(dataObj.currentDataSummary(bins))
       .call(updatePlotAttrs);
 
     if (typeHint.indexOf('spatial-stop') >= 0) {
-      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(), 'y'))];
+      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins), 'y'))];
       yPlotScale.domain(lastYExtent);
       yAxisSel.transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)

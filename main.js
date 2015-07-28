@@ -84,8 +84,6 @@ function inlineKSData(ks, xmap, ymap) {
 }
 
 function createDataObj(ks, xmap, ymap) {
-  var NUM_HISTOGRAM_TICKS = 80;
-
   ret = {};
   var currentData = ks;
   data = _.sortBy(currentData, function(d) {
@@ -96,18 +94,6 @@ function createDataObj(ks, xmap, ymap) {
     d.xmin = d.xmax = d.nt.x_relative_offset;
     d.ymin = d.ymax = d.nt.y_relative_offset;
   });
-
-  var ks_bvh = bvh_build(ks);
-  var plotScale = d3.scale.linear()
-    .domain(d3.extent(_.pluck(currentData, 'logks')))
-  computeBins(ks_bvh, 'logks', plotScale.ticks(NUM_HISTOGRAM_TICKS));
-
-  var kn_bvh = bvh_build(ks);
-  var plotScale = d3.scale.linear()
-    .domain(d3.extent(_.pluck(currentData, 'logkn')))
-  computeBins(kn_bvh, 'logkn', plotScale.ticks(NUM_HISTOGRAM_TICKS));
-
-  var bvh = ks_bvh;
 
   var spatialFilter = null;
   var dataFilter = null;
@@ -124,7 +110,7 @@ function createDataObj(ks, xmap, ymap) {
   ret.setOrder = function(newOrder) {
     order = newOrder;
     currentData = _.sortBy(currentData, ret.getSummaryField());
-    if(order === 'minimum'){
+    if (order === 'minimum') {
       currentData.reverse();
     }
     ret.notifyListeners('order-change');
@@ -133,15 +119,9 @@ function createDataObj(ks, xmap, ymap) {
   var sumField = 'logks';;
   ret.setSummaryField = function(field) {
     sumField = field;
-    if (field === 'logks') {
-      bvh = ks_bvh;
-    } else if (field === 'logkn') {
-      bvh = kn_bvh;
-    } else {
-      console.log('did not recognize that field name');
-    }
     ret.removeDataFilter();
-      ret.notifyListeners('variable-change');
+    ret.setOrder(order);
+    ret.notifyListeners('variable-change');
   }
 
   ret.getSummaryField = function() {
@@ -174,29 +154,47 @@ function createDataObj(ks, xmap, ymap) {
     return currentData;
   };
 
-  ret.currentDataSummary = function() {
-    var wholePlot = {
-      xmin: 0,
-      ymin: 0,
-      xmax: 1e15,
-      ymax: 1e15
-    };
-    var summary;
+  ret.currentDataSummary = function(ticks) {
+    var diff = ticks[1] - ticks[0];
+    var bins = _.reduce(ticks, function(binList, tick) {
+      binList.push({
+        x: tick,
+        dx: diff,
+        y: 0
+      });
+      return binList;
+    }, []);
+    var summary = currentData;
     if (spatialFilter) {
-      summary = bvh_find_summary(bvh, spatialFilter);
-    } else {
-      summary = bvh_find_summary(bvh, wholePlot);
+      summary = _.filter(summary, function(dot) {
+        return dot.nt.x_relative_offset >= spatialFilter[0][0] &&
+          dot.nt.x_relative_offset <= spatialFilter[1][0] &&
+          dot.nt.y_relative_offset >= spatialFilter[0][1] &&
+          dot.nt.y_relative_offset <= spatialFilter[1][1];
+      });
     }
     if (dataFilter) {
-      _.each(summary, function(x) {
+      summary = _.filter(summary, function(dot) {
+        return dot[field] <= dataFilter[1] && dot[field] >= dataFilter[0];
+      });
+    }
+    if (dataFilter) {
+      _.each(bins, function(x) {
         x.active = x.x + x.dx >= dataFilter[0] && x.x < dataFilter[1];
       });
     } else {
-      _.each(summary, function(x) {
+      _.each(bins, function(x) {
         x.active = true;
       });
     }
-    return summary;
+    _.each(summary, function(dot) {
+      _.each(bins, function(bin) {
+        if (bin.x <= dot[sumField] && dot[sumField] < bin.x + bin.dx) {
+          bin.y++;
+        }
+      });
+    });
+    return bins;
   }
 
   ret.addSpatialFilter = function(extents, typeHint) {
@@ -242,13 +240,18 @@ function createDataObj(ks, xmap, ymap) {
     var failing = [];
     var passing = currentData;
     if (spatialFilter) {
-      passing = bvh_find(bvh, spatialFilter);
-      failing = bvh_find_complement(bvh, spatialFilter);
+      var dataSplit = _.partition(passing, function(dot) {
+        return dot.nt.x_relative_offset >= spatialFilter[0][0] &&
+          dot.nt.x_relative_offset <= spatialFilter[1][0] &&
+          dot.nt.y_relative_offset >= spatialFilter[0][1] &&
+          dot.nt.y_relative_offset <= spatialFilter[1][1];
+      });
+      passing = dataSplit[0];
+      failing = _.flatten([failing, dataSplit[1]], true);
     }
     if (dataFilter) {
       var dataSplit = _.partition(passing, function(x) {
-        // XXX
-        return x.logks < dataFilter[1] && x.logks > dataFilter[0];
+        return x[sunField] < dataFilter[1] && x[sumField] > dataFilter[0];
       });
       passing = dataSplit[0];
       failing = _.flatten([failing, dataSplit[1]], true);
