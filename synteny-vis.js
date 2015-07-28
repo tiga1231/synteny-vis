@@ -7,7 +7,7 @@ var NUM_HISTOGRAM_TICKS = 80;
 
 var globalColorScale;
 
-function controller(dataObj, cumulative) {
+function controller(dataObj) {
   /* zoom/pan switching */
   d3.selectAll("#mouse-options input[name=mouse-options]")
     .on("change", function() {
@@ -94,10 +94,13 @@ function synteny(id, dataObj) {
 
   var xExtent = [0, _.last(dataObj.getXLineOffsets())];
   var yExtent = [0, _.last(dataObj.getYLineOffsets())];
+  console.log(xExtent);
+  console.log(yExtent);
 
   var width = d3.select(id).attr('width') - 2 * SYNTENY_MARGIN;
   var height = yExtent[1] / xExtent[1] * width + 2 * SYNTENY_MARGIN;
   d3.select(id).attr('height', height);
+  console.log(width, height);
 
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
@@ -261,8 +264,9 @@ function synteny(id, dataObj) {
       var d = dataObj.currentData();
       context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
       var field = dataObj.getSummaryField();
+      var gent = dataObj.getGEvNTMode();
       for (var i = 0; i < d.length; ++i) {
-        var e = d[i].nt;
+        var e = d[i][gent];
         var cx = SYNTENY_MARGIN + xScale(e.x_relative_offset);
         var cy = SYNTENY_MARGIN + yScale(e.y_relative_offset);
         context.beginPath();

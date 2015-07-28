@@ -14,10 +14,9 @@ wget -O $temp1 "https://genomevolution.org/coge/FeatList.pl?dsgid=${1}&ftid=4;gs
 <$temp2 grep -e '</\?TABLE\|</\?TD\|</\?TR' \
     | sed 's/^[\ \t]*//g' \
     | tr -d '\n' \
-    | sed 's/<\/TR[^>]*>/\n/g'  
+    | sed 's/<\/TR[^>]*>/\n/g' \
     | sed 's/<\/\?\(TABLE\|TR\)[^>]*>//g' \
     | sed 's/^<T[DH][^>]*>\|<\/\?T[DH][^>]*>$//g' \
-exit
     | sed 's/<\/T[DH][^>]*><T[DH][^>]*>/,/g' 
 
 exit

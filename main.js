@@ -1,25 +1,24 @@
-var loadksData = function(ks_filename, x_lengths_file_name, y_lengths_file_name, cb) {
+var loadksData = function(ks_filename, x_id, y_id, cb) {
 
   queue()
     .defer(d3.text, ks_filename)
-    .defer(d3.json, x_lengths_file_name)
-    .defer(d3.json, y_lengths_file_name)
+    //.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + x_id)
+    //.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + y_id)
+    .defer(d3.json, 'lengths/' + x_id + '.json')
+    .defer(d3.json, 'lengths/' + y_id + '.json')
     .await(function(err, ks, x_len, y_len) {
       if (err) {
         console.log(err);
         return;
       }
-
       var ksData = ksTextToObjects(ks);
-      var xCumLenMap = lengthsToCumulativeBPCounts(x_len);
-      var yCumLenMap = lengthsToCumulativeBPCounts(y_len);
+      var xCumLenMap = lengthsToCumulativeBPCounts(x_len.chromosomes);
+      var yCumLenMap = lengthsToCumulativeBPCounts(y_len.chromosomes);
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
+      console.log(inlinedKSData);
 
       ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
-      cb(ksDataObject, {
-        xCumBPCount: xCumLenMap,
-        yCumBPCount: yCumLenMap
-      });
+      cb(ksDataObject);
     });
 };
 
@@ -59,7 +58,12 @@ function ksLineToSyntenyDot(line) {
 }
 
 function lengthsToCumulativeBPCounts(len_list) {
-  return _.chain(len_list)
+  var cleanLenList =  _.each(len_list, function(chromosome) {
+      chromosome.length = Number(chromosome.length);
+      chromosome.gene_count = Number(chromosome.gene_count);
+  });
+
+  var ntLenList = _.chain(cleanLenList)
     .sortBy('length')
     .reverse()
     .reduce(function(map, kv) {
@@ -70,30 +74,44 @@ function lengthsToCumulativeBPCounts(len_list) {
       total: 0
     })
     .value();
+
+  var geLenList = _.chain(cleanLenList)
+    .sortBy('gene_count')
+    .reverse()
+    .tap(function(x) { console.log(x); })
+    .reduce(function(map, kv) {
+      map[kv.name] = map.total;
+      map.total += kv.gene_count;
+      return map;
+    }, {
+      total: 0
+    })
+    .value();
+
+    return {nt: ntLenList, ge: geLenList};
 }
 
 // Compute absolute BP offset from chromosome and relative offset
 function inlineKSData(ks, xmap, ymap) {
   _.each(ks, function(ksObj) {
-    var xShift = xmap[ksObj.x_chromosome_id];
-    var yShift = ymap[ksObj.y_chromosome_id];
+    var xShift = xmap.nt[ksObj.x_chromosome_id];
+    var yShift = ymap.nt[ksObj.y_chromosome_id];
     ksObj.nt.x_relative_offset += xShift;
     ksObj.nt.y_relative_offset += yShift;
+
+    xShift = xmap.ge[ksObj.x_chromosome_id];
+    yShift = ymap.ge[ksObj.y_chromosome_id];
+    ksObj.ge.x_relative_offset += xShift;
+    ksObj.ge.y_relative_offset += yShift;
   });
   return ks;
 }
 
-function createDataObj(ks, xmap, ymap) {
-  ret = {};
+function createDataObj(ks, xmapPair, ymapPair) {
+  var xmap = xmapPair.ge;
+  var ymap = ymapPair.ge;
   var currentData = ks;
-  data = _.sortBy(currentData, function(d) {
-    return d.logks;
-  });
-
-  _.each(ks, function(d) {
-    d.xmin = d.xmax = d.nt.x_relative_offset;
-    d.ymin = d.ymax = d.nt.y_relative_offset;
-  });
+  ret = {};
 
   var spatialFilter = null;
   var dataFilter = null;
@@ -104,6 +122,18 @@ function createDataObj(ks, xmap, ymap) {
 
   ret.getYLineOffsets = function() {
     return _.chain(ymap).values().sortBy().value();
+  };
+
+  var gentMode = 'nt';
+  ret.setGEvNTMode = function(mode) {
+    gentMode = mode;
+    xmap = xmapPair[mode];
+    ymap = ymapPair[mode];
+    ret.notifyListeners('ge-v-nt-change');
+  }
+
+  ret.getGEvNTMode = function() {
+    return gentMode;
   };
 
   var order = 'minimum';
@@ -167,15 +197,15 @@ function createDataObj(ks, xmap, ymap) {
     var summary = currentData;
     if (spatialFilter) {
       summary = _.filter(summary, function(dot) {
-        return dot.nt.x_relative_offset >= spatialFilter[0][0] &&
-          dot.nt.x_relative_offset <= spatialFilter[1][0] &&
-          dot.nt.y_relative_offset >= spatialFilter[0][1] &&
-          dot.nt.y_relative_offset <= spatialFilter[1][1];
+        return dot[gentMode].x_relative_offset >= spatialFilter[0][0] &&
+          dot[gentMode].x_relative_offset <= spatialFilter[1][0] &&
+          dot[gentMode].y_relative_offset >= spatialFilter[0][1] &&
+          dot[gentMode].y_relative_offset <= spatialFilter[1][1];
       });
     }
     if (dataFilter) {
       summary = _.filter(summary, function(dot) {
-        return dot[field] <= dataFilter[1] && dot[field] >= dataFilter[0];
+        return dot[sumField] <= dataFilter[1] && dot[sumField] >= dataFilter[0];
       });
     }
     if (dataFilter) {
@@ -241,17 +271,17 @@ function createDataObj(ks, xmap, ymap) {
     var passing = currentData;
     if (spatialFilter) {
       var dataSplit = _.partition(passing, function(dot) {
-        return dot.nt.x_relative_offset >= spatialFilter[0][0] &&
-          dot.nt.x_relative_offset <= spatialFilter[1][0] &&
-          dot.nt.y_relative_offset >= spatialFilter[0][1] &&
-          dot.nt.y_relative_offset <= spatialFilter[1][1];
+        return dot[gentMode].x_relative_offset >= spatialFilter[0][0] &&
+          dot[gentMode].x_relative_offset <= spatialFilter[1][0] &&
+          dot[gentMode].y_relative_offset >= spatialFilter[0][1] &&
+          dot[gentMode].y_relative_offset <= spatialFilter[1][1];
       });
       passing = dataSplit[0];
       failing = _.flatten([failing, dataSplit[1]], true);
     }
     if (dataFilter) {
       var dataSplit = _.partition(passing, function(x) {
-        return x[sunField] < dataFilter[1] && x[sumField] > dataFilter[0];
+        return x[sumField] < dataFilter[1] && x[sumField] > dataFilter[0];
       });
       passing = dataSplit[0];
       failing = _.flatten([failing, dataSplit[1]], true);
@@ -276,6 +306,7 @@ function createDataObj(ks, xmap, ymap) {
 
   updateData();
   ret.setOrder(order);
+  ret.setGEvNTMode('nt');
   return ret;
 }
 
