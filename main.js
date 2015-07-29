@@ -1,7 +1,9 @@
+'use strict';
+
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;
 
-var loadksData = function(ks_filename, x_id, y_id, cb) {
+var loadksData = function (ks_filename, x_id, y_id, cb) {
   queue()
     .defer(d3.text, ks_filename)
     //.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + x_id)
@@ -22,9 +24,7 @@ var loadksData = function(ks_filename, x_id, y_id, cb) {
       var yCumLenMap = lengthsToCumulativeBPCounts(y_len.chromosomes);
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
-      ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
-      console.log(ksDataObject.getXLineOffsets());
-      console.log(ksDataObject.getYLineOffsets());
+      var ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
       cb(ksDataObject);
     });
 };
@@ -35,7 +35,7 @@ function ksTextToObjects(text) {
   var ksLines = _.compact(csv.split('\n'));
   return _.chain(ksLines)
     .reject(function(line) {
-      return line[0] === '#'
+      return line[0] === '#';
     })
     .map(ksLineToSyntenyDot)
     .filter(function(line) {
@@ -123,8 +123,8 @@ function inlineKSData(ks, xmap, ymap) {
 
     var xNameShift = xmap.name[ksObj.x_chromosome_id];
     var yNameShift = ymap.name[ksObj.y_chromosome_id];
-    var xShift = xmap.ge[ksObj.x_chromosome_id];
-    var yShift = ymap.ge[ksObj.y_chromosome_id];
+    xShift = xmap.ge[ksObj.x_chromosome_id];
+    yShift = ymap.ge[ksObj.y_chromosome_id];
     ksObj.ge.x_relative_offset -= xNameShift;
     ksObj.ge.y_relative_offset -= yNameShift;
     ksObj.ge.x_relative_offset += xShift;
@@ -137,7 +137,7 @@ function createDataObj(ks, xmapPair, ymapPair) {
   var xmap = xmapPair.ge;
   var ymap = ymapPair.ge;
   var currentData = ks;
-  ret = {};
+  var ret = {};
 
   var spatialFilter = null;
   var dataFilter = {};
@@ -156,7 +156,7 @@ function createDataObj(ks, xmapPair, ymapPair) {
     xmap = xmapPair[mode];
     ymap = ymapPair[mode];
     ret.notifyListeners('ge-v-nt-change');
-  }
+  };
 
   ret.getGEvNTMode = function() {
     return gentMode;
@@ -166,11 +166,11 @@ function createDataObj(ks, xmapPair, ymapPair) {
   ret.setSummaryField = function(mode) {
     sumField = mode;
     ret.notifyListeners('summary-field-change');
-  }
+  };
 
   ret.getSummaryField = function() {
     return sumField;
-  }
+  };
 
   var order = 'minimum';
   ret.setOrder = function(newOrder) {
@@ -209,7 +209,9 @@ function createDataObj(ks, xmapPair, ymapPair) {
   };
 
   ret.currentDataSummary = function(ticks, field) {
-    if (!field) throw Error();
+    if (!field) {
+      throw new Error();
+    }
     var diff = ticks[1] - ticks[0];
     var bins = _.reduce(ticks, function(binList, tick) {
       binList.push({
@@ -247,12 +249,12 @@ function createDataObj(ks, xmapPair, ymapPair) {
     _.each(summary, function(dot) {
       _.each(bins, function(bin) {
         if (bin.x <= dot[field] && dot[field] < bin.x + bin.dx) {
-          bin.y++;
+          bin.y += 1;
         }
       });
     });
     return bins;
-  }
+  };
 
   ret.addSpatialFilter = function(extents, typeHint) {
     extents.xmin = extents[0][0];
@@ -260,40 +262,44 @@ function createDataObj(ks, xmapPair, ymapPair) {
     extents.ymin = extents[0][1];
     extents.ymax = extents[1][1];
     spatialFilter = extents;
-    updateData(typeHint ? typeHint : 'spatial');
+    updateData(typeHint);
   };
 
   ret.removeSpatialFilter = function(typeHint) {
     spatialFilter = null;
-    updateData(typeHint ? typeHint : 'spatial');
+    updateData(typeHint);
   };
 
   ret.addDataFilter = function(extent, field) {
-    if (!field) throw Error();
+    if (!field) {
+      throw new Error();
+    }
     dataFilter[field] = extent;
     updateData('data');
   };
 
   ret.removeDataFilter = function(field) {
-    if (!field) throw Error();
+    if (!field) {
+      throw new Error();
+    }
     delete dataFilter[field];
     updateData('data-stop');
-  }
+  };
 
   var listeners = [];
   ret.addListener = function(x) {
     listeners.push(x);
-  }
+  };
 
   var navMode = 'brush';
   ret.getNavMode = function() {
     return navMode;
-  }
+  };
 
   ret.setNavMode = function(mode) {
     navMode = mode;
     ret.notifyListeners('nav-mode-update');
-  }
+  };
 
   var updateData = function(typeOfChange) {
     var failing = [];
@@ -310,14 +316,14 @@ function createDataObj(ks, xmapPair, ymapPair) {
     }
     if (_.keys(dataFilter).length > 0) {
       _.each(dataFilter, function(filter, key) {
-        var dataSplit = _.partition(passing, function(x) {
+        dataSplit = _.partition(passing, function(x) {
           return x[key] < filter[1] && x[key] > filter[0];
         });
         passing = dataSplit[0];
         failing = failing.concat(dataSplit[1]);
       });
     }
-    if (!spatialFilter && _.keys(dataFilter).length == 0) {
+    if (!spatialFilter && _.keys(dataFilter).length === 0) {
       passing = currentData;
     }
     _.each(passing, function(x) {

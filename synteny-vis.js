@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
 var HISTOGRAM_MARGIN = 40; /* Padding around histogram */
@@ -71,8 +71,8 @@ function controller(dataObj) {
 
       return _.mapObject(COLOR_RANGES, function(colorRange, colorScaleName) {
         var step = range / (colorRange.length - 1);
-        // Extra .5 * step is to avoid missing a value because of floating point precision 
-        var domain = _.range(min, max + .5 * step, step);
+        // Extra .5 * step is to avoid missing a value because of floating point precision
+        var domain = _.range(min, max + 0.5 * step, step);
 
         var scale = colorScaleName.indexOf('quantized') > -1 ? d3.scale.quantize() : d3.scale.linear();
         return scale.domain(domain).range(colorRange);
@@ -115,7 +115,42 @@ function synteny(id, dataObj) {
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
-  var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 100]).on('zoom', zoomed);
+  var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 100]).on('zoom', function() {
+    var t = d3.event.translate;
+    var s = d3.event.scale;
+    t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
+    t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
+    // prevents the translate from growing large. This way, you don't 
+    // have to "scroll back" onto the canvas if you pan past the edge.
+    zoom.translate(t);
+
+    brushGroup.attr("transform", translate(t[0], t[1]) + 'scale(' + s + ')');
+
+    var tempXOffsets = _.filter(xOffsets, function(x) {
+      return 0 <= xScale(x) && xScale(x) <= width;
+    });
+    var tempXGaps = _.filter(xAxisTickValues, function(x) {
+      return 0 <= xScale(x) && xScale(x) <= width;
+    });
+    var tempYOffsets = _.filter(yOffsets, function(y) {
+      return 0 <= yScale(y) && yScale(y) <= height;
+    });
+    var tempYGaps = _.filter(yAxisTickValues, function(y) {
+      return 0 <= yScale(y) && yScale(y) <= height;
+    });
+
+    xLineAxis.tickValues(tempXOffsets);
+    xGapsAxis.tickValues(tempXGaps);
+    yLineAxis.tickValues(tempYOffsets);
+    yGapsAxis.tickValues(tempYGaps);
+
+    xAxisGapsGroup.call(xGapsAxis);
+    yAxisGapsGroup.call(yGapsAxis);
+    xAxisLineGroup.call(xLineAxis);
+    yAxisLineGroup.call(yLineAxis);
+
+    setSyntenyData();
+  });
 
   function resizeBrushBoundary() {
     var scaling = zoom.scale();
@@ -154,9 +189,9 @@ function synteny(id, dataObj) {
       } else {
         dataObj.addSpatialFilter(brush.extent(), 'spatial-stop');
       }
-    })
+    });
 
-  var canvas = d3.select(id + '-canvas')
+  d3.select(id + '-canvas')
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
   var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
@@ -182,7 +217,7 @@ function synteny(id, dataObj) {
     .classed('plot-title', true)
     .text(Y_AXIS_ORGANISM_NAME);
 
-  var defs = svg
+  svg
     .append('defs')
     .append('clipPath')
     .attr('id', 'plot-clip-box')
@@ -191,7 +226,7 @@ function synteny(id, dataObj) {
     .attr('width', width)
     .attr('y', 0)
     .attr('height', height)
-    .attr('fill', 'black')
+    .attr('fill', 'black');
 
   var xOffsets = dataObj.getXLineOffsets();
   var xPairs = _.zip(_.initial(xOffsets), _.rest(xOffsets));
@@ -203,7 +238,7 @@ function synteny(id, dataObj) {
   var xLineAxis = d3.svg.axis()
     .scale(xScale)
     .tickValues(xOffsets)
-    .tickFormat(function(x) {
+    .tickFormat(function() {
       return '';
     })
     .orient('bottom')
@@ -232,7 +267,7 @@ function synteny(id, dataObj) {
   var yLineAxis = d3.svg.axis()
     .scale(yScale)
     .tickValues(yOffsets)
-    .tickFormat(function(x) {
+    .tickFormat(function() {
       return '';
     })
     .orient('left')
@@ -303,31 +338,32 @@ function synteny(id, dataObj) {
       var activeDots = splitData[0];
       var inactiveDots = splitData[1];
 
+      console.log(activeDots.length);
       context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 
       /* First, inactive dots */
       context.fillStyle = UNSELECTED_DOT_FILL;
-      for (var i = 0; i < inactiveDots.length; ++i) {
-        var d = inactiveDots[i][gent];
+      _.each(inactiveDots, function(dot) {
+        var d = dot[gent];
         var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
         var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
         context.beginPath();
         context.moveTo(cx, cy);
         context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
         context.fill();
-      }
+      });
 
       /* On top, active dots */
-      for (var i = 0; i < activeDots.length; ++i) {
-        var d = activeDots[i][gent];
+      _.each(activeDots, function(dot) {
+        var d = dot[gent];
         var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
         var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
         context.beginPath();
         context.moveTo(cx, cy);
-        context.fillStyle = intermediateColorScale(activeDots[i][field]);
+        context.fillStyle = intermediateColorScale(dot[field]);
         context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
         context.fill();
-      }
+      });
 
       if (elapsedMS > 0) {
         var diff = Date.now() - start;
@@ -346,43 +382,6 @@ function synteny(id, dataObj) {
   }
   dataObj.addListener(setSyntenyData);
   setSyntenyData();
-
-  function zoomed() {
-    var t = d3.event.translate;
-    var s = d3.event.scale;
-    t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
-    t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
-    // prevents the translate from growing large. This way, you don't 
-    // have to "scroll back" onto the canvas if you pan past the edge.
-    zoom.translate(t);
-
-    brushGroup.attr("transform", translate(t[0], t[1]) + 'scale(' + s + ')');
-
-    var tempXOffsets = _.filter(xOffsets, function(x) {
-      return 0 <= xScale(x) && xScale(x) <= width;
-    });
-    var tempXGaps = _.filter(xAxisTickValues, function(x) {
-      return 0 <= xScale(x) && xScale(x) <= width;
-    });
-    var tempYOffsets = _.filter(yOffsets, function(y) {
-      return 0 <= yScale(y) && yScale(y) <= height;
-    });
-    var tempYGaps = _.filter(yAxisTickValues, function(y) {
-      return 0 <= yScale(y) && yScale(y) <= height;
-    });
-
-    xLineAxis.tickValues(tempXOffsets);
-    xGapsAxis.tickValues(tempXGaps);
-    yLineAxis.tickValues(tempYOffsets);
-    yGapsAxis.tickValues(tempYGaps);
-
-    xAxisGapsGroup.call(xGapsAxis);
-    yAxisGapsGroup.call(yGapsAxis);
-    xAxisLineGroup.call(xLineAxis);
-    yAxisLineGroup.call(yLineAxis);
-
-    setSyntenyData();
-  }
 
   function setNavigationMode(typeHint) {
     if (typeHint !== 'nav-mode-update') {
@@ -472,17 +471,6 @@ function histogram(id, dataObj, field) {
     .classed('yAxis', true).call(yAxis);
 
   function updatePlot(typeHint) {
-    if (typeHint === 'variable-change') {
-      dataExtent = d3.extent(
-        _.pluck(dataObj.currentData(),
-          dataObj.getSummaryField()));
-      xPlotScale.domain(dataExtent)
-      var ticks = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
-      var temp = plot.selectAll('.dataBars').data(ticks);
-      temp.exit().remove();
-      temp.enter().append('rect').classed('dataBars', true);
-      typeHint = 'spatial-stop';
-    }
 
     function updatePlotAttrs(selection) {
       var colorScale = globalColorScale;
@@ -498,7 +486,7 @@ function histogram(id, dataObj, field) {
         })
         .attr('height', function(d) {
           return plotHeight - HISTOGRAM_MARGIN - yPlotScale(d.y);
-        })
+        });
 
       if (typeHint.indexOf('initial') === -1 && typeHint.indexOf('data') === -1) {
         temp = temp.transition().duration(COLOR_TRANS_LEN);
@@ -535,23 +523,5 @@ function histogram(id, dataObj, field) {
 
   updatePlot('initial');
   dataObj.addListener(updatePlot);
-
-
-  function reColorDataBars() {
-    var colorScale = globalColorScale;
-    plot.selectAll('.dataBars')
-      .transition().duration(500)
-      .attr('fill', function(d) {
-        return colorScale(d.x + d.dx / 2);
-      });
-  }
-
-  function filterBarsByData(range, selField, selector) {
-    /* Broken -- doesn't properly filter on other plot fields */
-    plot.selectAll('.dataBars')
-      .classed(selector, function(d) {
-        return d.x > range[1] || d.x + d.dx < range[0];
-      });
-  }
 }
 
