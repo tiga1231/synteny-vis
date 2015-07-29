@@ -1,11 +1,15 @@
-var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
+var SYNTENY_MARGIN = 30; /* Padding around synteny plot for axes */
 var HISTOGRAM_MARGIN = 50; /* Padding around histogram */
 var HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
 var COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 var NUM_HISTOGRAM_TICKS = 80;
 
-
 var globalColorScale;
+
+function getComputedAttr(element, attr) {
+  var computed = window.getComputedStyle(element)[attr];
+  return parseInt(computed, 10);
+}
 
 function controller(dataObj) {
   /* zoom/pan switching */
@@ -37,10 +41,9 @@ function controller(dataObj) {
       dataObj.notifyListeners('color-scale-change');
     });
 
-  var ksDataMax = d3.max(_.pluck(dataObj.currentData(), 'logks'));
-  var ksDataMin = d3.min(_.pluck(dataObj.currentData(), 'logks'));
-  var knDataMax = d3.max(_.pluck(dataObj.currentData(), 'logkn'));
-  var knDataMin = d3.min(_.pluck(dataObj.currentData(), 'logkn'));
+  var ksExtent = d3.extent(_.pluck(dataObj.currentData(), 'logks'));
+  var knExtent = d3.extent(_.pluck(dataObj.currentData(), 'logkn'));
+  var ksknExtent = d3.extent(_.pluck(dataObj.currentData(), 'logkskn'));
 
   function partitionedExtent(min, max, n) {
     var diff = max - min;
@@ -50,41 +53,59 @@ function controller(dataObj) {
 
   var ksColorScales = {
     rg: d3.scale.linear()
-      .domain(partitionedExtent(ksDataMin, ksDataMax, 2))
+      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 2))
       .range(['red', 'green']),
     rg_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(ksDataMin, ksDataMax, 11))
+      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 11))
       .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
     rainbow: d3.scale.linear()
-      .domain(partitionedExtent(ksDataMin, ksDataMax, 7))
+      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 7))
       .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
     rainbow_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(ksDataMin, ksDataMax, 7))
+      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 7))
       .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
   };
   var knColorScales = {
     rg: d3.scale.linear()
-      .domain(partitionedExtent(knDataMin, knDataMax, 2))
+      .domain(partitionedExtent(knExtent[0], knExtent[1], 2))
       .range(['red', 'green']),
     rg_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(knDataMin, knDataMax, 11))
+      .domain(partitionedExtent(knExtent[0], knExtent[1], 11))
       .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
     rainbow: d3.scale.linear()
-      .domain(partitionedExtent(knDataMin, knDataMax, 7))
+      .domain(partitionedExtent(knExtent[0], knExtent[1], 7))
       .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
     rainbow_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(knDataMin, knDataMax, 7))
+      .domain(partitionedExtent(knExtent[0], knExtent[1], 7))
       .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
   };
+  var ksknColorScales = {
+    rg: d3.scale.linear()
+      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 2))
+      .range(['red', 'green']),
+    rg_quantized: d3.scale.quantize()
+      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 11))
+      .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
+    rainbow: d3.scale.linear()
+      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 7))
+      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
+    rainbow_quantized: d3.scale.quantize()
+      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 7))
+      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
+  };
+
   var colorScales = {
     logks: ksColorScales,
-    logkn: knColorScales
+    logkn: knColorScales,
+    logkskn: ksknColorScales
   };
   globalColorScale = colorScales['logks']['rg'];
 
   var funcs = [
     synteny('#main', dataObj),
-    histogram('#plot', dataObj),
+    histogram('#plot', dataObj, 'logks'),
+    histogram('#plot2', dataObj, 'logkn'),
+    histogram('#plot3', dataObj, 'logkskn'),
   ];
 }
 
@@ -92,21 +113,17 @@ var globals = {};
 
 function synteny(id, dataObj) {
 
-  var xExtent = [0, _.last(dataObj.getXLineOffsets())];
-  var yExtent = [0, _.last(dataObj.getYLineOffsets())];
-  console.log(xExtent);
-  console.log(yExtent);
+  var xExtent = [0, _.max(dataObj.getXLineOffsets())];
+  var yExtent = [0, _.max(dataObj.getYLineOffsets())];
 
-  var width = d3.select(id).attr('width') - 2 * SYNTENY_MARGIN;
-  var height = yExtent[1] / xExtent[1] * width + 2 * SYNTENY_MARGIN;
+  var height = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
+  var width = xExtent[1] / yExtent[1] * height;
   d3.select(id).attr('height', height);
-  console.log(width, height);
 
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
   var xScaleOriginal = xScale.copy();
   var yScaleOriginal = yScale.copy();
-
 
   var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 100]).on('zoom', zoomed);
 
@@ -234,7 +251,7 @@ function synteny(id, dataObj) {
     .scale(yScale)
     .tickValues(yAxisTickValues)
     .tickFormat(function(x) {
-      return yOffsetToNameMap[x].length > 3 ? '' : yOffsetToNameMap[x];
+      return yOffsetToNameMap[x];
     })
     .orient('left')
     .tickSize(0);
@@ -361,32 +378,37 @@ function synteny(id, dataObj) {
   dataObj.addListener(setNavigationMode);
 }
 
-function histogram(id, dataObj) {
-  var dataExtent = d3.extent(_.pluck(dataObj.currentData(), dataObj.getSummaryField()));
+function histogram(id, dataObj, field) {
+  var dataExtent = d3.extent(_.pluck(dataObj.currentData(), field));
 
   var plot = d3.select(id);
-  var plotWidth = plot.attr('width');
-  var plotHeight = plot.attr('height');
+  var plotWidth = getComputedAttr(plot.node(), 'width');
+  var plotHeight = getComputedAttr(plot.node(), 'height');
 
+  var prettyNames = {
+    logks: 'log(ks)',
+    logkn: 'log(kn)',
+    logkskn: 'log(ks/kn)'
+};
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
     .attr('width', plotHeight / 3)
     .attr('y', 50)
     .attr('height', 50)
     .classed('textInPlot', true)
-    .text(dataObj.getSummaryField());
+    .text(prettyNames[field]);
 
   function plotBrushBrush() {
     if (plotBrush.empty()) {
-      dataObj.removeDataFilter();
+      dataObj.removeDataFilter(field);
     } else {
-      dataObj.addDataFilter(plotBrush.extent());
+      dataObj.addDataFilter(plotBrush.extent(), field);
     }
   }
 
   function plotBrushEnd() {
     if (plotBrush.empty()) {
-      dataObj.removeDataFilter();
+      dataObj.removeDataFilter(field);
     }
   }
 
@@ -394,7 +416,7 @@ function histogram(id, dataObj) {
   var xPlotScale = d3.scale.linear().domain(dataExtent).range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
 
   var bins = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
-  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins), 'y'))];
+  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins, field), 'y'))];
 
   var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
@@ -414,7 +436,7 @@ function histogram(id, dataObj) {
     .enter()
     .append('rect').classed('dataBars', true);
 
-  var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom');
+    var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
   var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
   plot.append('g')
@@ -458,21 +480,28 @@ function histogram(id, dataObj) {
       }
       temp
         .attr('fill', function(d) {
-          return d.active ? colorScale(d.x + d.dx / 2) : 'grey';
+          if(field === dataObj.getSummaryField()) {
+            return d.active ? colorScale(d.x + d.dx / 2) : 'grey';
+          } else {
+            return d.active ? 'steelblue' : 'grey';
+          }
         });
     }
 
-    plot.selectAll('.dataBars').data(dataObj.currentDataSummary(bins))
-      .call(updatePlotAttrs);
-
-    if (typeHint.indexOf('spatial-stop') >= 0) {
-      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins), 'y'))];
+    if (typeHint.indexOf('spatial-stop') >= 0 || typeHint === 'data-stop') {
+      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins, field), 'y'))];
       yPlotScale.domain(lastYExtent);
       yAxisSel.transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(yAxis);
-      plot.selectAll('.dataBars').transition()
+      plot.selectAll('.dataBars')
+        .data(dataObj.currentDataSummary(bins, field))
+        .transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
+        .call(updatePlotAttrs);
+    } else {
+      plot.selectAll('.dataBars')
+        .data(dataObj.currentDataSummary(bins, field))
         .call(updatePlotAttrs);
     }
   }

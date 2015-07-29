@@ -6,9 +6,6 @@
   <script src="lib/queue.js"></script>
   <script src="lib/underscore.js"></script>
   <style>
-    svg {
-      border: 1px solid black;
-    }
     .extent {
       fill: grey;
       opacity: .2;
@@ -17,29 +14,32 @@
       font-family: Verdana, geneva, sans-serif;
       font-size: 14pt;
     }
-    #plot > .xAxis > line {
-      stroke-width: 2;
+    .domain {
+      fill: none;
+      stroke: black;
     }
-    #main > .yAxis > path,
-    #main > .xAxis > path {
-      opacity: 0;
-    }
-    #main > .xAxis > .tick > line,
-    #main > .yAxis > .tick > line {
+    .histogram .tick line {
       stroke: grey;
     }
-    circle.unselected {
-      opacity: .01;
-    }
-    rect.unselected-main,
-    rect.unselected-plot {
-      opacity: .2;
+    #main .tick line {
+      stroke: grey;
     }
     #main-canvas-wrapper {
-      float: left; 
+      float: left;
+      position: absolute;
     }
-    #main-svg-wrapper { 
-      position: absolute; 
+    #main-svg-wrapper {
+      float: left;
+      position: absolute;
+      width: 50%;
+      height: 85%;
+    }
+    #histogram-wrapper {
+      float: right;
+      width: 50%;
+    }
+    form {
+      display: inline;
     }
   </style>
 </head>
@@ -49,32 +49,45 @@
     <canvas id="main-canvas"></canvas>
   </div>
   <div id="main-svg-wrapper">
-    <svg id="main" width="500"></svg>
+    <svg id="main" width="100%" height="100%"></svg>
   </div>
-  <svg id="plot" width="500" height="450"></svg>
+  <div id="histogram-wrapper">
+    <svg id="plot" class="histogram" width="100%" height="33%"></svg>
+    <svg id="plot2" class="histogram" width="100%" height="33%"></svg>
+    <svg id="plot3" class="histogram" width="100%" height="33%"></svg>
+  </div>
 
-  <div>
-    <form id="mouse-options">
-      <input type="radio" name="mouse-options" value="brush" checked>Brushing
-      <input type="radio" name="mouse-options" value="pan">Panning
-    </form>
+  <div style="position: absolute; bottom: 10; left: 10; width: 50%; height:10%">
+    <div class="radio-button-label"><strong>Navigation Mode</strong>
+      <form id="mouse-options">
+        <input type="radio" name="mouse-options" value="brush" checked>Brushing
+        <input type="radio" name="mouse-options" value="pan">Panning
+      </form>
+    </div>
 
-    <form id="summary-options">
-      <input type="radio" name="summary-options" value="minimum" checked>High to Low
-      <input type="radio" name="summary-options" value="maximum">Low to High
-    </form>
+    <div class="radio-button-label"><strong>Plotting order</strong>
+      <form id="summary-options">
+        <input type="radio" name="summary-options" value="minimum" checked>High to Low
+        <input type="radio" name="summary-options" value="maximum">Low to High
+      </form>
+    </div>
 
-    <form id="plot-var-options">
-      <input type="radio" name="plot-var-options" value="logks" checked>logks
-      <input type="radio" name="plot-var-options" value="logkn">logkn
-    </form>
+    <div class="radio-button-label"><strong>Dot Plot Coloring</strong>
+      <form id="plot-var-options">
+        <input type="radio" name="plot-var-options" value="logks" checked>log ks
+        <input type="radio" name="plot-var-options" value="logkn">log kn
+        <input type="radio" name="plot-var-options" value="logkskn">log ks/kn
+      </form>
+    </div>
 
-    <form id="color-options">
-      <input type="radio" name="color-options" value="rg" checked>red-green
-      <input type="radio" name="color-options" value="rg_quantized">rg_quantized
-      <input type="radio" name="color-options" value="rainbow">rainbow
-      <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
-    </form>
+    <div class="radio-button-label"><strong>Color Scale</strong>
+      <form id="color-options">
+        <input type="radio" name="color-options" value="rg" checked>red-green
+        <input type="radio" name="color-options" value="rg_quantized">rg_quantized
+        <input type="radio" name="color-options" value="rainbow">rainbow
+        <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
+      </form>
+    </div>
   </div>
 
   <script src="synteny-vis.js"></script>

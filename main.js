@@ -15,7 +15,6 @@ var loadksData = function(ks_filename, x_id, y_id, cb) {
       var xCumLenMap = lengthsToCumulativeBPCounts(x_len.chromosomes);
       var yCumLenMap = lengthsToCumulativeBPCounts(y_len.chromosomes);
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
-      console.log(inlinedKSData);
 
       ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
       cb(ksDataObject);
@@ -44,6 +43,7 @@ function ksLineToSyntenyDot(line) {
     logks: Math.log(Number(fields[0])) / Math.log(10),
     kn: Number(fields[1]),
     logkn: Math.log(Number(fields[1])) / Math.log(10),
+    logkskn: (Math.log(Number(fields[0])) - Math.log(Number(fields[1]))) / Math.log(10),
     x_chromosome_id: fields[3],
     y_chromosome_id: fields[15],
     ge: {
@@ -58,9 +58,9 @@ function ksLineToSyntenyDot(line) {
 }
 
 function lengthsToCumulativeBPCounts(len_list) {
-  var cleanLenList =  _.each(len_list, function(chromosome) {
-      chromosome.length = Number(chromosome.length);
-      chromosome.gene_count = Number(chromosome.gene_count);
+  var cleanLenList = _.each(len_list, function(chromosome) {
+    chromosome.length = Number(chromosome.length);
+    chromosome.gene_count = Number(chromosome.gene_count);
   });
 
   var ntLenList = _.chain(cleanLenList)
@@ -78,7 +78,6 @@ function lengthsToCumulativeBPCounts(len_list) {
   var geLenList = _.chain(cleanLenList)
     .sortBy('gene_count')
     .reverse()
-    .tap(function(x) { console.log(x); })
     .reduce(function(map, kv) {
       map[kv.name] = map.total;
       map.total += kv.gene_count;
@@ -88,7 +87,10 @@ function lengthsToCumulativeBPCounts(len_list) {
     })
     .value();
 
-    return {nt: ntLenList, ge: geLenList};
+  return {
+    nt: ntLenList,
+    ge: geLenList
+  };
 }
 
 // Compute absolute BP offset from chromosome and relative offset
@@ -98,11 +100,10 @@ function inlineKSData(ks, xmap, ymap) {
     var yShift = ymap.nt[ksObj.y_chromosome_id];
     ksObj.nt.x_relative_offset += xShift;
     ksObj.nt.y_relative_offset += yShift;
-
-    xShift = xmap.ge[ksObj.x_chromosome_id];
-    yShift = ymap.ge[ksObj.y_chromosome_id];
-    ksObj.ge.x_relative_offset += xShift;
-    ksObj.ge.y_relative_offset += yShift;
+    //var xShift = xmap.ge[ksObj.x_chromosome_id];
+    //var yShift = ymap.ge[ksObj.y_chromosome_id];
+    //ksObj.ge.x_relative_offset += xShift;
+    //ksObj.ge.y_relative_offset += yShift;
   });
   return ks;
 }
@@ -114,7 +115,7 @@ function createDataObj(ks, xmapPair, ymapPair) {
   ret = {};
 
   var spatialFilter = null;
-  var dataFilter = null;
+  var dataFilter = {};
 
   ret.getXLineOffsets = function() {
     return _.chain(xmap).values().sortBy().value();
@@ -136,27 +137,25 @@ function createDataObj(ks, xmapPair, ymapPair) {
     return gentMode;
   };
 
-  var order = 'minimum';
-  ret.setOrder = function(newOrder) {
-    order = newOrder;
-    currentData = _.sortBy(currentData, ret.getSummaryField());
-    if (order === 'minimum') {
-      currentData.reverse();
-    }
-    ret.notifyListeners('order-change');
-  };
-
-  var sumField = 'logks';;
-  ret.setSummaryField = function(field) {
-    sumField = field;
-    ret.removeDataFilter();
-    ret.setOrder(order);
-    ret.notifyListeners('variable-change');
+  var sumField = 'logks';
+  ret.setSummaryField = function(mode) {
+    sumField = mode;
+    ret.notifyListeners('summary-field-change');
   }
 
   ret.getSummaryField = function() {
     return sumField;
   }
+
+  var order = 'minimum';
+  ret.setOrder = function(newOrder) {
+    order = newOrder;
+    currentData = _.sortBy(currentData, 'ks');
+    if (order === 'minimum') {
+      currentData.reverse();
+    }
+    ret.notifyListeners('order-change');
+  };
 
   ret.getXLineNames = function() {
     return _.chain(xmap)
@@ -184,7 +183,8 @@ function createDataObj(ks, xmapPair, ymapPair) {
     return currentData;
   };
 
-  ret.currentDataSummary = function(ticks) {
+  ret.currentDataSummary = function(ticks, field) {
+    if (!field) throw Error();
     var diff = ticks[1] - ticks[0];
     var bins = _.reduce(ticks, function(binList, tick) {
       binList.push({
@@ -203,23 +203,25 @@ function createDataObj(ks, xmapPair, ymapPair) {
           dot[gentMode].y_relative_offset <= spatialFilter[1][1];
       });
     }
-    //if (dataFilter) {
-    //  summary = _.filter(summary, function(dot) {
-    //    return dot[sumField] <= dataFilter[1] && dot[sumField] >= dataFilter[0];
-    //  });
-    //}
-    if (dataFilter) {
+    if (dataFilter[field]) {
       _.each(bins, function(x) {
-        x.active = x.x + x.dx >= dataFilter[0] && x.x < dataFilter[1];
+        x.active = x.x + x.dx >= dataFilter[field][0] && x.x < dataFilter[field][1];
       });
     } else {
       _.each(bins, function(x) {
         x.active = true;
       });
     }
+    _.each(dataFilter, function(filter, key) {
+      if (key !== field) {
+        summary = _.filter(summary, function(dot) {
+          return (dot[key] >= filter[0] && dot[key] <= filter[1]);
+        });
+      }
+    });
     _.each(summary, function(dot) {
       _.each(bins, function(bin) {
-        if (bin.x <= dot[sumField] && dot[sumField] < bin.x + bin.dx) {
+        if (bin.x <= dot[field] && dot[field] < bin.x + bin.dx) {
           bin.y++;
         }
       });
@@ -241,14 +243,16 @@ function createDataObj(ks, xmapPair, ymapPair) {
     updateData(typeHint ? typeHint : 'spatial');
   };
 
-  ret.addDataFilter = function(extent) {
-    dataFilter = extent;
+  ret.addDataFilter = function(extent, field) {
+    if (!field) throw Error();
+    dataFilter[field] = extent;
     updateData('data');
   };
 
-  ret.removeDataFilter = function() {
-    dataFilter = null;
-    updateData('data');
+  ret.removeDataFilter = function(field) {
+    if (!field) throw Error();
+    delete dataFilter[field];
+    updateData('data-stop');
   }
 
   var listeners = [];
@@ -266,7 +270,7 @@ function createDataObj(ks, xmapPair, ymapPair) {
     ret.notifyListeners('nav-mode-update');
   }
 
-  function updateData(typeOfChange) {
+  var updateData = function(typeOfChange) {
     var failing = [];
     var passing = currentData;
     if (spatialFilter) {
@@ -279,14 +283,16 @@ function createDataObj(ks, xmapPair, ymapPair) {
       passing = dataSplit[0];
       failing = _.flatten([failing, dataSplit[1]], true);
     }
-    if (dataFilter) {
-      var dataSplit = _.partition(passing, function(x) {
-        return x[sumField] < dataFilter[1] && x[sumField] > dataFilter[0];
+    if (_.keys(dataFilter).length > 0) {
+      _.each(dataFilter, function(filter, key) {
+        var dataSplit = _.partition(passing, function(x) {
+          return x[key] < filter[1] && x[key] > filter[0];
+        });
+        passing = dataSplit[0];
+        failing = failing.concat(dataSplit[1]);
       });
-      passing = dataSplit[0];
-      failing = _.flatten([failing, dataSplit[1]], true);
     }
-    if (!spatialFilter && !dataFilter) {
+    if (!spatialFilter && _.keys(dataFilter).length == 0) {
       passing = currentData;
     }
     _.each(passing, function(x) {
@@ -298,6 +304,8 @@ function createDataObj(ks, xmapPair, ymapPair) {
     ret.notifyListeners(typeOfChange);
   };
 
+  updateData = _.throttle(updateData, 30);
+
   ret.notifyListeners = function(typeOfChange) {
     _.each(listeners, function(x) {
       x(typeOfChange);
@@ -306,7 +314,7 @@ function createDataObj(ks, xmapPair, ymapPair) {
 
   updateData();
   ret.setOrder(order);
-  ret.setGEvNTMode('nt');
+  ret.setGEvNTMode(gentMode);
   return ret;
 }
 
