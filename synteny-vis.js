@@ -423,9 +423,7 @@ function histogram(id, dataObj, field) {
     .text(prettyNames[field]);
 
   function plotBrushBrush() {
-    if (plotBrush.empty()) {
-      dataObj.removeDataFilter(field);
-    } else {
+    if (!plotBrush.empty()) {
       dataObj.addDataFilter(plotBrush.extent(), field);
     }
   }
