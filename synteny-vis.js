@@ -291,6 +291,8 @@ function synteny(id, dataObj) {
     function draw(n, a, b) {
       var start = Date.now();
       var d = dataObj.currentData();
+      var split = _.partition(d, 'active');
+      d = split[1].concat(split[0]);
       context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
       var field = dataObj.getSummaryField();
       var gent = dataObj.getGEvNTMode();
@@ -300,7 +302,7 @@ function synteny(id, dataObj) {
         var cy = SYNTENY_MARGIN + yScale(e.y_relative_offset);
         context.beginPath();
         context.moveTo(cx, cy);
-        var color = d[i].active ? b(d[i][field]) : 'rgba(200, 200, 200, .2)';
+        var color = d[i].active ? b(d[i][field]) : '#D0D0D0';
         context.fillStyle = color;
         context.arc(cx, cy, 2, 0, 2 * Math.PI);
         context.fill();
