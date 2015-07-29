@@ -5,74 +5,38 @@
   <script src="lib/d3.js"></script>
   <script src="lib/queue.js"></script>
   <script src="lib/underscore.js"></script>
-  <style>
-    .extent {
-      fill: grey;
-      opacity: .2;
-    }
-    .textInPlot {
-      font-family: Verdana, geneva, sans-serif;
-      font-size: 14pt;
-    }
-    .domain {
-      fill: none;
-      stroke: black;
-    }
-    .histogram .tick line {
-      stroke: grey;
-    }
-    #main .tick line {
-      stroke: grey;
-    }
-    #main-canvas-wrapper {
-      float: left;
-      position: absolute;
-    }
-    #main-svg-wrapper {
-      float: left;
-      position: absolute;
-      width: 50%;
-      height: 85%;
-    }
-    #histogram-wrapper {
-      float: right;
-      width: 50%;
-    }
-    form {
-      display: inline;
-    }
-  </style>
+  <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
 <body>
-  <div id="main-canvas-wrapper">
-    <canvas id="main-canvas"></canvas>
-  </div>
-  <div id="main-svg-wrapper">
-    <svg id="main" width="100%" height="100%"></svg>
-  </div>
+  <canvas id="dotplot-canvas"></canvas>
+  <svg id="dotplot"></svg>
+
   <div id="histogram-wrapper">
-    <svg id="plot" class="histogram" width="100%" height="33%"></svg>
-    <svg id="plot2" class="histogram" width="100%" height="33%"></svg>
-    <svg id="plot3" class="histogram" width="100%" height="33%"></svg>
+    <svg id="plot" class="histogram"></svg>
+    <svg id="plot2" class="histogram"></svg>
+    <svg id="plot3" class="histogram"></svg>
   </div>
 
-  <div style="position: absolute; bottom: 10; left: 10; width: 50%; height:10%">
-    <div class="radio-button-label"><strong>Navigation Mode</strong>
+  <div id="form-wrapper">
+    <div class="radio-button-box">
+      <strong>Navigation Mode</strong>
       <form id="mouse-options">
         <input type="radio" name="mouse-options" value="brush" checked>Brushing
         <input type="radio" name="mouse-options" value="pan">Panning
       </form>
     </div>
 
-    <div class="radio-button-label"><strong>Plotting order</strong>
+    <div class="radio-button-box">
+      <strong>Plotting order</strong>
       <form id="summary-options">
         <input type="radio" name="summary-options" value="minimum" checked>High to Low
         <input type="radio" name="summary-options" value="maximum">Low to High
       </form>
     </div>
 
-    <div class="radio-button-label"><strong>Dot Plot Coloring</strong>
+    <div class="radio-button-box">
+      <strong>Dot Plot Coloring</strong>
       <form id="plot-var-options">
         <input type="radio" name="plot-var-options" value="logks" checked>log ks
         <input type="radio" name="plot-var-options" value="logkn">log kn
@@ -80,7 +44,8 @@
       </form>
     </div>
 
-    <div class="radio-button-label"><strong>Color Scale</strong>
+    <div class="radio-button-box">
+      <strong>Color Scale</strong>
       <form id="color-options">
         <input type="radio" name="color-options" value="rg" checked>red-green
         <input type="radio" name="color-options" value="rg_quantized">rg_quantized

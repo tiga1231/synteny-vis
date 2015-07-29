@@ -1,5 +1,5 @@
-var SYNTENY_MARGIN = 30; /* Padding around synteny plot for axes */
-var HISTOGRAM_MARGIN = 50; /* Padding around histogram */
+var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
+var HISTOGRAM_MARGIN = 25; /* Padding around histogram */
 var HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
 var COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 var NUM_HISTOGRAM_TICKS = 80;
@@ -102,7 +102,7 @@ function controller(dataObj) {
   globalColorScale = colorScales['logks']['rg'];
 
   var funcs = [
-    synteny('#main', dataObj),
+    synteny('#dotplot', dataObj),
     histogram('#plot', dataObj, 'logks'),
     histogram('#plot2', dataObj, 'logkn'),
     histogram('#plot3', dataObj, 'logkskn'),
@@ -115,10 +115,24 @@ function synteny(id, dataObj) {
 
   var xExtent = [0, _.max(dataObj.getXLineOffsets())];
   var yExtent = [0, _.max(dataObj.getYLineOffsets())];
+  var aspectRatio = yExtent[1] / xExtent[1];
 
-  var height = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
-  var width = xExtent[1] / yExtent[1] * height;
-  d3.select(id).attr('height', height);
+  var computedWidth = getComputedAttr(d3.select(id).node(), 'width') - 2 * SYNTENY_MARGIN;
+  var computedHeight = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
+
+  var width;
+  var height;
+
+  if ((computedHeight / computedWidth) / aspectRatio > 1) {
+    width = computedWidth;
+    height = aspectRatio * width;
+  } else {
+    height = computedHeight;
+    width = 1 / aspectRatio * height;
+  }
+
+  d3.select(id).attr('width', width + 2 * SYNTENY_MARGIN);
+  d3.select(id).attr('height', height + 2 * SYNTENY_MARGIN);
 
   var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
   var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
@@ -180,11 +194,9 @@ function synteny(id, dataObj) {
   var canvas = d3.select(id + '-canvas')
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
-  var context = document.getElementById('main-canvas').getContext('2d');
+  var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
 
-  var svgPre = d3.select(id)
-    .attr('width', width + 2 * SYNTENY_MARGIN)
-    .attr('height', height + 2 * SYNTENY_MARGIN);
+  var svgPre = d3.select(id);
 
   svgPre
     .append('defs')
@@ -389,13 +401,13 @@ function histogram(id, dataObj, field) {
     logks: 'log(ks)',
     logkn: 'log(kn)',
     logkskn: 'log(ks/kn)'
-};
+  };
   plot.append('text')
     .attr('x', 2 * plotHeight / 3)
     .attr('width', plotHeight / 3)
     .attr('y', 50)
     .attr('height', 50)
-    .classed('textInPlot', true)
+    .classed('histogram-title', true)
     .text(prettyNames[field]);
 
   function plotBrushBrush() {
@@ -436,14 +448,14 @@ function histogram(id, dataObj, field) {
     .enter()
     .append('rect').classed('dataBars', true);
 
-    var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
+  var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
   var yAxis = d3.svg.axis().scale(yPlotScale).orient('left');
 
   plot.append('g')
-    .attr('transform', 'translate(0,' + (plotHeight - 50) + ')')
+    .attr('transform', 'translate(0,' + (plotHeight - HISTOGRAM_MARGIN) + ')')
     .classed('xAxis', true).call(xAxis);
   var yAxisSel = plot.append('g')
-    .attr('transform', 'translate(50,0)')
+    .attr('transform', 'translate(' + HISTOGRAM_MARGIN + ',0)')
     .classed('yAxis', true).call(yAxis);
 
   function updatePlot(typeHint) {
@@ -480,7 +492,7 @@ function histogram(id, dataObj, field) {
       }
       temp
         .attr('fill', function(d) {
-          if(field === dataObj.getSummaryField()) {
+          if (field === dataObj.getSummaryField()) {
             return d.active ? colorScale(d.x + d.dx / 2) : 'grey';
           } else {
             return d.active ? 'steelblue' : 'grey';
