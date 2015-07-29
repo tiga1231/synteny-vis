@@ -1,5 +1,5 @@
 var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
-var HISTOGRAM_MARGIN = 25; /* Padding around histogram */
+var HISTOGRAM_MARGIN = 40; /* Padding around histogram */
 var HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
 var COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 var NUM_HISTOGRAM_TICKS = 80;
