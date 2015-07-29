@@ -28,107 +28,74 @@ function controller(dataObj) {
   d3.selectAll("#plot-var-options input[name=plot-var-options]")
     .on("change", function() {
       dataObj.setSummaryField(this.value);
-      globalColorScale = colorScales[dataObj.getSummaryField()][cs];
+      globalColorScale = colorScales[dataObj.getSummaryField()][colorScale];
       dataObj.notifyListeners('color-scale-change');
     });
 
   /* color mode switching */
-  var cs = 'rg';
+  var colorScale = 'rg';
   d3.selectAll("#color-options input[name=color-options]")
     .on("change", function() {
       globalColorScale = colorScales[dataObj.getSummaryField()][this.value];
-      cs = this.value;
+      colorScale = this.value;
       dataObj.notifyListeners('color-scale-change');
     });
 
-  var ksExtent = d3.extent(_.pluck(dataObj.currentData(), 'logks'));
-  var knExtent = d3.extent(_.pluck(dataObj.currentData(), 'logkn'));
-  var ksknExtent = d3.extent(_.pluck(dataObj.currentData(), 'logkskn'));
-
-  function partitionedExtent(min, max, n) {
-    var diff = max - min;
-    var step = diff / (n - 1);
-    return _.range(min, max + .5 * step, step);
-  }
-
-  var ksColorScales = {
-    rg: d3.scale.linear()
-      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 2))
-      .range(['red', 'green']),
-    rg_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 11))
-      .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
-    rainbow: d3.scale.linear()
-      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 7))
-      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
-    rainbow_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(ksExtent[0], ksExtent[1], 7))
-      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
-  };
-  var knColorScales = {
-    rg: d3.scale.linear()
-      .domain(partitionedExtent(knExtent[0], knExtent[1], 2))
-      .range(['red', 'green']),
-    rg_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(knExtent[0], knExtent[1], 11))
-      .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
-    rainbow: d3.scale.linear()
-      .domain(partitionedExtent(knExtent[0], knExtent[1], 7))
-      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
-    rainbow_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(knExtent[0], knExtent[1], 7))
-      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
-  };
-  var ksknColorScales = {
-    rg: d3.scale.linear()
-      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 2))
-      .range(['red', 'green']),
-    rg_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 11))
-      .range(['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837']),
-    rainbow: d3.scale.linear()
-      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 7))
-      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
-    rainbow_quantized: d3.scale.quantize()
-      .domain(partitionedExtent(ksknExtent[0], ksknExtent[1], 7))
-      .range(['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']),
+  var extents = {
+    logks: d3.extent(_.pluck(dataObj.currentData(), 'logks')),
+    logkn: d3.extent(_.pluck(dataObj.currentData(), 'logkn')),
+    logkskn: d3.extent(_.pluck(dataObj.currentData(), 'logkskn'))
   };
 
-  var colorScales = {
-    logks: ksColorScales,
-    logkn: knColorScales,
-    logkskn: ksknColorScales
+  var colorRanges = {
+    rg: ['red', 'green'],
+    rg_quantized: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
+    rainbow: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange'],
+    rainbow_quantized: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
   };
-  globalColorScale = colorScales['logks']['rg'];
 
-  var funcs = [
-    synteny('#dotplot', dataObj),
-    histogram('#plot', dataObj, 'logks'),
-    histogram('#plot2', dataObj, 'logkn'),
-    histogram('#plot3', dataObj, 'logkskn'),
-  ];
+  var colorScales = _.mapObject(extents, function(extent) {
+    var max = extent[1];
+    var min = extent[0];
+    var range = max - min;
+
+    return _.mapObject(colorRanges, function(colorRange, colorScaleName) {
+      var step = range / (colorRange.length - 1);
+      // Extra .5 * step is to avoid missing a value because of floating point precision 
+      var domain = _.range(min, max + .5 * step, step);
+
+      var scale = colorScaleName.indexOf('quantized') > -1 ? d3.scale.quantize() : d3.scale.linear();
+      return scale.domain(domain).range(colorRange);
+    });
+  });
+
+  globalColorScale = colorScales[dataObj.getSummaryField()][colorScale];
+
+  synteny('#dotplot', dataObj);
+  histogram('#plot', dataObj, 'logks');
+  histogram('#plot2', dataObj, 'logkn');
+  histogram('#plot3', dataObj, 'logkskn');
 }
-
-var globals = {};
 
 function synteny(id, dataObj) {
 
   var xExtent = [0, _.max(dataObj.getXLineOffsets())];
   var yExtent = [0, _.max(dataObj.getYLineOffsets())];
-  var aspectRatio = yExtent[1] / xExtent[1];
+  var dataAspectRatio = yExtent[1] / xExtent[1];
 
   var computedWidth = getComputedAttr(d3.select(id).node(), 'width') - 2 * SYNTENY_MARGIN;
   var computedHeight = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
+  var windowAspectRatio = computedHeight / computedWidth;
 
   var width;
   var height;
 
-  if ((computedHeight / computedWidth) / aspectRatio > 1) {
+  if (windowAspectRatio / dataAspectRatio > 1) {
     width = computedWidth;
-    height = aspectRatio * width;
+    height = dataAspectRatio * width;
   } else {
     height = computedHeight;
-    width = 1 / aspectRatio * height;
+    width = 1 / dataAspectRatio * height;
   }
 
   d3.select(id).attr('width', width + 2 * SYNTENY_MARGIN);
@@ -197,6 +164,25 @@ function synteny(id, dataObj) {
   var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
 
   var svgPre = d3.select(id);
+
+  var TEXT_OFFSET = 35;
+  var TEXT_BOX_HEIGHT = 25;
+  svgPre.append('text')
+    .attr('x', (width + 2 * SYNTENY_MARGIN) / 3)
+    .attr('width', (width + 2 * SYNTENY_MARGIN) / 3)
+    .attr('y', SYNTENY_MARGIN + height + TEXT_OFFSET)
+    .attr('height', TEXT_BOX_HEIGHT)
+    .classed('plot-title', true)
+    .text(X_AXIS_ORGANISM_NAME);
+
+  svgPre.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -2*(width + 2 * SYNTENY_MARGIN) / 3)
+    .attr('width', (width + 2 * SYNTENY_MARGIN) / 3)
+    .attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
+    .attr('height', TEXT_BOX_HEIGHT)
+    .classed('plot-title', true)
+    .text(Y_AXIS_ORGANISM_NAME);
 
   svgPre
     .append('defs')

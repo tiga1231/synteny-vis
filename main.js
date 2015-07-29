@@ -1,5 +1,7 @@
-var loadksData = function(ks_filename, x_id, y_id, cb) {
+var X_AXIS_ORGANISM_NAME;
+var Y_AXIS_ORGANISM_NAME;
 
+var loadksData = function(ks_filename, x_id, y_id, cb) {
   queue()
     .defer(d3.text, ks_filename)
     //.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + x_id)
@@ -11,6 +13,10 @@ var loadksData = function(ks_filename, x_id, y_id, cb) {
         console.log(err);
         return;
       }
+
+      X_AXIS_ORGANISM_NAME = x_len.organism.name;
+      Y_AXIS_ORGANISM_NAME = y_len.organism.name;
+
       var ksData = ksTextToObjects(ks);
       var xCumLenMap = lengthsToCumulativeBPCounts(x_len.chromosomes);
       var yCumLenMap = lengthsToCumulativeBPCounts(y_len.chromosomes);
@@ -303,8 +309,6 @@ function createDataObj(ks, xmapPair, ymapPair) {
     });
     ret.notifyListeners(typeOfChange);
   };
-
-  updateData = _.throttle(updateData, 30);
 
   ret.notifyListeners = function(typeOfChange) {
     _.each(listeners, function(x) {
