@@ -177,8 +177,8 @@ function synteny(id, dataObj) {
 
   svgPre.append('text')
     .attr('transform', 'rotate(-90)')
-    .attr('x', -2*(width + 2 * SYNTENY_MARGIN) / 3)
-    .attr('width', (width + 2 * SYNTENY_MARGIN) / 3)
+    .attr('x', -2*(height + 2 * SYNTENY_MARGIN) / 3)
+    .attr('width', (height + 2 * SYNTENY_MARGIN) / 3)
     .attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
     .attr('height', TEXT_BOX_HEIGHT)
     .classed('plot-title', true)

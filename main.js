@@ -23,6 +23,8 @@ var loadksData = function(ks_filename, x_id, y_id, cb) {
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
       ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
+      console.log(ksDataObject.getXLineOffsets());
+      console.log(ksDataObject.getYLineOffsets());
       cb(ksDataObject);
     });
 };
@@ -82,8 +84,19 @@ function lengthsToCumulativeBPCounts(len_list) {
     .value();
 
   var geLenList = _.chain(cleanLenList)
-    .sortBy('gene_count')
+    .sortBy('length')
     .reverse()
+    .reduce(function(map, kv) {
+      map[kv.name] = map.total;
+      map.total += kv.gene_count;
+      return map;
+    }, {
+      total: 0
+    })
+    .value();
+
+  var nameLenList = _.chain(cleanLenList)
+    .sortBy('name')
     .reduce(function(map, kv) {
       map[kv.name] = map.total;
       map.total += kv.gene_count;
@@ -95,7 +108,8 @@ function lengthsToCumulativeBPCounts(len_list) {
 
   return {
     nt: ntLenList,
-    ge: geLenList
+    ge: geLenList,
+    name: nameLenList
   };
 }
 
@@ -106,10 +120,15 @@ function inlineKSData(ks, xmap, ymap) {
     var yShift = ymap.nt[ksObj.y_chromosome_id];
     ksObj.nt.x_relative_offset += xShift;
     ksObj.nt.y_relative_offset += yShift;
-    //var xShift = xmap.ge[ksObj.x_chromosome_id];
-    //var yShift = ymap.ge[ksObj.y_chromosome_id];
-    //ksObj.ge.x_relative_offset += xShift;
-    //ksObj.ge.y_relative_offset += yShift;
+
+    var xNameShift = xmap.name[ksObj.x_chromosome_id];
+    var yNameShift = ymap.name[ksObj.y_chromosome_id];
+    var xShift = xmap.ge[ksObj.x_chromosome_id];
+    var yShift = ymap.ge[ksObj.y_chromosome_id];
+    ksObj.ge.x_relative_offset -= xNameShift;
+    ksObj.ge.y_relative_offset -= yNameShift;
+    ksObj.ge.x_relative_offset += xShift;
+    ksObj.ge.y_relative_offset += yShift;
   });
   return ks;
 }
