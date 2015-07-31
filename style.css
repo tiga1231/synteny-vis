@@ -15,6 +15,12 @@
   float: left;
   position: absolute;
 }
+#dotplot-canvas-bak {
+  /* The float and position properties here are some sort of black magic to
+   * get the canvas and svg to sit on top of each other. */
+  float: left;
+  position: absolute;
+}
 #dotplot {
   float: left;
   position: absolute;
