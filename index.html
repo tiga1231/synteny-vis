@@ -51,17 +51,45 @@
         <input type="radio" name="color-options" value="rg_quantized">rg_quantized
         <input type="radio" name="color-options" value="rainbow">rainbow
         <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
+        <input type="radio" name="color-options" value="auto">auto
       </form>
+    </div>
+
+    <div class="radio-button-box">
+      <strong>Auto-scale persistence</strong>
+      <input type=range id=persistence min=0 max=100 value=25 step=1 oninput="refreshAutoDots(); document.getElementById('persistence-text').innerText=this.value">
+      <button type=button onclick="refreshAutoScale()">Refresh auto scale</button>
+      Largest persistence edge that will be removed:
+      <label id="persistence-text">25</label>
     </div>
   </div>
 
   <script src="synteny-vis.js"></script>
   <script src="main.js"></script>
   <script>
-    loadksData('./data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks',
-      '11691',
-      '25577',
-      controller);
+    switch (window.location.hash) {
+      case '#m':
+      case '#maize':
+        loadksData('./data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords.ks', '6807', '8082', controller);
+        break;
+
+      case '#e':
+      case '#ecoli':
+        loadksData('./data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '4241', '4242', controller);
+        break;
+
+      case '#a':
+      case '#arabidopsis':
+        loadksData('./data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '16911', '3068', controller);
+        break;
+
+      default:
+        window.location.hash = '#homo';
+      case '#h':
+      case '#homo':
+        loadksData('./data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '11691', '25577', controller);
+        break;
+    }
   </script>
 </body>
 

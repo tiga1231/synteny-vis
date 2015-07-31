@@ -1,6 +1,6 @@
 'use strict';
 
-var DATA_OP_TIMING = true;
+var DATA_OP_TIMING = false;
 
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;
@@ -27,6 +27,7 @@ var loadksData = function(ks_filename, x_id, y_id, cb) {
       var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
       var ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
+      console.log('Total synteny dots:', ksDataObject.currentData().raw.length);
       cb(ksDataObject);
     });
 };
@@ -169,21 +170,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     return gentMode;
   };
 
-  var sumField = 'logks';
-  ret.setSummaryField = function(mode) {
-    sumField = mode;
-    ret.notifyListeners('validPoints-field-change');
-  };
-
-  ret.getSummaryField = function() {
-    return sumField;
-  };
-
-  var order = 'minimum';
-  ret.setOrder = function(newOrder) {
-    order = newOrder;
-    syntenyDots = _.sortBy(syntenyDots, 'ks');
-    if (order === 'minimum') {
+  ret.setOrder = function(field, descending) {
+    syntenyDots = _.sortBy(syntenyDots, field);
+    if (descending) {
       syntenyDots.reverse();
     }
     ret.notifyListeners('order-change');
@@ -282,16 +271,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     listeners.push(x);
   };
 
-  var navMode = 'brush';
-  ret.getNavMode = function() {
-    return navMode;
-  };
-
-  ret.setNavMode = function(mode) {
-    navMode = mode;
-    ret.notifyListeners('nav-mode-update');
-  };
-
   ret.notifyListeners = function(typeOfChange) {
     _.each(listeners, function(x) {
       x(typeOfChange);
@@ -315,7 +294,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       return x;
     }
   }
-  ret.setOrder(order);
+  ret.setOrder('logks', true);
   ret.setGEvNTMode(gentMode);
   return ret;
 }
