@@ -148,6 +148,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   var ymap = ymapPair.ge;
   var ret = {};
 
+  var sortedDots = { };
   var dataFilters = {};
 
   ret.getXLineOffsets = function() {
@@ -216,12 +217,13 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.currentDataSummary = function currentDataSummary(ticks, field) {
     var filtersToApply = _.omit(dataFilters, field);
 
-    var validPoints = _.chain(filtersToApply)
-      .reduce(function(dots, filterFunc) {
+    if(!sortedDots[field]) {
+      sortedDots[field] = _.sortBy(syntenyDots, field);
+    }
+
+    var validPoints = _.reduce(filtersToApply, function(dots, filterFunc) {
         return _.filter(dots, filterFunc);
-      }, syntenyDots)
-      .sortBy(field)
-      .value();
+    }, sortedDots[field]);
 
     var diff = ticks[1] - ticks[0];
 
@@ -293,6 +295,11 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       console.log('currentDataSummary', Date.now() - start);
       return x;
     }
+    var r = ret.notifyListeners;
+    ret.notifyListeners = function(x) {
+      console.log('notifyListeners');
+      r(x);
+    };
   }
   ret.setOrder('logks', true);
   ret.setGEvNTMode(gentMode);

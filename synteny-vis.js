@@ -28,8 +28,6 @@ function translate(x, y) {
   return 'translate(' + x + ',' + y + ')';
 }
 
-var refreshAutoDots;
-
 function refreshAutoScale() {
   var radio = document.getElementById('color-options');
   var auto = _.find(radio.children, {
@@ -44,14 +42,6 @@ function getPersistence() {
 }
 
 function controller(dataObj) {
-
-  refreshAutoDots = function() {
-    var p = getPersistence();
-    _.each(histograms, function(h) {
-      h.generateAutoScale(p);
-    });
-  };
-  dataObj.addListener(refreshAutoDots);
 
   var syntenyPlot;
   /* zoom/pan switching */
@@ -74,7 +64,7 @@ function controller(dataObj) {
       syntenyPlot.setField(activeField);
       var newCS;
       if (activeCS === 'auto') {
-        newCS = histograms[activeField].generateAutoScale(getPersistence());
+        newCS = histograms[activeField].getAutoScale();
       } else {
         newCS = colorScales[activeField][activeCS];
       }
@@ -89,10 +79,11 @@ function controller(dataObj) {
     .on("change", function() {
       var newCS;
       if (this.value === 'auto') {
-        newCS = histograms[activeField].generateAutoScale(getPersistence());
+        newCS = histograms[activeField].getAutoScale();
       } else {
         newCS = colorScales[activeField][this.value];
       }
+      console.log(newCS);
       histograms[activeField].setColorScale(newCS);
       syntenyPlot.setColorScale(newCS);
       activeCS = this.value;
@@ -341,6 +332,7 @@ function synteny(id, dataObj, field, initialColorScale) {
   var colorScale = initialColorScale;
   var field;
 
+  var times = [];
   function draw(elapsedMS, initialColorScale, finalColorScale) {
     var start = Date.now();
     var gent = dataObj.getGEvNTMode();
@@ -361,15 +353,16 @@ function synteny(id, dataObj, field, initialColorScale) {
 
     /* First, inactive dots */
     context.fillStyle = UNSELECTED_DOT_FILL;
+    context.beginPath();
     _.each(inactiveDots, function(dot) {
       var d = dot[gent];
       var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
       var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
-      context.beginPath();
       context.moveTo(cx, cy);
       context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
-      context.fill();
     });
+    context.fill();
+    console.log(context.currentTranform)
 
     /* On top, active dots */
     _.each(activeDots, function(dot) {
@@ -389,7 +382,9 @@ function synteny(id, dataObj, field, initialColorScale) {
     context.fillRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
 
     var diff = Date.now() - start;
-    //console.log(diff);
+    console.log('draw:', diff);
+    times.push(diff);
+    console.log(d3.mean(times))
     if (elapsedMS > 0) {
       setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
     }
@@ -497,8 +492,13 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
-  function generateAutoScale(persistence) {
-    var summary = dataObj.currentDataSummary(bins, field);
+  var autoScale;
+
+  function getAutoScale() {
+    return autoScale;
+  }
+
+  function generateAutoScale(summary, persistence) {
 
     function removeNonExtrema(A) {
       return _.filter(A, function(p, i, a) {
@@ -582,15 +582,13 @@ function histogram(id, dataObj, field, initialColorScale) {
     var combined = _.sortBy(minima.concat(maxima), 'x');
 
     var colors = d3.scale.category10();
-    var auto = d3.scale.linear()
+    autoScale = d3.scale.linear()
       .domain(_.map(combined, function(d) {
         return d.x + d.dx / 2
       }))
       .range(_.chain(combined).map(function(m) {
         return m.max ? colors(m.colorIndex) : UNSELECTED_DOT_FILL;
       }).value());
-
-    return auto;
   }
 
   var plotBrush = d3.svg.brush()
@@ -644,18 +642,20 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   function updatePlot(typeHint) {
 
+    var data = dataObj.currentDataSummary(bins, field);
+    generateAutoScale(data, getPersistence());
     plot.selectAll('.dataBars')
-      .data(dataObj.currentDataSummary(bins, field))
+      .data(data)
       .call(updatePlotAttrs);
 
     if (typeHint.indexOf('spatial-stop') >= 0 || typeHint === 'data-stop') {
-      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins, field), 'y'))];
+      lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
       yPlotScale.domain(lastYExtent);
       yAxisSel.transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(yAxis);
       plot.selectAll('.dataBars')
-        .data(dataObj.currentDataSummary(bins, field))
+        .data(data)
         .transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(updatePlotAttrs);
@@ -681,7 +681,7 @@ function histogram(id, dataObj, field, initialColorScale) {
   }
   return {
     setColorScale: setColorScale,
-    generateAutoScale: generateAutoScale
+    getAutoScale: getAutoScale
   };
 }
 
