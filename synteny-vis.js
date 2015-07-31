@@ -560,16 +560,17 @@ function histogram(id, dataObj, field, initialColorScale) {
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
 
-  plot.append('g').attr('id', 'plotbrush-group')
-    .attr('transform', translate(0, HISTOGRAM_MARGIN))
-    .call(plotBrush)
-    .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
-
   var ticks = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
   plot.selectAll('.dataBars')
     .data(ticks)
     .enter()
     .append('rect').classed('dataBars', true);
+
+  plot.append('g').attr('id', 'plotbrush-group')
+    .attr('transform', translate(0, HISTOGRAM_MARGIN))
+    .call(plotBrush)
+    .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
+
 
   var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
   var yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
