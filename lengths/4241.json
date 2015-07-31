@@ -1,3 +1,1 @@
-[
-{"name":"1","length":4686137}
-]
+{"additional_metadata":[],"sequence_type":{"name":"unmasked","description":"unmasked sequence data"},"chromosome_count":1,"version":"1","description":null,"chromosomes":[{"name":"1","length":4686137,"gene_count":4283}],"experiments":[2527,2531,2845,2847,2933,2937,2943,2948,3384,3456,3458,3459,3460,3462,3464,3465,3467,3468,3470,3471,3472,3473,3475,3476,3477,3479,3480,3482,3483,3484,3485,3487,3490],"organism":{"id":24289,"name":"Escherichia coli K12 strain K-12 substrain DH10B","description":"Bacteria; Proteobacteria; Gammaproteobacteria; Enterobacteriales; Enterobacteriaceae; Escherichia"},"link":null,"id":4241,"restricted":false,"name":null}
