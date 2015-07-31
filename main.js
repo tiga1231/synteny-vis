@@ -1,9 +1,11 @@
 'use strict';
 
+var DATA_OP_TIMING = true;
+
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;
 
-var loadksData = function (ks_filename, x_id, y_id, cb) {
+var loadksData = function(ks_filename, x_id, y_id, cb) {
   queue()
     .defer(d3.text, ks_filename)
     //.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + x_id)
@@ -66,12 +68,7 @@ function ksLineToSyntenyDot(line) {
 }
 
 function lengthsToCumulativeBPCounts(len_list) {
-  var cleanLenList = _.each(len_list, function(chromosome) {
-    chromosome.length = Number(chromosome.length);
-    chromosome.gene_count = Number(chromosome.gene_count);
-  });
-
-  var ntLenList = _.chain(cleanLenList)
+  var ntLenList = _.chain(len_list)
     .sortBy('length')
     .reverse()
     .reduce(function(map, kv) {
@@ -83,7 +80,7 @@ function lengthsToCumulativeBPCounts(len_list) {
     })
     .value();
 
-  var geLenList = _.chain(cleanLenList)
+  var geLenList = _.chain(len_list)
     .sortBy('length')
     .reverse()
     .reduce(function(map, kv) {
@@ -95,7 +92,7 @@ function lengthsToCumulativeBPCounts(len_list) {
     })
     .value();
 
-  var nameLenList = _.chain(cleanLenList)
+  var nameLenList = _.chain(len_list)
     .sortBy('name')
     .reduce(function(map, kv) {
       map[kv.name] = map.total;
@@ -133,14 +130,24 @@ function inlineKSData(ks, xmap, ymap) {
   return ks;
 }
 
-function createDataObj(ks, xmapPair, ymapPair) {
+function between(low, high, field) {
+  if (field) {
+    return function(x) {
+      return low <= x[field] && x[field] < high;
+    }
+  } else {
+    return function(x) {
+      return low <= x && x < high;
+    }
+  }
+}
+
+function createDataObj(syntenyDots, xmapPair, ymapPair) {
   var xmap = xmapPair.ge;
   var ymap = ymapPair.ge;
-  var currentData = ks;
   var ret = {};
 
-  var spatialFilter = null;
-  var dataFilter = {};
+  var dataFilters = {};
 
   ret.getXLineOffsets = function() {
     return _.chain(xmap).values().sortBy().value();
@@ -165,7 +172,7 @@ function createDataObj(ks, xmapPair, ymapPair) {
   var sumField = 'logks';
   ret.setSummaryField = function(mode) {
     sumField = mode;
-    ret.notifyListeners('summary-field-change');
+    ret.notifyListeners('validPoints-field-change');
   };
 
   ret.getSummaryField = function() {
@@ -175,9 +182,9 @@ function createDataObj(ks, xmapPair, ymapPair) {
   var order = 'minimum';
   ret.setOrder = function(newOrder) {
     order = newOrder;
-    currentData = _.sortBy(currentData, 'ks');
+    syntenyDots = _.sortBy(syntenyDots, 'ks');
     if (order === 'minimum') {
-      currentData.reverse();
+      syntenyDots.reverse();
     }
     ret.notifyListeners('order-change');
   };
@@ -204,86 +211,70 @@ function createDataObj(ks, xmapPair, ymapPair) {
       .value();
   };
 
-  ret.currentData = function() {
-    return currentData;
+  ret.currentData = function currentData() {
+    return _.reduce(dataFilters, function(ret, filterFunc) {
+      var split = _.partition(ret.active, filterFunc);
+      ret.active = split[0];
+      ret.inactive = ret.inactive.concat(split[1]);
+      return ret;
+    }, {
+      raw: syntenyDots,
+      active: syntenyDots,
+      inactive: []
+    });
   };
 
-  ret.currentDataSummary = function(ticks, field) {
-    if (!field) {
-      throw new Error();
-    }
+  ret.currentDataSummary = function currentDataSummary(ticks, field) {
+    var filtersToApply = _.omit(dataFilters, field);
+
+    var validPoints = _.chain(filtersToApply)
+      .reduce(function(dots, filterFunc) {
+        return _.filter(dots, filterFunc);
+      }, syntenyDots)
+      .sortBy(field)
+      .value();
+
     var diff = ticks[1] - ticks[0];
-    var bins = _.reduce(ticks, function(binList, tick) {
-      binList.push({
-        x: tick,
-        dx: diff,
-        y: 0
-      });
-      return binList;
-    }, []);
-    var summary = currentData;
-    if (spatialFilter) {
-      summary = _.filter(summary, function(dot) {
-        return dot[gentMode].x_relative_offset >= spatialFilter[0][0] &&
-          dot[gentMode].x_relative_offset <= spatialFilter[1][0] &&
-          dot[gentMode].y_relative_offset >= spatialFilter[0][1] &&
-          dot[gentMode].y_relative_offset <= spatialFilter[1][1];
-      });
-    }
-    if (dataFilter[field]) {
-      _.each(bins, function(x) {
-        x.active = x.x + x.dx >= dataFilter[field][0] && x.x < dataFilter[field][1];
-      });
-    } else {
-      _.each(bins, function(x) {
-        x.active = true;
-      });
-    }
-    _.each(dataFilter, function(filter, key) {
-      if (key !== field) {
-        summary = _.filter(summary, function(dot) {
-          return (dot[key] >= filter[0] && dot[key] <= filter[1]);
-        });
-      }
-    });
-    _.each(summary, function(dot) {
-      _.each(bins, function(bin) {
-        if (bin.x <= dot[field] && dot[field] < bin.x + bin.dx) {
-          bin.y += 1;
-        }
-      });
-    });
-    return bins;
-  };
+
+    return _.chain(ticks)
+      .map(function(tick) {
+        var start = {},
+          end = {};
+        start[field] = tick;
+        end[field] = tick + diff;
+        var low = _.sortedIndex(validPoints, start, field);
+        var hi = _.sortedIndex(validPoints, end, field);
+        return {
+          x: tick,
+          dx: diff,
+          y: hi - low
+        };
+      }).value();
+  }
 
   ret.addSpatialFilter = function(extents, typeHint) {
-    extents.xmin = extents[0][0];
-    extents.xmax = extents[1][0];
-    extents.ymin = extents[0][1];
-    extents.ymax = extents[1][1];
-    spatialFilter = extents;
-    updateData(typeHint);
+    dataFilters['spatial'] = function(dot) {
+      return dot[gentMode].x_relative_offset >= extents[0][0] &&
+        dot[gentMode].x_relative_offset <= extents[1][0] &&
+        dot[gentMode].y_relative_offset >= extents[0][1] &&
+        dot[gentMode].y_relative_offset <= extents[1][1];
+    };
+    ret.notifyListeners(typeHint);
   };
 
   ret.removeSpatialFilter = function(typeHint) {
-    spatialFilter = null;
-    updateData(typeHint);
+    delete dataFilters['spatial'];
+    ret.notifyListeners(typeHint);
   };
 
   ret.addDataFilter = function(extent, field) {
-    if (!field) {
-      throw new Error();
-    }
-    dataFilter[field] = extent;
-    updateData('data');
+    dataFilters[field] = between(extent[0], extent[1], field);
+    ret.notifyListeners('data');
   };
 
   ret.removeDataFilter = function(field) {
-    if (!field) {
-      throw new Error();
-    }
-    delete dataFilter[field];
-    updateData('data-stop');
+    delete dataFilters[field];
+    ret.notifyListeners('data-stop');
   };
 
   var listeners = [];
@@ -301,47 +292,29 @@ function createDataObj(ks, xmapPair, ymapPair) {
     ret.notifyListeners('nav-mode-update');
   };
 
-  var updateData = function(typeOfChange) {
-    var failing = [];
-    var passing = currentData;
-    if (spatialFilter) {
-      var dataSplit = _.partition(passing, function(dot) {
-        return dot[gentMode].x_relative_offset >= spatialFilter[0][0] &&
-          dot[gentMode].x_relative_offset <= spatialFilter[1][0] &&
-          dot[gentMode].y_relative_offset >= spatialFilter[0][1] &&
-          dot[gentMode].y_relative_offset <= spatialFilter[1][1];
-      });
-      passing = dataSplit[0];
-      failing = _.flatten([failing, dataSplit[1]], true);
-    }
-    if (_.keys(dataFilter).length > 0) {
-      _.each(dataFilter, function(filter, key) {
-        dataSplit = _.partition(passing, function(x) {
-          return x[key] < filter[1] && x[key] > filter[0];
-        });
-        passing = dataSplit[0];
-        failing = failing.concat(dataSplit[1]);
-      });
-    }
-    if (!spatialFilter && _.keys(dataFilter).length === 0) {
-      passing = currentData;
-    }
-    _.each(passing, function(x) {
-      x.active = true;
-    });
-    _.each(failing, function(x) {
-      x.active = false;
-    });
-    ret.notifyListeners(typeOfChange);
-  };
-
   ret.notifyListeners = function(typeOfChange) {
     _.each(listeners, function(x) {
       x(typeOfChange);
     });
   };
 
-  updateData();
+  if (DATA_OP_TIMING) {
+    var t = ret.currentData;
+    ret.currentData = function() {
+      var start = Date.now();
+      var x = t();
+      console.log('currentData', Date.now() - start);
+      return x;
+    }
+
+    var s = ret.currentDataSummary;
+    ret.currentDataSummary = function(a, b) {
+      var start = Date.now();
+      var x = s(a, b);
+      console.log('currentDataSummary', Date.now() - start);
+      return x;
+    }
+  }
   ret.setOrder(order);
   ret.setGEvNTMode(gentMode);
   return ret;

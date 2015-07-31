@@ -28,12 +28,14 @@ function translate(x, y) {
   return 'translate(' + x + ',' + y + ')';
 }
 
+var syntenyPlot;
+/* zoom/pan switching */
+d3.selectAll("#mouse-options input[name=mouse-options]")
+  .on("change", function() {
+    syntenyPlot.setNavMode(this.value);
+  });
+
 function controller(dataObj) {
-  /* zoom/pan switching */
-  d3.selectAll("#mouse-options input[name=mouse-options]")
-    .on("change", function() {
-      dataObj.setNavMode(this.value);
-    });
 
   /* summary mode switching */
   d3.selectAll("#summary-options input[name=summary-options]")
@@ -61,15 +63,15 @@ function controller(dataObj) {
   var fields = ['logks', 'logkn', 'logkskn'];
   var colorScales = _.chain(fields)
     .map(function(field) {
-      return [field, d3.extent(_.pluck(dataObj.currentData(), field))];
+      return [field, d3.extent(_.pluck(dataObj.currentData().raw, field))];
     })
     .object()
-    .mapObject(function(extent) {
+    .mapValues(function(extent) {
       var max = extent[1];
       var min = extent[0];
       var range = max - min;
 
-      return _.mapObject(COLOR_RANGES, function(colorRange, colorScaleName) {
+      return _.mapValues(COLOR_RANGES, function(colorRange, colorScaleName) {
         var step = range / (colorRange.length - 1);
         // Extra .5 * step is to avoid missing a value because of floating point precision
         var domain = _.range(min, max + 0.5 * step, step);
@@ -82,7 +84,7 @@ function controller(dataObj) {
 
   globalColorScale = colorScales[dataObj.getSummaryField()][colorScale];
 
-  synteny('#dotplot', dataObj);
+  syntenyPlot = synteny('#dotplot', dataObj);
   histogram('#plot', dataObj, 'logks');
   histogram('#plot2', dataObj, 'logkn');
   histogram('#plot3', dataObj, 'logkskn');
@@ -329,16 +331,9 @@ function synteny(id, dataObj) {
       }
 
       var allData = dataObj.currentData();
-      var visibleData = _.filter(allData, function(dot) {
-        var x = dot[gent].x_relative_offset;
-        var y = dot[gent].y_relative_offset;
-        return 0 <= xScale(x) && xScale(x) <= width && 0 <= yScale(y) && yScale(y) <= height;
-      });
-      var splitData = _.partition(visibleData, 'active');
-      var activeDots = splitData[0];
-      var inactiveDots = splitData[1];
+      var activeDots = allData.active;
+      var inactiveDots = allData.inactive;
 
-      console.log(activeDots.length);
       context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 
       /* First, inactive dots */
@@ -364,10 +359,15 @@ function synteny(id, dataObj) {
         context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
         context.fill();
       });
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
+      context.fillRect(0, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+      context.fillRect(SYNTENY_MARGIN + width, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+      context.fillRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
 
+      var diff = Date.now() - start;
+      //console.log(diff);
       if (elapsedMS > 0) {
-        var diff = Date.now() - start;
-        //console.log(diff);
         setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
       }
     }
@@ -383,11 +383,7 @@ function synteny(id, dataObj) {
   dataObj.addListener(setSyntenyData);
   setSyntenyData();
 
-  function setNavigationMode(typeHint) {
-    if (typeHint !== 'nav-mode-update') {
-      return;
-    }
-    var mode = dataObj.getNavMode();
+  function setNavigationMode(mode) {
     if (mode === 'pan') {
       d3.select(id).select('#brush-group').on('mousedown.brush', null);
       d3.select(id).select('#zoom-group').call(zoom);
@@ -399,11 +395,13 @@ function synteny(id, dataObj) {
       d3.select(id).select('#zoom-group').on('mousedown.zoom', null);
     }
   }
-  dataObj.addListener(setNavigationMode);
+  return {
+    setNavMode: setNavigationMode
+  };
 }
 
 function histogram(id, dataObj, field) {
-  var dataExtent = d3.extent(_.pluck(dataObj.currentData(), field));
+  var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
 
   var plot = d3.select(id);
   var plotWidth = getComputedAttr(plot.node(), 'width');
@@ -471,6 +469,10 @@ function histogram(id, dataObj, field) {
   function updatePlot(typeHint) {
 
     function updatePlotAttrs(selection) {
+      var activeFunc = plotBrush.empty() ? _.constant(true) : function(bin) {
+        return bin.x + bin.dx > plotBrush.extent()[0] &&
+          bin.x < plotBrush.extent()[1];
+      };
       var colorScale = globalColorScale;
       var temp = selection
         .attr('x', function(d) {
@@ -492,9 +494,9 @@ function histogram(id, dataObj, field) {
       temp
         .attr('fill', function(d) {
           if (field === dataObj.getSummaryField()) {
-            return d.active ? colorScale(d.x + d.dx / 2) : 'grey';
+            return activeFunc(d) ? colorScale(d.x + d.dx / 2) : 'grey';
           } else {
-            return d.active ? 'steelblue' : 'grey';
+            return activeFunc(d) ? 'steelblue' : 'grey';
           }
         });
     }
