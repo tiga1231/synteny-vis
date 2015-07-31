@@ -1,6 +1,6 @@
 'use strict';
 
-var DATA_OP_TIMING = false;
+var DATA_OP_TIMING = true;
 
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;

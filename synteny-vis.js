@@ -9,7 +9,8 @@ var CIRCLE_RADIUS = 2;
 var UNSELECTED_DOT_FILL = '#D0D0D0';
 var NUM_COLOR_SCALE_INTERPOLATION_SAMPLES = 100;
 
-var SHOW_EXTREMA = true;
+var SHOW_MAXIMA = true;
+var SHOW_MINIMA = true;
 
 var COLOR_RANGES = {
   rg: ['red', 'green'],
@@ -477,12 +478,22 @@ function histogram(id, dataObj, field, initialColorScale) {
   }
 
   var colorScale = initialColorScale;
-
   var xPlotScale = d3.scale.linear().domain(dataExtent).range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
 
-  var bins = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
-  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins, field), 'y'))];
+  function makeBins() {
+    var data = _.chain(dataObj.currentData().raw).pluck(field).sortBy().value();
+    //var n = Math.floor(Math.sqrt(data.length));
+    //var n = 2 * Math.floor(Math.pow(data.length, 1/3));
+    var n = NUM_HISTOGRAM_TICKS;
+    var min = dataExtent[0];
+    var max = dataExtent[1];
+    var range = max - min;
+    var step = range / n;
+    return _.range(min, max, step);
+  }
 
+  var bins = makeBins();
+  var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins, field), 'y'))];
 
   var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
@@ -521,17 +532,31 @@ function histogram(id, dataObj, field, initialColorScale) {
       mm = removeNonExtrema(mm);
     }
 
-    mm = _.filter(mm, function(p, i, a) {
+    mm = _.partition(mm, function(p, i, a) {
       return i === 0 || i === a.length - 1 ||
         p.y > a[i - 1].y || p.y > a[i + 1].y;
     });
 
-    if (mm.length > 3) {
-      mm = _.chain(mm).initial().rest().value();
+    var maxima = mm[0];
+    var minima = mm[1];
+
+    if (maxima.length > 3) {
+      maxima = _.chain(maxima).initial().rest().value();
     }
 
-    if (SHOW_EXTREMA) {
-      var tempSelA = plot.selectAll('.maxMark').data(mm);
+    _.each(maxima, function(m) {
+      _.defaults(m, {
+        max: true
+      });
+    });
+    _.each(minima, function(m) {
+      _.defaults(m, {
+        max: false
+      });
+    });
+
+    if (SHOW_MAXIMA || SHOW_MINIMA) {
+      var tempSelA = plot.selectAll('.maxMark').data(maxima.concat(minima));
       tempSelA.exit().remove();
       tempSelA.enter().append('circle').classed('maxMark', 1);
       tempSelA
@@ -542,15 +567,28 @@ function histogram(id, dataObj, field, initialColorScale) {
           return yPlotScale(d.y) - 5;
         })
         .attr('r', 3)
-        .attr('fill', 'red')
+        .attr('fill', function(d) {
+          return d.max ? 'red' : 'orange';
+        })
+        .attr('opacity', function(d) {
+          return ((d.max && SHOW_MAXIMA) || (!d.max && SHOW_MINIMA)) ? 1 : 0;
+        });
     }
+
+    _.each(maxima, function(m, i) {
+      m.colorIndex = i;
+    });
+
+    var combined = _.sortBy(minima.concat(maxima), 'x');
 
     var colors = d3.scale.category10();
     var auto = d3.scale.linear()
-      .domain(_.map(mm, function(d) {
+      .domain(_.map(combined, function(d) {
         return d.x + d.dx / 2
       }))
-      .range(_.chain(mm.length).range().map(colors).value());
+      .range(_.chain(combined).map(function(m) {
+        return m.max ? colors(m.colorIndex) : UNSELECTED_DOT_FILL;
+      }).value());
 
     return auto;
   }
@@ -560,9 +598,8 @@ function histogram(id, dataObj, field, initialColorScale) {
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
 
-  var ticks = xPlotScale.ticks(NUM_HISTOGRAM_TICKS).slice(1);
   plot.selectAll('.dataBars')
-    .data(ticks)
+    .data(bins)
     .enter()
     .append('rect').classed('dataBars', true);
 
