@@ -117,6 +117,10 @@ function synteny(id, dataObj, field, initialColorScale) {
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
   var contextbak = document.getElementById(id.substring(1) + '-canvas-bak').getContext('2d');
+  var bgCanvas = document.createElement('canvas');
+  var bgCanvasContext = bgCanvas.getContext('2d');
+  bgCanvas.setAttribute('width', width + 2 * SYNTENY_MARGIN);
+  bgCanvas.setAttribute('height', height + 2 * SYNTENY_MARGIN);
 
   var svg = d3.select(id);
 
@@ -218,9 +222,7 @@ function synteny(id, dataObj, field, initialColorScale) {
   var colorScale = initialColorScale;
   var field;
 
-  var times = [];
-
-  function draw(elapsedMS, initialColorScale, finalColorScale, drawbackground) {
+  function draw(elapsedMS, initialColorScale, finalColorScale, typeHint) {
     var start = Date.now();
     var gent = dataObj.getGEvNTMode();
 
@@ -236,26 +238,39 @@ function synteny(id, dataObj, field, initialColorScale) {
     var activeDots = allData.active;
     var inactiveDots = allData.inactive;
 
-    context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+    console.log('Time after collecting data', Date.now() - start);
+    start = Date.now();
 
-    /* First, inactive dots */
-    if (drawbackground) {
+    if (typeHint === 'zoom') {
       contextbak.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
       contextbak.fillStyle = UNSELECTED_DOT_FILL;
-      _.each(inactiveDots, function(dot) {
+      _.each(_.flatten([inactiveDots, activeDots]), function(dot) {
         var d = dot[gent];
         var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
         var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
+
+        if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
+          return;
+
         contextbak.beginPath();
         contextbak.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
         contextbak.fill();
       });
     }
+
+    console.log('Time to draw bg points:', Date.now() - start);
+    start = Date.now();
+
+    context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
     /* On top, active dots */
     _.each(activeDots, function(dot) {
       var d = dot[gent];
       var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
       var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
+
+      if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
+        return;
+
       context.beginPath();
       context.fillStyle = intermediateColorScale(dot[field]);
       context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
@@ -268,8 +283,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     context.fillRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
 
     var diff = Date.now() - start;
-    console.log('draw:', diff);
-    times.push(diff);
+    console.log('Start of call to end of draw call:', diff);
     if (elapsedMS > 0) {
       setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
     }
@@ -288,12 +302,11 @@ function synteny(id, dataObj, field, initialColorScale) {
     return d3.scale.linear().domain(domain).range(range);
   }
 
-
   function setSyntenyData(typeHint) {
-    draw(0, colorScale, colorScale, true);
+    draw(0, colorScale, colorScale, typeHint);
   }
   dataObj.addListener(setSyntenyData);
-  setSyntenyData(true);
+  setSyntenyData('zoom');
 
   function setNavigationMode(mode) {
     if (mode === 'pan') {
@@ -324,5 +337,4 @@ function synteny(id, dataObj, field, initialColorScale) {
     setField: setField
   };
 }
-
 

@@ -5,6 +5,8 @@ var DATA_OP_TIMING = false;
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;
 
+var NUCLEOTIDE_LOWER_NAME_LIMIT = 1000 * 1000;
+
 var loadksData = function(ks_filename, x_id, y_id, cb) {
   queue()
     .defer(d3.text, ks_filename)
@@ -104,10 +106,16 @@ function lengthsToCumulativeBPCounts(len_list) {
     })
     .value();
 
+  var geneCounts = _.reduce(len_list, function(map, kv) {
+    map[kv.name] = kv.gene_count;
+    return map;
+  }, {});
+
   return {
     nt: ntLenList,
     ge: geLenList,
-    name: nameLenList
+    name: nameLenList,
+    gene_counts: geneCounts
   };
 }
 
@@ -147,8 +155,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   var xmap = xmapPair.ge;
   var ymap = ymapPair.ge;
   var ret = {};
+  console.log(xmap);
 
-  var sortedDots = { };
+  var sortedDots = {};
   var dataFilters = {};
 
   ret.getXLineOffsets = function() {
@@ -180,26 +189,27 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   ret.getXLineNames = function() {
-    return _.chain(xmap)
-      .pairs()
-      .sortBy('1')
-      .pluck('0')
-      .reject(function(x) {
-        return x === 'total';
-      })
-      .value();
+    return filterMapForNames(xmap);
   };
 
   ret.getYLineNames = function() {
-    return _.chain(ymap)
+    return filterMapForNames(ymap);
+  };
+
+  function filterMapForNames(map) {
+    return _.chain(map)
       .pairs()
+      // Filter out short names
+      //.reject(function(x, i, A) {
+      //  return i > 0 && x[1] - A[i-1][1] < NUCLEOTIDE_LOWER_NAME_LIMIT;
+      //})
       .sortBy('1')
       .pluck('0')
       .reject(function(x) {
         return x === 'total';
       })
       .value();
-  };
+  }
 
   ret.currentData = function currentData() {
     return _.reduce(dataFilters, function(ret, filterFunc) {
@@ -217,12 +227,12 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.currentDataSummary = function currentDataSummary(ticks, field) {
     var filtersToApply = _.omit(dataFilters, field);
 
-    if(!sortedDots[field]) {
+    if (!sortedDots[field]) {
       sortedDots[field] = _.sortBy(syntenyDots, field);
     }
 
     var validPoints = _.reduce(filtersToApply, function(dots, filterFunc) {
-        return _.filter(dots, filterFunc);
+      return _.filter(dots, filterFunc);
     }, sortedDots[field]);
 
     var diff = ticks[1] - ticks[0];
