@@ -268,12 +268,12 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     ret.notifyListeners(typeHint);
   };
 
-  ret.addDataFilter = function(extent, field) {
+  ret.addDataFilter = function(extent, field, typeHint) {
     dataFilters[field] = between(extent[0], extent[1], field);
-    ret.notifyListeners('data');
+    ret.notifyListeners(typeHint || 'data');
   };
 
-  ret.removeDataFilter = function(field) {
+  ret.removeDataFilter = function(field, typeHint) {
     delete dataFilters[field];
     ret.notifyListeners('data-stop');
   };

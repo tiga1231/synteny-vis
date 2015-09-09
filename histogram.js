@@ -9,6 +9,8 @@ var UNSELECTED_BAR_FILL = '#D0D0D0';
 var SHOW_MAXIMA = true;
 var SHOW_MINIMA = true;
 
+var REFRESH_Y_SCALE_ON_BRUSH_PAUSE = false;
+
 function histogram(id, dataObj, field, initialColorScale) {
   var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
 
@@ -38,6 +40,9 @@ function histogram(id, dataObj, field, initialColorScale) {
   function plotBrushEnd() {
     if (plotBrush.empty()) {
       dataObj.removeDataFilter(field);
+    } else {
+      dataObj.addDataFilter(plotBrush.extent(), field, 
+        REFRESH_Y_SCALE_ON_BRUSH_PAUSE ? 'data-stop' : null);
     }
   }
 
