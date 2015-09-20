@@ -74,13 +74,6 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   function generateAutoScale(summary, persistence) {
 
-    function removeNonExtrema(A) {
-      return _.filter(A, function(p, i, a) {
-        return i === 0 || i === a.length - 1 ||
-          (a[i - 1].y - a[i].y) * (a[i].y - a[i + 1].y) < 0;
-      });
-    }
-
     function edgeDelta(A, e) {
       return Math.abs(A[e[0]].y - A[e[1]].y);
     }
