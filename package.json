@@ -1,0 +1,19 @@
+{
+  "name": "synteny-vis",
+  "version": "0.0.1",
+  "description": "synteny visualization things",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "hdc-arizona.github.io/synteny-vis"
+  },
+  "dependencies": {
+    "d3": "^3.5.6",
+    "lodash": "^3.10.1",
+    "queue-async": "^1.0.7",
+    "should": "^7.1.0"
+  },
+  "scripts": {
+    "build": "browserify top.js -o build/compiled.js"
+  }
+}

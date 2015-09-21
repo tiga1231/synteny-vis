@@ -1,14 +1,11 @@
 'use strict';
 
+var _ = require('lodash');
+
 /*
  * Given a list of
  *
- * [
- *   {
- *     ...
- *     y: <function value>
- *   }
- * ]
+ * [{y: <function value>}]
  *
  * remove all the objects that are not extrema; that is, remove the objects
  * that have a y-value that is not higher than both its neighbor's y-values
@@ -28,21 +25,4 @@ function removeNonExtrema(A) {
   });
 }
 
-(function removeNonExtremaTests() {
-
-  function intsToObjects(xs) {
-    return _.map(xs, function(i) {
-      return {
-        y: i
-      };
-    });
-  }
-
-  assertTrue(_.isEqual([], removeNonExtrema([])));
-
-  assertEquals(2, removeNonExtrema(intsToObjects([1,2,3])).length);
-  assertEquals(3, removeNonExtrema(intsToObjects([1,2,1])).length);
-  assertEquals(3, removeNonExtrema(intsToObjects([2,1,2])).length);
-  assertEquals(4, removeNonExtrema(intsToObjects([2,1,2,3,2])).length);
-})();
-
+exports.removeNonExtrema = removeNonExtrema;

@@ -7,6 +7,9 @@ var Y_AXIS_ORGANISM_NAME;
 
 var NUCLEOTIDE_LOWER_NAME_LIMIT = 1000 * 1000;
 
+var _ = require('lodash');
+var queue = require('queue-async');
+
 var loadksData = function(ks_filename, x_id, y_id, cb) {
   queue()
     .defer(d3.text, ks_filename)
@@ -159,6 +162,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
   var sortedDots = {};
   var dataFilters = {};
+
+  ret.X_AXIS_ORGANISM_NAME = X_AXIS_ORGANISM_NAME;
+  ret.Y_AXIS_ORGANISM_NAME = Y_AXIS_ORGANISM_NAME;
 
   ret.getXLineOffsets = function() {
     return _.chain(xmap).values().sortBy().value();
@@ -316,3 +322,4 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   return ret;
 }
 
+exports.loadksData = loadksData;

@@ -1,5 +1,10 @@
 'use strict';
 
+var histogram = require('./histogram');
+var dotplot = require('./dotplot');
+var _ = require('lodash');
+var d3 = require('d3');
+
 var COLOR_RANGES = {
   rg: ['red', 'green'],
   rg_quantized: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
@@ -26,10 +31,6 @@ function refreshAutoScale() {
 }
 
 var refreshAutoDots;
-
-function getPersistence() {
-  return Number(document.getElementById('persistence').value);
-}
 
 function controller(dataObj) {
 
@@ -111,12 +112,13 @@ function controller(dataObj) {
   var steelBlueCS = _.constant('steelblue');
   var initialColorScale = colorScales[activeField]['rg'];
 
-  syntenyPlot = synteny('#dotplot', dataObj, 'logks', initialColorScale);
+  syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initialColorScale);
   var histograms = {
-    'logks': histogram('#plot', dataObj, 'logks', initialColorScale),
-    'logkn': histogram('#plot2', dataObj, 'logkn', steelBlueCS),
-    'logkskn': histogram('#plot3', dataObj, 'logkskn', steelBlueCS)
+    'logks': histogram.histogram('#plot', dataObj, 'logks', initialColorScale),
+    'logkn': histogram.histogram('#plot2', dataObj, 'logkn', steelBlueCS),
+    'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', steelBlueCS)
   };
   dataObj.notifyListeners('initial');
 }
 
+exports.controller = controller;

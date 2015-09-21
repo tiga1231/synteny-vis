@@ -1,5 +1,9 @@
 'use strict';
 
+var util = require('./utils.js');
+var _ = require('lodash');
+var d3 = require('d3');
+
 var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
 var CIRCLE_RADIUS = 2;
 var UNSELECTED_DOT_FILL = '#D0D0D0';
@@ -11,6 +15,11 @@ function synteny(id, dataObj, field, initialColorScale) {
   var xExtent = [0, _.max(dataObj.getXLineOffsets())];
   var yExtent = [0, _.max(dataObj.getYLineOffsets())];
   var dataAspectRatio = yExtent[1] / xExtent[1];
+
+  function getComputedAttr(element, attr) {
+    var computed = window.getComputedStyle(element)[attr];
+    return parseInt(computed, 10);
+  }
 
   var computedWidth = getComputedAttr(d3.select(id).node(), 'width') - 2 * SYNTENY_MARGIN;
   var computedHeight = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
@@ -42,7 +51,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     // have to "scroll back" onto the canvas if you pan past the edge.
     zoom.translate(t);
 
-    brushGroup.attr("transform", translate(t[0], t[1]) + 'scale(' + s + ')');
+    brushGroup.attr("transform", util.translate(t[0], t[1]) + 'scale(' + s + ')');
 
     var tempXOffsets = _.filter(xOffsets, function(x) {
       return 0 <= xScale(x) && xScale(x) <= width;
@@ -132,7 +141,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     .attr('y', SYNTENY_MARGIN + height + TEXT_OFFSET)
     .attr('height', TEXT_BOX_HEIGHT)
     .classed('plot-title', true)
-    .text(X_AXIS_ORGANISM_NAME);
+    .text(dataObj.X_AXIS_ORGANISM_NAME);
 
   svg.append('text')
     .attr('transform', 'rotate(-90)')
@@ -141,7 +150,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     .attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
     .attr('height', TEXT_BOX_HEIGHT)
     .classed('plot-title', true)
-    .text(Y_AXIS_ORGANISM_NAME);
+    .text(dataObj.Y_AXIS_ORGANISM_NAME);
 
   svg
     .append('defs')
@@ -177,7 +186,8 @@ function synteny(id, dataObj, field, initialColorScale) {
     .orient('bottom')
     .tickSize(0);
 
-  var xAxisWrapper = svg.append('g').attr('transform', translate(SYNTENY_MARGIN, height + SYNTENY_MARGIN));
+
+  var xAxisWrapper = svg.append('g').attr('transform', util.translate(SYNTENY_MARGIN, height + SYNTENY_MARGIN));
   var xAxisGapsGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xGapsAxis);
   var xAxisLineGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xLineAxis);
 
@@ -204,13 +214,13 @@ function synteny(id, dataObj, field, initialColorScale) {
     .orient('left')
     .tickSize(0);
 
-  var yAxisWrapper = svg.append('g').attr('transform', translate(SYNTENY_MARGIN, SYNTENY_MARGIN));
+  var yAxisWrapper = svg.append('g').attr('transform', util.translate(SYNTENY_MARGIN, SYNTENY_MARGIN));
   var yAxisGapsGroup = yAxisWrapper.append('g').classed('yAxis', true).call(yGapsAxis);
   var yAxisLineGroup = yAxisWrapper.append('g').classed('yAxis', true).call(yLineAxis);
 
   svg = svg
     .append('g')
-    .attr('transform', translate(SYNTENY_MARGIN, SYNTENY_MARGIN))
+    .attr('transform', util.translate(SYNTENY_MARGIN, SYNTENY_MARGIN))
     .append('g').attr('id', 'zoom-group')
     .call(zoom).on('mousedown.zoom', null); //disable panning
 
@@ -338,3 +348,4 @@ function synteny(id, dataObj, field, initialColorScale) {
   };
 }
 
+exports.synteny = synteny;

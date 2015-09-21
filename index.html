@@ -1,10 +1,6 @@
 <html>
 
 <head>
-  <meta charset='utf-8'>
-  <script src="lib/d3.js"></script>
-  <script src="lib/queue.js"></script>
-  <script src="lib/lodash.js"></script>
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
@@ -65,37 +61,7 @@
     </div>
   </div>
 
-  <script src="assert.js"></script>
-  <script src="dotplot.js"></script>
-  <script src="persistence.js"></script>
-  <script src="histogram.js"></script>
-  <script src="synteny-vis.js"></script>
-  <script src="main.js"></script>
-  <script>
-    switch (window.location.hash) {
-      case '#m':
-      case '#maize':
-        loadksData('./data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords.ks', '6807', '8082', controller);
-        break;
-
-      case '#e':
-      case '#ecoli':
-        loadksData('./data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '4241', '4242', controller);
-        break;
-
-      case '#a':
-      case '#arabidopsis':
-        loadksData('./data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '16911', '3068', controller);
-        break;
-
-      default:
-        window.location.hash = '#homo';
-      case '#h':
-      case '#homo':
-        loadksData('./data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '11691', '25577', controller);
-        break;
-    }
-  </script>
+  <script src="build/compiled.js"></script>
 </body>
 
 </html>

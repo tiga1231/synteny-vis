@@ -11,12 +11,18 @@ var SHOW_MINIMA = true;
 
 var REFRESH_Y_SCALE_ON_BRUSH_PAUSE = false;
 
+var persist = require('./persistence');
+var util = require('./utils');
+var env = require('./window');
+var _ = require('lodash');
+var d3 = require('d3');
+
 function histogram(id, dataObj, field, initialColorScale) {
   var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
 
   var plot = d3.select(id);
-  var plotWidth = getComputedAttr(plot.node(), 'width');
-  var plotHeight = getComputedAttr(plot.node(), 'height');
+  var plotWidth = util.getComputedAttr(plot.node(), 'width');
+  var plotHeight = util.getComputedAttr(plot.node(), 'height');
 
   var prettyNames = {
     logks: 'log(ks)',
@@ -83,7 +89,7 @@ function histogram(id, dataObj, field, initialColorScale) {
       return _.min(edges, _.partial(edgeDelta, A));
     }
 
-    var mm = removeNonExtrema(summary);
+    var mm = persist.removeNonExtrema(summary);
     while (edgeDelta(mm, minimumDeltaEdge(mm)) < persistence) {
       var e = minimumDeltaEdge(mm);
       if (e[0] === 0) {
@@ -96,7 +102,7 @@ function histogram(id, dataObj, field, initialColorScale) {
         if (mm.length <= 4) break;
         mm.splice(e[0], 1);
       }
-      mm = removeNonExtrema(mm);
+      mm = persist.removeNonExtrema(mm);
     }
 
     mm = _.partition(mm, function(p, i, a) {
@@ -169,7 +175,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     .append('rect').classed('dataBars', true);
 
   plot.append('g').attr('id', 'plotbrush-group')
-    .attr('transform', translate(0, HISTOGRAM_MARGIN))
+    .attr('transform', util.translate(0, HISTOGRAM_MARGIN))
     .call(plotBrush)
     .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
 
@@ -178,10 +184,10 @@ function histogram(id, dataObj, field, initialColorScale) {
   var yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
 
   plot.append('g')
-    .attr('transform', translate(0, plotHeight - HISTOGRAM_MARGIN))
+    .attr('transform', util.translate(0, plotHeight - HISTOGRAM_MARGIN))
     .classed('xAxis', true).call(xAxis);
   var yAxisSel = plot.append('g')
-    .attr('transform', translate(HISTOGRAM_MARGIN, 0))
+    .attr('transform', util.translate(HISTOGRAM_MARGIN, 0))
     .classed('yAxis', true).call(yAxis);
 
   function updatePlotAttrs(selection) {
@@ -211,7 +217,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 
     typeHint = typeHint || '';
     var data = dataObj.currentDataSummary(bins, field);
-    generateAutoScale(data, getPersistence());
+    generateAutoScale(data, env.getPersistence());
     plot.selectAll('.dataBars')
       .data(data)
       .call(updatePlotAttrs);
@@ -254,4 +260,5 @@ function histogram(id, dataObj, field, initialColorScale) {
   };
 }
 
+exports.histogram = histogram;
 
