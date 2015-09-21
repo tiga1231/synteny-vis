@@ -1,7 +1,6 @@
 'use strict';
 
 var _ = require('lodash');
-
 /*
  * Given a list of
  *

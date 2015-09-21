@@ -1,8 +1,6 @@
 'use strict';
 
 var util = require('./utils.js');
-var _ = require('lodash');
-var d3 = require('d3');
 
 var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
 var CIRCLE_RADIUS = 2;

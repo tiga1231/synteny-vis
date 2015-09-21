@@ -1,6 +1,6 @@
 var should = require('should');
 var _ = require('lodash');
-var test = require('../persistence.js');
+var test = require('../src/persistence.js');
 
 var removeNonExtrema = test.removeNonExtrema;
 

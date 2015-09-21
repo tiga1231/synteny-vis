@@ -14,8 +14,6 @@ var REFRESH_Y_SCALE_ON_BRUSH_PAUSE = false;
 var persist = require('./persistence');
 var util = require('./utils');
 var env = require('./window');
-var _ = require('lodash');
-var d3 = require('d3');
 
 function histogram(id, dataObj, field, initialColorScale) {
   var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
