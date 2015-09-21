@@ -18,9 +18,9 @@ switch (window.location.hash) {
     break;
 
   default:
-    window.location.hash = '#homo';
   case '#h':
   case '#homo':
+    window.location.hash = '#homo';
     main.loadksData('./data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '11691', '25577', sv.controller);
     break;
 }

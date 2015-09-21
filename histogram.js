@@ -157,7 +157,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     var colors = d3.scale.category10();
     autoScale = d3.scale.linear()
       .domain(_.map(combined, function(d) {
-        return d.x + d.dx / 2
+        return d.x + d.dx / 2;
       }))
       .range(_.chain(combined).map(function(m) {
         return m.max ? colors(m.colorIndex) : UNSELECTED_BAR_FILL;

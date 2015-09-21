@@ -38,7 +38,7 @@ function controller(dataObj) {
     _.each(histograms, function(h) {
       h.refreshAutoScale();
     });
-  }
+  };
 
   var syntenyPlot;
   /* zoom/pan switching */
@@ -110,7 +110,7 @@ function controller(dataObj) {
 
 
   var steelBlueCS = _.constant('steelblue');
-  var initialColorScale = colorScales[activeField]['rg'];
+  var initialColorScale = colorScales[activeField].rg;
 
   syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initialColorScale);
   var histograms = {

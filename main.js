@@ -9,6 +9,7 @@ var NUCLEOTIDE_LOWER_NAME_LIMIT = 1000 * 1000;
 
 var _ = require('lodash');
 var queue = require('queue-async');
+var d3 = require('d3');
 
 var loadksData = function(ks_filename, x_id, y_id, cb) {
   queue()
@@ -146,11 +147,11 @@ function between(low, high, field) {
   if (field) {
     return function(x) {
       return low <= x[field] && x[field] < high;
-    }
+    };
   } else {
     return function(x) {
       return low <= x && x < high;
-    }
+    };
   }
 }
 
@@ -257,10 +258,10 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
           y: hi - low
         };
       }).value();
-  }
+  };
 
   ret.addSpatialFilter = function(extents, typeHint) {
-    dataFilters['spatial'] = function(dot) {
+    dataFilters.spatial = function(dot) {
       return dot[gentMode].x_relative_offset >= extents[0][0] &&
         dot[gentMode].x_relative_offset <= extents[1][0] &&
         dot[gentMode].y_relative_offset >= extents[0][1] &&
@@ -270,7 +271,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   ret.removeSpatialFilter = function(typeHint) {
-    delete dataFilters['spatial'];
+    delete dataFilters.spatial;
     ret.notifyListeners(typeHint);
   };
 
@@ -302,7 +303,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       var x = t();
       console.log('currentData', Date.now() - start);
       return x;
-    }
+    };
 
     var s = ret.currentDataSummary;
     ret.currentDataSummary = function(a, b) {
@@ -310,7 +311,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       var x = s(a, b);
       console.log('currentDataSummary', Date.now() - start);
       return x;
-    }
+    };
     var r = ret.notifyListeners;
     ret.notifyListeners = function(x) {
       console.log('notifyListeners');

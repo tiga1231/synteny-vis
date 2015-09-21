@@ -14,6 +14,11 @@
     "should": "^7.1.0"
   },
   "scripts": {
-    "build": "mkdir -p build && browserify top.js -o build/compiled.js"
+    "build": "mkdir -p build && browserify top.js -o build/compiled.js",
+    "lint": "jshint *.js || echo ''"
+  },
+  "jshintConfig": {
+    "node": true,
+    "browser": true  
   }
 }

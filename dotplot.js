@@ -230,7 +230,6 @@ function synteny(id, dataObj, field, initialColorScale) {
     .call(brush);
 
   var colorScale = initialColorScale;
-  var field;
 
   function draw(elapsedMS, initialColorScale, finalColorScale, typeHint) {
     var start = Date.now();
