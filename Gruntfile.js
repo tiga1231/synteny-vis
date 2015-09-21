@@ -62,7 +62,7 @@ module.exports = function(grunt) {
             return url;
           }
         },
-        src: 'build/index.html',
+        src: 'build/main.html',
         dest: 'build/index.html'
       }
     },
@@ -72,8 +72,8 @@ module.exports = function(grunt) {
           src: 'style.css',
           dest: 'build/'
         }, {
-          src: 'index.html',
-          dest: 'build/'
+          src: 'main.html',
+          dest: 'build/index.html'
         }, {
           expand: true,
           src: 'lib/**',

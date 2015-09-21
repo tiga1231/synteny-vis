@@ -1,0 +1,73 @@
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- Remember to replace these with CDN versions -->
+  <script src="lib/d3.js"></script>
+  <script src="lib/queue.js"></script>
+  <script src="lib/lodash.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+  <canvas id="dotplot-canvas-bak"></canvas>
+  <canvas id="dotplot-canvas"></canvas>
+  <svg id="dotplot"></svg>
+
+  <div id="histogram-wrapper">
+    <svg id="plot" class="histogram"></svg>
+    <svg id="plot2" class="histogram"></svg>
+    <svg id="plot3" class="histogram"></svg>
+  </div>
+
+  <div id="form-wrapper">
+    <div class="radio-button-box">
+      <strong>Navigation Mode</strong>
+      <form id="mouse-options">
+        <input type="radio" name="mouse-options" value="brush" checked>Brushing
+        <input type="radio" name="mouse-options" value="pan">Panning
+      </form>
+    </div>
+
+    <div class="radio-button-box">
+      <strong>Plotting order</strong>
+      <form id="summary-options">
+        <input type="radio" name="summary-options" value="minimum" checked>High to Low
+        <input type="radio" name="summary-options" value="maximum">Low to High
+      </form>
+    </div>
+
+    <div class="radio-button-box">
+      <strong>Dot Plot Coloring</strong>
+      <form id="plot-var-options">
+        <input type="radio" name="plot-var-options" value="logks" checked>log ks
+        <input type="radio" name="plot-var-options" value="logkn">log kn
+        <input type="radio" name="plot-var-options" value="logkskn">log ks/kn
+      </form>
+    </div>
+
+    <div class="radio-button-box">
+      <strong>Color Scale</strong>
+      <form id="color-options">
+        <input type="radio" name="color-options" value="rg" checked>red-green
+        <input type="radio" name="color-options" value="rg_quantized">rg_quantized
+        <input type="radio" name="color-options" value="rainbow">rainbow
+        <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
+        <input type="radio" name="color-options" value="auto">auto
+      </form>
+    </div>
+
+    <div class="radio-button-box">
+      <strong>Auto-scale persistence</strong>
+      <input type=range id=persistence min=0 max=100 value=40 step=1 oninput="refreshAutoDots(); document.getElementById('persistence-text').innerText=this.value">
+      <button type=button onclick="refreshAutoScale()">Refresh auto scale</button>
+      Largest persistence edge that will be removed:
+      <label id="persistence-text">25</label>
+    </div>
+  </div>
+
+  <script src="bundled.min.js"></script>
+</body>
+
+</html>
+
