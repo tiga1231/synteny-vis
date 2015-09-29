@@ -119,6 +119,37 @@ function controller(dataObj) {
     'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', steelBlueCS)
   };
   dataObj.notifyListeners('initial');
+
+  var minLogKs = d3.min(_.pluck(dataObj.currentData().raw, 'logks'));
+  var maxLogKs = d3.max(_.pluck(dataObj.currentData().raw, 'logks'));
+  var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 20);
+
+  var i = 0;
+  var j = 0;
+  var count = 0;
+  var time = 0;
+  setTimeout(function bm() {
+    if (j >= points.length) {
+      i++;
+      j = 0;
+    }
+    if (i >= points.length) {
+      console.log(time, count);
+      window.alert("Average brush time: " + (time / count));
+      return;
+    }
+    if (points[i] < points[j]) {
+      var start = Date.now();
+      histograms.logks.brush.extent([points[i], points[j]]);
+      histograms.logks.brush.event(histograms.logks.selection);
+      var end = Date.now();
+      time += end - start;
+      count++;
+    }
+    j++;
+    setTimeout(bm, 0);
+  }, 1000);
 }
 
 exports.controller = controller;
+

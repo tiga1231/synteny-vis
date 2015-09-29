@@ -172,10 +172,11 @@ function histogram(id, dataObj, field, initialColorScale) {
     .enter()
     .append('rect').classed('dataBars', true);
 
-  plot.append('g').attr('id', 'plotbrush-group')
+  var brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
     .attr('transform', util.translate(0, HISTOGRAM_MARGIN))
-    .call(plotBrush)
-    .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
+    .call(plotBrush);
+  brushSelectForBM.selectAll('rect')
+    .attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
 
 
   var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
@@ -254,7 +255,10 @@ function histogram(id, dataObj, field, initialColorScale) {
   return {
     setColorScale: setColorScale,
     getAutoScale: getAutoScale,
-    refreshAutoScale: updatePlot
+    refreshAutoScale: updatePlot,
+    brush: plotBrush,
+    sendBrushEvent: plotBrushBrush,
+    selection: brushSelectForBM
   };
 }
 

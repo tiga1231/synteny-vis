@@ -82,7 +82,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     var scaling = zoom.scale();
     var corners = ['.nw', '.ne', '.se', '.sw'];
     var vertical = ['.e', '.w'];
-    var horizontal = ['.elapsedMS', '.s'];
+    var horizontal = ['.n', '.s'];
     var horizontalRescale = _.union(corners, vertical);
     var verticalRescale = _.union(corners, horizontal);
 
@@ -121,6 +121,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
   var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
+
   d3.select(id + '-canvas-bak')
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
@@ -235,7 +236,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     var gent = dataObj.getGEvNTMode();
 
     var intermediateColorScale;
-    if (elapsedMS > 0) {
+    if (elapsedMS > 0 && typeHint !== 'data') {
       var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
       intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
     } else {
@@ -270,7 +271,9 @@ function synteny(id, dataObj, field, initialColorScale) {
     start = Date.now();
 
     context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+
     /* On top, active dots */
+    var cache = {};
     _.each(activeDots, function(dot) {
       var d = dot[gent];
       var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
@@ -279,10 +282,11 @@ function synteny(id, dataObj, field, initialColorScale) {
       if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
         return;
 
-      context.beginPath();
-      context.fillStyle = intermediateColorScale(dot[field]);
-      context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
-      context.fill();
+      var bin = Math.floor(dot[field] * 10) / 10;
+      if(!cache[bin])
+        context.fillStyle = cache[bin] = intermediateColorScale(bin);
+
+      context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
     });
     context.fillStyle = 'white';
     context.fillRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
@@ -523,10 +527,11 @@ function histogram(id, dataObj, field, initialColorScale) {
     .enter()
     .append('rect').classed('dataBars', true);
 
-  plot.append('g').attr('id', 'plotbrush-group')
+  var brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
     .attr('transform', util.translate(0, HISTOGRAM_MARGIN))
-    .call(plotBrush)
-    .selectAll('rect').attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
+    .call(plotBrush);
+  brushSelectForBM.selectAll('rect')
+    .attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
 
 
   var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
@@ -605,7 +610,10 @@ function histogram(id, dataObj, field, initialColorScale) {
   return {
     setColorScale: setColorScale,
     getAutoScale: getAutoScale,
-    refreshAutoScale: updatePlot
+    refreshAutoScale: updatePlot,
+    brush: plotBrush,
+    sendBrushEvent: plotBrushBrush,
+    selection: brushSelectForBM
   };
 }
 
@@ -1090,9 +1098,40 @@ function controller(dataObj) {
     'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', steelBlueCS)
   };
   dataObj.notifyListeners('initial');
+
+  var minLogKs = d3.min(_.pluck(dataObj.currentData().raw, 'logks'));
+  var maxLogKs = d3.max(_.pluck(dataObj.currentData().raw, 'logks'));
+  var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 20);
+
+  var i = 0;
+  var j = 0;
+  var count = 0;
+  var time = 0;
+  setTimeout(function bm() {
+    if (j >= points.length) {
+      i++;
+      j = 0;
+    }
+    if (i >= points.length) {
+      console.log(time, count);
+      window.alert("Average brush time: " + (time / count));
+      return;
+    }
+    if (points[i] < points[j]) {
+      var start = Date.now();
+      histograms.logks.brush.extent([points[i], points[j]]);
+      histograms.logks.brush.event(histograms.logks.selection);
+      var end = Date.now();
+      time += end - start;
+      count++;
+    }
+    j++;
+    setTimeout(bm, 0);
+  }, 1000);
 }
 
 exports.controller = controller;
+
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./dotplot":1,"./histogram":2}],6:[function(require,module,exports){

@@ -81,7 +81,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     var scaling = zoom.scale();
     var corners = ['.nw', '.ne', '.se', '.sw'];
     var vertical = ['.e', '.w'];
-    var horizontal = ['.elapsedMS', '.s'];
+    var horizontal = ['.n', '.s'];
     var horizontalRescale = _.union(corners, vertical);
     var verticalRescale = _.union(corners, horizontal);
 
@@ -120,6 +120,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
   var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
+
   d3.select(id + '-canvas-bak')
     .attr('width', width + 2 * SYNTENY_MARGIN)
     .attr('height', height + 2 * SYNTENY_MARGIN);
@@ -234,7 +235,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     var gent = dataObj.getGEvNTMode();
 
     var intermediateColorScale;
-    if (elapsedMS > 0) {
+    if (elapsedMS > 0 && typeHint !== 'data') {
       var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
       intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
     } else {
@@ -269,7 +270,9 @@ function synteny(id, dataObj, field, initialColorScale) {
     start = Date.now();
 
     context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+
     /* On top, active dots */
+    var cache = {};
     _.each(activeDots, function(dot) {
       var d = dot[gent];
       var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
@@ -278,10 +281,11 @@ function synteny(id, dataObj, field, initialColorScale) {
       if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
         return;
 
-      context.beginPath();
-      context.fillStyle = intermediateColorScale(dot[field]);
-      context.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
-      context.fill();
+      var bin = Math.floor(dot[field] * 10) / 10;
+      if(!cache[bin])
+        context.fillStyle = cache[bin] = intermediateColorScale(bin);
+
+      context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
     });
     context.fillStyle = 'white';
     context.fillRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);

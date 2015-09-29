@@ -42,13 +42,13 @@ module.exports = function(grunt) {
     browserify: {
       'build/bundled.js': 'src/*.js'
     },
-    uglify: {
-      my_target: {
-        files: {
-          'build/bundled.min.js': ['build/bundled.js']
-        }
-      }
-    },
+//    uglify: {
+//      my_target: {
+//        files: {
+//          'build/bundled.min.js': ['build/bundled.js']
+//        }
+//      }
+//    },
     cdnify: {
       dev: {
         options: {
@@ -102,7 +102,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-http-server');
   grunt.loadNpmTasks('grunt-cdnify');
 
-  grunt.registerTask('core', ['jshint', 'mochaTest', 'browserify', 'uglify']);
+  grunt.registerTask('core', ['jshint', 'mochaTest', 'browserify', /*'uglify'*/]);
   grunt.registerTask('default', ['core', 'copy']);
   grunt.registerTask('prod', ['default', 'cdnify']);
 
