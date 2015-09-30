@@ -1,6 +1,9 @@
 var sv = require('./synteny-vis');
 var main = require('./main');
 
+var refreshAutoDots = sv.refreshAutoDots;
+var refreshAutoScale = sv.refreshAutoScale;
+
 switch (window.location.hash) {
   case '#m':
   case '#maize':
@@ -25,4 +28,5 @@ switch (window.location.hash) {
     break;
 }
 
-
+window.refreshAutoScale = refreshAutoScale;
+window.refreshAutoDots = refreshAutoDots;

@@ -44,9 +44,6 @@ function histogram(id, dataObj, field, initialColorScale) {
   function plotBrushEnd() {
     if (plotBrush.empty()) {
       dataObj.removeDataFilter(field);
-    } else {
-      dataObj.addDataFilter(plotBrush.extent(), field, 
-        REFRESH_Y_SCALE_ON_BRUSH_PAUSE ? 'data-stop' : null);
     }
   }
 
@@ -73,10 +70,13 @@ function histogram(id, dataObj, field, initialColorScale) {
   var autoScale;
 
   function getAutoScale() {
+    console.log(autoScale);
+    if(!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
     return autoScale;
   }
 
   function generateAutoScale(summary, persistence) {
+    console.log('generateAutoScale', summary, persistence);
 
     function edgeDelta(A, e) {
       return Math.abs(A[e[0]].y - A[e[1]].y);
@@ -216,7 +216,8 @@ function histogram(id, dataObj, field, initialColorScale) {
 
     typeHint = typeHint || '';
     var data = dataObj.currentDataSummary(bins, field);
-    generateAutoScale(data, env.getPersistence());
+    if (typeHint === 'data-stop' || typeHint == 'autoscale')
+      generateAutoScale(data, env.getPersistence());
     plot.selectAll('.dataBars')
       .data(data)
       .call(updatePlotAttrs);
@@ -247,11 +248,15 @@ function histogram(id, dataObj, field, initialColorScale) {
   dataObj.addListener(updatePlot);
 
   function setColorScale(newColorScale) {
+    /*jshint -W087*/
+  //debugger;
+    console.log('set');
     colorScale = newColorScale;
     plot.selectAll('.dataBars')
       .transition().duration(HISTOGRAM_COLOR_TRANS_LEN)
       .call(updatePlotAttrs);
   }
+
   return {
     setColorScale: setColorScale,
     getAutoScale: getAutoScale,

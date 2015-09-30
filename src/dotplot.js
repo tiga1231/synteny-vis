@@ -244,15 +244,15 @@ function synteny(id, dataObj, field, initialColorScale) {
 
     var allData = dataObj.currentData();
     var activeDots = allData.active;
-    var inactiveDots = allData.inactive;
+    var allDots = allData.raw;
 
-    console.log('Time after collecting data', Date.now() - start);
+    //console.log('Time after collecting data', Date.now() - start);
     start = Date.now();
 
     if (typeHint === 'zoom') {
       contextbak.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
       contextbak.fillStyle = UNSELECTED_DOT_FILL;
-      _.each(_.flatten([inactiveDots, activeDots]), function(dot) {
+      _.each(allDots, function(dot) {
         var d = dot[gent];
         var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
         var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
@@ -266,7 +266,7 @@ function synteny(id, dataObj, field, initialColorScale) {
       });
     }
 
-    console.log('Time to draw bg points:', Date.now() - start);
+    //console.log('Time to draw bg points:', Date.now() - start);
     start = Date.now();
 
     context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
@@ -294,7 +294,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     context.fillRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
 
     var diff = Date.now() - start;
-    console.log('Start of call to end of draw call:', diff);
+    //console.log('Start of call to end of draw call:', diff);
     if (elapsedMS > 0) {
       setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
     }

@@ -245,15 +245,15 @@ function synteny(id, dataObj, field, initialColorScale) {
 
     var allData = dataObj.currentData();
     var activeDots = allData.active;
-    var inactiveDots = allData.inactive;
+    var allDots = allData.raw;
 
-    console.log('Time after collecting data', Date.now() - start);
+    //console.log('Time after collecting data', Date.now() - start);
     start = Date.now();
 
     if (typeHint === 'zoom') {
       contextbak.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
       contextbak.fillStyle = UNSELECTED_DOT_FILL;
-      _.each(_.flatten([inactiveDots, activeDots]), function(dot) {
+      _.each(allDots, function(dot) {
         var d = dot[gent];
         var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
         var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
@@ -267,7 +267,7 @@ function synteny(id, dataObj, field, initialColorScale) {
       });
     }
 
-    console.log('Time to draw bg points:', Date.now() - start);
+    //console.log('Time to draw bg points:', Date.now() - start);
     start = Date.now();
 
     context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
@@ -295,7 +295,7 @@ function synteny(id, dataObj, field, initialColorScale) {
     context.fillRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
 
     var diff = Date.now() - start;
-    console.log('Start of call to end of draw call:', diff);
+    //console.log('Start of call to end of draw call:', diff);
     if (elapsedMS > 0) {
       setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
     }
@@ -399,9 +399,6 @@ function histogram(id, dataObj, field, initialColorScale) {
   function plotBrushEnd() {
     if (plotBrush.empty()) {
       dataObj.removeDataFilter(field);
-    } else {
-      dataObj.addDataFilter(plotBrush.extent(), field, 
-        REFRESH_Y_SCALE_ON_BRUSH_PAUSE ? 'data-stop' : null);
     }
   }
 
@@ -428,10 +425,13 @@ function histogram(id, dataObj, field, initialColorScale) {
   var autoScale;
 
   function getAutoScale() {
+    console.log(autoScale);
+    if(!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
     return autoScale;
   }
 
   function generateAutoScale(summary, persistence) {
+    console.log('generateAutoScale', summary, persistence);
 
     function edgeDelta(A, e) {
       return Math.abs(A[e[0]].y - A[e[1]].y);
@@ -571,7 +571,8 @@ function histogram(id, dataObj, field, initialColorScale) {
 
     typeHint = typeHint || '';
     var data = dataObj.currentDataSummary(bins, field);
-    generateAutoScale(data, env.getPersistence());
+    if (typeHint === 'data-stop' || typeHint == 'autoscale')
+      generateAutoScale(data, env.getPersistence());
     plot.selectAll('.dataBars')
       .data(data)
       .call(updatePlotAttrs);
@@ -602,11 +603,15 @@ function histogram(id, dataObj, field, initialColorScale) {
   dataObj.addListener(updatePlot);
 
   function setColorScale(newColorScale) {
+    /*jshint -W087*/
+  //debugger;
+    console.log('set');
     colorScale = newColorScale;
     plot.selectAll('.dataBars')
       .transition().duration(HISTOGRAM_COLOR_TRANS_LEN)
       .call(updatePlotAttrs);
   }
+
   return {
     setColorScale: setColorScale,
     getAutoScale: getAutoScale,
@@ -837,45 +842,59 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       .value();
   }
 
+  function getFilterFunction() {
+    var s = dataFilters.spatial;
+    var l = dataFilters.logks;
+    var k = dataFilters.logkn;
+    var m = dataFilters.logkskn;
+    if (s && l) {
+      return function(d) {
+        return s(d) && l(d);
+      };
+    }
+    if (s) return s;
+    if (l) return l;
+    return function(d) {
+      return (!s || s(d)) && (!l || l(d)) &&
+        (!k || k(d)) && (!m || m(d));
+    };
+  }
+
   ret.currentData = function currentData() {
-    return _.reduce(dataFilters, function(ret, filterFunc) {
-      var split = _.partition(ret.active, filterFunc);
-      ret.active = split[0];
-      ret.inactive = ret.inactive.concat(split[1]);
-      return ret;
-    }, {
+    return {
       raw: syntenyDots,
-      active: syntenyDots,
-      inactive: []
-    });
+      active: _.filter(syntenyDots, getFilterFunction())
+    };
   };
 
   ret.currentDataSummary = function currentDataSummary(ticks, field) {
-    var filtersToApply = _.omit(dataFilters, field);
+    var oldFilters = dataFilters;
+    dataFilters = _.omit(dataFilters, field);
 
     if (!sortedDots[field]) {
       sortedDots[field] = _.sortBy(syntenyDots, field);
     }
 
-    var validPoints = _.reduce(filtersToApply, function(dots, filterFunc) {
-      return _.filter(dots, filterFunc);
-    }, sortedDots[field]);
+    var validPoints = _.filter(sortedDots[field], getFilterFunction());
+    dataFilters = oldFilters;
 
     var diff = ticks[1] - ticks[0];
 
+    var lastLow = 0;
     return _.chain(ticks)
       .map(function(tick) {
         var start = {},
           end = {};
         start[field] = tick;
         end[field] = tick + diff;
-        var low = _.sortedIndex(validPoints, start, field);
         var hi = _.sortedIndex(validPoints, end, field);
-        return {
+        var ret = {
           x: tick,
           dx: diff,
-          y: hi - low
+          y: hi - lastLow
         };
+        lastLow = hi;
+        return ret;
       }).value();
   };
 
@@ -944,6 +963,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 exports.loadksData = loadksData;
 
+
 },{}],4:[function(require,module,exports){
 (function (global){
 'use strict';
@@ -1009,13 +1029,16 @@ function refreshAutoScale() {
   auto.click();
 }
 
-var refreshAutoDots;
+var _refreshAutoDots;
+function refreshAutoDots() {
+  _refreshAutoDots();
+}
 
 function controller(dataObj) {
 
-  refreshAutoDots = function() {
+  _refreshAutoDots = function() {
     _.each(histograms, function(h) {
-      h.refreshAutoScale();
+      h.refreshAutoScale('autoscale');
     });
   };
 
@@ -1059,7 +1082,6 @@ function controller(dataObj) {
       } else {
         newCS = colorScales[activeField][this.value];
       }
-      console.log(newCS);
       histograms[activeField].setColorScale(newCS);
       syntenyPlot.setColorScale(newCS);
       activeCS = this.value;
@@ -1107,6 +1129,7 @@ function controller(dataObj) {
   var j = 0;
   var count = 0;
   var time = 0;
+  var slow = 0;
   setTimeout(function bm() {
     if (j >= points.length) {
       i++;
@@ -1114,22 +1137,28 @@ function controller(dataObj) {
     }
     if (i >= points.length) {
       console.log(time, count);
-      window.alert("Average brush time: " + (time / count));
+      window.alert("Average brush time: " + (time / count) + ", max: " + slow);
       return;
     }
     if (points[i] < points[j]) {
       var start = Date.now();
+//      console.profile();
       histograms.logks.brush.extent([points[i], points[j]]);
       histograms.logks.brush.event(histograms.logks.selection);
+//      console.profileEnd();
       var end = Date.now();
       time += end - start;
+      slow = Math.max(slow, end - start);
       count++;
+    //  console.log(end - start);
     }
     j++;
     setTimeout(bm, 0);
   }, 1000);
 }
 
+exports.refreshAutoDots = refreshAutoDots;
+exports.refreshAutoScale = refreshAutoScale;
 exports.controller = controller;
 
 
@@ -1137,6 +1166,9 @@ exports.controller = controller;
 },{"./dotplot":1,"./histogram":2}],6:[function(require,module,exports){
 var sv = require('./synteny-vis');
 var main = require('./main');
+
+var refreshAutoDots = sv.refreshAutoDots;
+var refreshAutoScale = sv.refreshAutoScale;
 
 switch (window.location.hash) {
   case '#m':
@@ -1162,7 +1194,8 @@ switch (window.location.hash) {
     break;
 }
 
-
+window.refreshAutoScale = refreshAutoScale;
+window.refreshAutoDots = refreshAutoDots;
 
 },{"./main":3,"./synteny-vis":5}],7:[function(require,module,exports){
 exports.getComputedAttr = function getComputedAttr(element, attr) {

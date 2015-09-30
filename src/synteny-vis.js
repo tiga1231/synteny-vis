@@ -30,13 +30,16 @@ function refreshAutoScale() {
   auto.click();
 }
 
-var refreshAutoDots;
+var _refreshAutoDots;
+function refreshAutoDots() {
+  _refreshAutoDots();
+}
 
 function controller(dataObj) {
 
-  refreshAutoDots = function() {
+  _refreshAutoDots = function() {
     _.each(histograms, function(h) {
-      h.refreshAutoScale();
+      h.refreshAutoScale('autoscale');
     });
   };
 
@@ -80,7 +83,6 @@ function controller(dataObj) {
       } else {
         newCS = colorScales[activeField][this.value];
       }
-      console.log(newCS);
       histograms[activeField].setColorScale(newCS);
       syntenyPlot.setColorScale(newCS);
       activeCS = this.value;
@@ -128,6 +130,7 @@ function controller(dataObj) {
   var j = 0;
   var count = 0;
   var time = 0;
+  var slow = 0;
   setTimeout(function bm() {
     if (j >= points.length) {
       i++;
@@ -135,21 +138,27 @@ function controller(dataObj) {
     }
     if (i >= points.length) {
       console.log(time, count);
-      window.alert("Average brush time: " + (time / count));
+      window.alert("Average brush time: " + (time / count) + ", max: " + slow);
       return;
     }
     if (points[i] < points[j]) {
       var start = Date.now();
+//      console.profile();
       histograms.logks.brush.extent([points[i], points[j]]);
       histograms.logks.brush.event(histograms.logks.selection);
+//      console.profileEnd();
       var end = Date.now();
       time += end - start;
+      slow = Math.max(slow, end - start);
       count++;
+    //  console.log(end - start);
     }
     j++;
     setTimeout(bm, 0);
   }, 1000);
 }
 
+exports.refreshAutoDots = refreshAutoDots;
+exports.refreshAutoScale = refreshAutoScale;
 exports.controller = controller;
 

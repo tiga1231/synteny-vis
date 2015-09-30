@@ -214,45 +214,59 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       .value();
   }
 
+  function getFilterFunction() {
+    var s = dataFilters.spatial;
+    var l = dataFilters.logks;
+    var k = dataFilters.logkn;
+    var m = dataFilters.logkskn;
+    if (s && l) {
+      return function(d) {
+        return s(d) && l(d);
+      };
+    }
+    if (s) return s;
+    if (l) return l;
+    return function(d) {
+      return (!s || s(d)) && (!l || l(d)) &&
+        (!k || k(d)) && (!m || m(d));
+    };
+  }
+
   ret.currentData = function currentData() {
-    return _.reduce(dataFilters, function(ret, filterFunc) {
-      var split = _.partition(ret.active, filterFunc);
-      ret.active = split[0];
-      ret.inactive = ret.inactive.concat(split[1]);
-      return ret;
-    }, {
+    return {
       raw: syntenyDots,
-      active: syntenyDots,
-      inactive: []
-    });
+      active: _.filter(syntenyDots, getFilterFunction())
+    };
   };
 
   ret.currentDataSummary = function currentDataSummary(ticks, field) {
-    var filtersToApply = _.omit(dataFilters, field);
+    var oldFilters = dataFilters;
+    dataFilters = _.omit(dataFilters, field);
 
     if (!sortedDots[field]) {
       sortedDots[field] = _.sortBy(syntenyDots, field);
     }
 
-    var validPoints = _.reduce(filtersToApply, function(dots, filterFunc) {
-      return _.filter(dots, filterFunc);
-    }, sortedDots[field]);
+    var validPoints = _.filter(sortedDots[field], getFilterFunction());
+    dataFilters = oldFilters;
 
     var diff = ticks[1] - ticks[0];
 
+    var lastLow = 0;
     return _.chain(ticks)
       .map(function(tick) {
         var start = {},
           end = {};
         start[field] = tick;
         end[field] = tick + diff;
-        var low = _.sortedIndex(validPoints, start, field);
         var hi = _.sortedIndex(validPoints, end, field);
-        return {
+        var ret = {
           x: tick,
           dx: diff,
-          y: hi - low
+          y: hi - lastLow
         };
+        lastLow = hi;
+        return ret;
       }).value();
   };
 
@@ -320,3 +334,4 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 }
 
 exports.loadksData = loadksData;
+
