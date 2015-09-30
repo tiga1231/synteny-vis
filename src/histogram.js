@@ -72,7 +72,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   function getAutoScale() {
     console.log(autoScale);
-    if(!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
+    if (!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
     return autoScale;
   }
 
@@ -167,7 +167,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
 
-  plot.selectAll('.dataBars')
+  var dataBarSel = plot.selectAll('.dataBars')
     .data(bins)
     .enter()
     .append('rect').classed('dataBars', true);
@@ -195,12 +195,6 @@ function histogram(id, dataObj, field, initialColorScale) {
         bin.x < plotBrush.extent()[1];
     };
     selection
-      .attr('x', function(d) {
-        return xPlotScale(d.x);
-      })
-      .attr('width', function(d) {
-        return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-      })
       .attr('y', function(d) {
         return yPlotScale(d.y);
       })
@@ -215,13 +209,19 @@ function histogram(id, dataObj, field, initialColorScale) {
   function updatePlot(typeHint) {
 
     typeHint = typeHint || '';
+    if (typeHint === 'initial') {
+      dataBarSel
+        .data(dataObj.currentDataSummary(bins, field))
+        .attr('x', function(d) {
+          return xPlotScale(d.x);
+        })
+        .attr('width', function(d) {
+          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
+        });
+    }
     var data = dataObj.currentDataSummary(bins, field);
     if (typeHint === 'data-stop' || typeHint == 'autoscale')
       generateAutoScale(data, env.getPersistence());
-      
-    plot.selectAll('.dataBars')
-      .data(data)
-      .call(updatePlotAttrs);
 
     if (typeHint.indexOf('spatial-stop') >= 0 || typeHint === 'data-stop') {
       lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
@@ -229,7 +229,8 @@ function histogram(id, dataObj, field, initialColorScale) {
       yAxisSel.transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(yAxis);
-      plot.selectAll('.dataBars')
+      //      plot.selectAll('.dataBars')
+      dataBarSel
         .data(data)
         .transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
@@ -241,6 +242,11 @@ function histogram(id, dataObj, field, initialColorScale) {
           return yPlotScale(d.y) - 5;
         });
     } else {
+      //    plot.selectAll('.dataBars')
+      dataBarSel
+        .data(data)
+        .call(updatePlotAttrs);
+
       // To disable sharp transitions, move that chunk above down here. 
     }
   }
@@ -250,7 +256,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   function setColorScale(newColorScale) {
     /*jshint -W087*/
-  //debugger;
+    //debugger;
     console.log('set');
     colorScale = newColorScale;
     plot.selectAll('.dataBars')

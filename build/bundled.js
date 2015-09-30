@@ -168,6 +168,7 @@ function synteny(id, dataObj, field, initialColorScale) {
   var xAxisTickValues = _.map(xPairs, function(p) {
     return (p[0] + p[1]) / 2;
   });
+
   var xOffsetToNameMap = _.object(xAxisTickValues, dataObj.getXLineNames());
 
   var xLineAxis = d3.svg.axis()
@@ -185,7 +186,6 @@ function synteny(id, dataObj, field, initialColorScale) {
     })
     .orient('bottom')
     .tickSize(0);
-
 
   var xAxisWrapper = svg.append('g').attr('transform', util.translate(SYNTENY_MARGIN, height + SYNTENY_MARGIN));
   var xAxisGapsGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xGapsAxis);
@@ -236,11 +236,11 @@ function synteny(id, dataObj, field, initialColorScale) {
     var gent = dataObj.getGEvNTMode();
 
     var intermediateColorScale;
-    if (elapsedMS > 0 && typeHint !== 'data') {
+    if (elapsedMS === 0 && typeHint === 'data') {
+      intermediateColorScale = finalColorScale;
+    } else {
       var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
       intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
-    } else {
-      intermediateColorScale = finalColorScale;
     }
 
     var allData = dataObj.currentData();
@@ -274,20 +274,52 @@ function synteny(id, dataObj, field, initialColorScale) {
 
     /* On top, active dots */
     var cache = {};
-    _.each(activeDots, function(dot) {
-      var d = dot[gent];
-      var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
-      var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
+    var minDomX = xScale.domain()[0];
+    var maxDomX = xScale.domain()[1];
+    var minDomY = yScale.domain()[0];
+    var maxDomY = yScale.domain()[1];
+    var minRanX = xScale.range()[0];
+    var maxRanX = xScale.range()[1];
+    var minRanY = yScale.range()[0];
+    var maxRanY = yScale.range()[1];
+    var widthDomX = maxDomX - minDomX;
+    var widthDomY = maxDomY - minDomY;
+    var widthRanX = maxRanX - minRanX;
+    var widthRanY = maxRanY - minRanY;
+    var xRatio = widthRanX / widthDomX;
+    var xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
+    var yRatio = widthRanY / widthDomY;
+    var yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
 
-      if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
-        return;
+    var groups = [];
+    var index = 0;
+    function makeComp(v) {
+      return function(x) { return x.roundedlogks < v; };
+    }
+    while(index < activeDots.length) {
+      var lo = index;
+      var val = activeDots[index].roundedlogks;
+      index = _.sortedLastIndex(activeDots, {roundedlogks: val}, makeComp(val));
+      groups.push([lo, index]);
+    }
+    
+    for(var g = 0; g < groups.length; g++) {
+      var group = groups[g];
+      var loIndex = group[0];
+      var hiIndex = group[1];
+      context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
+      for(var i = loIndex; i < hiIndex; i++) {
+        var dot = activeDots[i];
+        var d = dot[gent];
+        var cx = d.x_relative_offset * xRatio - xShift;
+        var cy = d.y_relative_offset * yRatio - yShift;
 
-      var bin = Math.floor(dot[field] * 10) / 10;
-      if(!cache[bin])
-        context.fillStyle = cache[bin] = intermediateColorScale(bin);
+        if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
+          continue;
 
-      context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
-    });
+        context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+      }
+    }
     context.fillStyle = 'white';
     context.fillRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
     context.fillRect(0, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
@@ -315,6 +347,7 @@ function synteny(id, dataObj, field, initialColorScale) {
   }
 
   function setSyntenyData(typeHint) {
+    if (typeHint == 'autoscale') return;
     draw(0, colorScale, colorScale, typeHint);
   }
   dataObj.addListener(setSyntenyData);
@@ -351,6 +384,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 }
 
 exports.synteny = synteny;
+
 
 },{"./utils.js":7}],2:[function(require,module,exports){
 'use strict';
@@ -427,7 +461,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   function getAutoScale() {
     console.log(autoScale);
-    if(!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
+    if (!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
     return autoScale;
   }
 
@@ -522,7 +556,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     .on('brush', plotBrushBrush)
     .on('brushend', plotBrushEnd);
 
-  plot.selectAll('.dataBars')
+  var dataBarSel = plot.selectAll('.dataBars')
     .data(bins)
     .enter()
     .append('rect').classed('dataBars', true);
@@ -550,12 +584,6 @@ function histogram(id, dataObj, field, initialColorScale) {
         bin.x < plotBrush.extent()[1];
     };
     selection
-      .attr('x', function(d) {
-        return xPlotScale(d.x);
-      })
-      .attr('width', function(d) {
-        return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-      })
       .attr('y', function(d) {
         return yPlotScale(d.y);
       })
@@ -570,13 +598,19 @@ function histogram(id, dataObj, field, initialColorScale) {
   function updatePlot(typeHint) {
 
     typeHint = typeHint || '';
+    if (typeHint === 'initial') {
+      dataBarSel
+        .data(dataObj.currentDataSummary(bins, field))
+        .attr('x', function(d) {
+          return xPlotScale(d.x);
+        })
+        .attr('width', function(d) {
+          return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
+        });
+    }
     var data = dataObj.currentDataSummary(bins, field);
     if (typeHint === 'data-stop' || typeHint == 'autoscale')
       generateAutoScale(data, env.getPersistence());
-      
-    plot.selectAll('.dataBars')
-      .data(data)
-      .call(updatePlotAttrs);
 
     if (typeHint.indexOf('spatial-stop') >= 0 || typeHint === 'data-stop') {
       lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
@@ -584,7 +618,8 @@ function histogram(id, dataObj, field, initialColorScale) {
       yAxisSel.transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
         .call(yAxis);
-      plot.selectAll('.dataBars')
+      //      plot.selectAll('.dataBars')
+      dataBarSel
         .data(data)
         .transition()
         .duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
@@ -596,6 +631,11 @@ function histogram(id, dataObj, field, initialColorScale) {
           return yPlotScale(d.y) - 5;
         });
     } else {
+      //    plot.selectAll('.dataBars')
+      dataBarSel
+        .data(data)
+        .call(updatePlotAttrs);
+
       // To disable sharp transitions, move that chunk above down here. 
     }
   }
@@ -605,7 +645,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 
   function setColorScale(newColorScale) {
     /*jshint -W087*/
-  //debugger;
+    //debugger;
     console.log('set');
     colorScale = newColorScale;
     plot.selectAll('.dataBars')
@@ -683,6 +723,7 @@ function ksLineToSyntenyDot(line) {
   return {
     ks: Number(fields[0]),
     logks: Math.log(Number(fields[0])) / Math.log(10),
+    roundedlogks: Math.floor(Math.log(Number(fields[0])) / Math.log(10) * 10) / 10,
     kn: Number(fields[1]),
     logkn: Math.log(Number(fields[1])) / Math.log(10),
     logkskn: (Math.log(Number(fields[0])) - Math.log(Number(fields[1]))) / Math.log(10),
@@ -1124,7 +1165,7 @@ function controller(dataObj) {
 
   var minLogKs = d3.min(_.pluck(dataObj.currentData().raw, 'logks'));
   var maxLogKs = d3.max(_.pluck(dataObj.currentData().raw, 'logks'));
-  var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 20);
+  var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
 
   var i = 0;
   var j = 0;
@@ -1143,10 +1184,8 @@ function controller(dataObj) {
     }
     if (points[i] < points[j]) {
       var start = Date.now();
-//      console.profile();
       histograms.logks.brush.extent([points[i], points[j]]);
       histograms.logks.brush.event(histograms.logks.selection);
-//      console.profileEnd();
       var end = Date.now();
       time += end - start;
       slow = Math.max(slow, end - start);

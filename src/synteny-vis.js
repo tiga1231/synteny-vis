@@ -124,7 +124,7 @@ function controller(dataObj) {
 
   var minLogKs = d3.min(_.pluck(dataObj.currentData().raw, 'logks'));
   var maxLogKs = d3.max(_.pluck(dataObj.currentData().raw, 'logks'));
-  var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 20);
+  var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
 
   var i = 0;
   var j = 0;
@@ -143,10 +143,8 @@ function controller(dataObj) {
     }
     if (points[i] < points[j]) {
       var start = Date.now();
-//      console.profile();
       histograms.logks.brush.extent([points[i], points[j]]);
       histograms.logks.brush.event(histograms.logks.selection);
-//      console.profileEnd();
       var end = Date.now();
       time += end - start;
       slow = Math.max(slow, end - start);

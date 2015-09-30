@@ -54,6 +54,7 @@ function ksLineToSyntenyDot(line) {
   return {
     ks: Number(fields[0]),
     logks: Math.log(Number(fields[0])) / Math.log(10),
+    roundedlogks: Math.floor(Math.log(Number(fields[0])) / Math.log(10) * 10) / 10,
     kn: Number(fields[1]),
     logkn: Math.log(Number(fields[1])) / Math.log(10),
     logkskn: (Math.log(Number(fields[0])) - Math.log(Number(fields[1]))) / Math.log(10),

@@ -167,6 +167,7 @@ function synteny(id, dataObj, field, initialColorScale) {
   var xAxisTickValues = _.map(xPairs, function(p) {
     return (p[0] + p[1]) / 2;
   });
+
   var xOffsetToNameMap = _.object(xAxisTickValues, dataObj.getXLineNames());
 
   var xLineAxis = d3.svg.axis()
@@ -184,7 +185,6 @@ function synteny(id, dataObj, field, initialColorScale) {
     })
     .orient('bottom')
     .tickSize(0);
-
 
   var xAxisWrapper = svg.append('g').attr('transform', util.translate(SYNTENY_MARGIN, height + SYNTENY_MARGIN));
   var xAxisGapsGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xGapsAxis);
@@ -235,11 +235,11 @@ function synteny(id, dataObj, field, initialColorScale) {
     var gent = dataObj.getGEvNTMode();
 
     var intermediateColorScale;
-    if (elapsedMS > 0 && typeHint !== 'data') {
+    if (elapsedMS === 0 && typeHint === 'data') {
+      intermediateColorScale = finalColorScale;
+    } else {
       var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
       intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
-    } else {
-      intermediateColorScale = finalColorScale;
     }
 
     var allData = dataObj.currentData();
@@ -273,20 +273,52 @@ function synteny(id, dataObj, field, initialColorScale) {
 
     /* On top, active dots */
     var cache = {};
-    _.each(activeDots, function(dot) {
-      var d = dot[gent];
-      var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
-      var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
+    var minDomX = xScale.domain()[0];
+    var maxDomX = xScale.domain()[1];
+    var minDomY = yScale.domain()[0];
+    var maxDomY = yScale.domain()[1];
+    var minRanX = xScale.range()[0];
+    var maxRanX = xScale.range()[1];
+    var minRanY = yScale.range()[0];
+    var maxRanY = yScale.range()[1];
+    var widthDomX = maxDomX - minDomX;
+    var widthDomY = maxDomY - minDomY;
+    var widthRanX = maxRanX - minRanX;
+    var widthRanY = maxRanY - minRanY;
+    var xRatio = widthRanX / widthDomX;
+    var xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
+    var yRatio = widthRanY / widthDomY;
+    var yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
 
-      if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
-        return;
+    var groups = [];
+    var index = 0;
+    function makeComp(v) {
+      return function(x) { return x.roundedlogks < v; };
+    }
+    while(index < activeDots.length) {
+      var lo = index;
+      var val = activeDots[index].roundedlogks;
+      index = _.sortedLastIndex(activeDots, {roundedlogks: val}, makeComp(val));
+      groups.push([lo, index]);
+    }
+    
+    for(var g = 0; g < groups.length; g++) {
+      var group = groups[g];
+      var loIndex = group[0];
+      var hiIndex = group[1];
+      context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
+      for(var i = loIndex; i < hiIndex; i++) {
+        var dot = activeDots[i];
+        var d = dot[gent];
+        var cx = d.x_relative_offset * xRatio - xShift;
+        var cy = d.y_relative_offset * yRatio - yShift;
 
-      var bin = Math.floor(dot[field] * 10) / 10;
-      if(!cache[bin])
-        context.fillStyle = cache[bin] = intermediateColorScale(bin);
+        if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
+          continue;
 
-      context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
-    });
+        context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+      }
+    }
     context.fillStyle = 'white';
     context.fillRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
     context.fillRect(0, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
@@ -314,6 +346,7 @@ function synteny(id, dataObj, field, initialColorScale) {
   }
 
   function setSyntenyData(typeHint) {
+    if (typeHint == 'autoscale') return;
     draw(0, colorScale, colorScale, typeHint);
   }
   dataObj.addListener(setSyntenyData);
@@ -350,3 +383,4 @@ function synteny(id, dataObj, field, initialColorScale) {
 }
 
 exports.synteny = synteny;
+
