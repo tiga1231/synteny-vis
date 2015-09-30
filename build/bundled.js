@@ -400,6 +400,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     if (plotBrush.empty()) {
       dataObj.removeDataFilter(field);
     }
+    dataObj.notifyListeners('data-stop');
   }
 
   var colorScale = initialColorScale;
@@ -431,7 +432,6 @@ function histogram(id, dataObj, field, initialColorScale) {
   }
 
   function generateAutoScale(summary, persistence) {
-    console.log('generateAutoScale', summary, persistence);
 
     function edgeDelta(A, e) {
       return Math.abs(A[e[0]].y - A[e[1]].y);
