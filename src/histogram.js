@@ -45,7 +45,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     if (plotBrush.empty()) {
       dataObj.removeDataFilter(field);
     }
-    dataObj.notifyListeners('data-stop');
+    dataObj.notifyListeners('autoscale');
   }
 
   var colorScale = initialColorScale;
@@ -218,6 +218,7 @@ function histogram(id, dataObj, field, initialColorScale) {
     var data = dataObj.currentDataSummary(bins, field);
     if (typeHint === 'data-stop' || typeHint == 'autoscale')
       generateAutoScale(data, env.getPersistence());
+      
     plot.selectAll('.dataBars')
       .data(data)
       .call(updatePlotAttrs);
