@@ -14,8 +14,7 @@
   },
   "scripts": {
     "lint": "eslint src/*.js",
-    "format": "esformatter -i src/*.js",
-		"serve": "webpack-dev-server --inline --hot --port 8000 --content-base build"
+    "format": "esformatter -i src/*.js"
   },
   "devDependencies": {
     "babel-core": "^5.8.25",
