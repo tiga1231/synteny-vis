@@ -44,18 +44,10 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(1);
-	(function webpackMissingModule() { throw new Error("Cannot find module \"serve\""); }());
-
-
-/***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
 	'use strict';
 	
-	var sv = __webpack_require__(2);
-	var main = __webpack_require__(11);
+	var sv = __webpack_require__(1);
+	var main = __webpack_require__(10);
 	
 	var refreshAutoDots = sv.refreshAutoDots;
 	var refreshAutoScale = sv.refreshAutoScale;
@@ -88,15 +80,15 @@
 	window.refreshAutoDots = refreshAutoDots;
 
 /***/ },
-/* 2 */
+/* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var histogram = __webpack_require__(3);
-	var dotplot = __webpack_require__(10);
-	var _ = __webpack_require__(5);
-	var d3 = __webpack_require__(9);
+	var histogram = __webpack_require__(2);
+	var dotplot = __webpack_require__(9);
+	var _ = __webpack_require__(4);
+	var d3 = __webpack_require__(8);
 	
 	var COLOR_RANGES = {
 		rg: ['red', 'green'],
@@ -236,7 +228,7 @@
 	exports.controller = controller;
 
 /***/ },
-/* 3 */
+/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -250,11 +242,11 @@
 	var SHOW_MAXIMA = true;
 	var SHOW_MINIMA = true;
 	
-	var persist = __webpack_require__(4);
-	var util = __webpack_require__(7);
-	var env = __webpack_require__(8);
-	var _ = __webpack_require__(5);
-	var d3 = __webpack_require__(9);
+	var persist = __webpack_require__(3);
+	var util = __webpack_require__(6);
+	var env = __webpack_require__(7);
+	var _ = __webpack_require__(4);
+	var d3 = __webpack_require__(8);
 	
 	function histogram(id, dataObj, field, initialColorScale) {
 		var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
@@ -467,12 +459,12 @@
 	exports.histogram = histogram;
 
 /***/ },
-/* 4 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var _ = __webpack_require__(5);
+	var _ = __webpack_require__(4);
 	/*
 	 * Given a list of
 	 *
@@ -498,7 +490,7 @@
 	exports.removeNonExtrema = removeNonExtrema;
 
 /***/ },
-/* 5 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -12853,10 +12845,10 @@
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)(module), (function() { return this; }())))
 
 /***/ },
-/* 6 */
+/* 5 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -12872,13 +12864,13 @@
 
 
 /***/ },
-/* 7 */
+/* 6 */
 /***/ function(module, exports) {
 
 	'use strict';
 	
 	exports.getComputedAttr = function getComputedAttr(element, attr) {
-		var computed = window.getComputedStyle(element)[attr];
+		var computed = getComputedStyle(element)[attr];
 		return parseInt(computed, 10);
 	};
 	
@@ -12887,7 +12879,7 @@
 	};
 
 /***/ },
-/* 8 */
+/* 7 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -12897,7 +12889,7 @@
 	};
 
 /***/ },
-/* 9 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;!function() {
@@ -22406,14 +22398,14 @@
 	}();
 
 /***/ },
-/* 10 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var util = __webpack_require__(7);
-	var _ = __webpack_require__(5);
-	var d3 = __webpack_require__(9);
+	var util = __webpack_require__(6);
+	var _ = __webpack_require__(4);
+	var d3 = __webpack_require__(8);
 	
 	var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
 	var CIRCLE_RADIUS = 2;
@@ -22427,13 +22419,10 @@
 		var yExtent = [0, _.max(dataObj.getYLineOffsets())];
 		var dataAspectRatio = yExtent[1] / xExtent[1];
 	
-		function getComputedAttr(element, attr) {
-			var computed = window.getComputedStyle(element)[attr];
-			return parseInt(computed, 10);
-		}
-	
-		var computedWidth = getComputedAttr(d3.select(id).node(), 'width') - 2 * SYNTENY_MARGIN;
-		var computedHeight = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
+		var baseID = id.substring(1);
+		var svgElement = document.getElementById(baseID);
+		var computedWidth = util.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
+		var computedHeight = util.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
 		var windowAspectRatio = computedHeight / computedWidth;
 	
 		var width;
@@ -22736,7 +22725,7 @@
 	exports.synteny = synteny;
 
 /***/ },
-/* 11 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -22746,9 +22735,9 @@
 	var X_AXIS_ORGANISM_NAME;
 	var Y_AXIS_ORGANISM_NAME;
 	
-	var queue = __webpack_require__(12);
-	var _ = __webpack_require__(5);
-	var d3 = __webpack_require__(9);
+	var queue = __webpack_require__(11);
+	var _ = __webpack_require__(4);
+	var d3 = __webpack_require__(8);
 	
 	var loadksData = function loadksData(ks_filename, x_id, y_id, cb) {
 		queue().defer(d3.text, ks_filename)
@@ -23053,7 +23042,7 @@
 	exports.loadksData = loadksData;
 
 /***/ },
-/* 12 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;(function() {
