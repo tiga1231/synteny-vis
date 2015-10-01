@@ -1,0 +1,9 @@
+{
+  "indent": {
+    "value": "\t",
+    "FunctionExpression": 1,
+    "ArrayExpression": 1,
+    "ObjectExpression": 1
+  }
+}
+
