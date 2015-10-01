@@ -13,7 +13,8 @@
     "queue-async": "^1.0.7"
   },
   "scripts": {
-    "lint": "eslint src/*.js"
+    "lint": "eslint src/*.js",
+		"format": "esformatter -i src/*.js"
   },
   "devDependencies": {
     "babel-core": "^5.8.25",
