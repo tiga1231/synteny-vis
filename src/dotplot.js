@@ -16,13 +16,10 @@ function synteny(id, dataObj, field, initialColorScale) {
 	var yExtent = [0, _.max(dataObj.getYLineOffsets())];
 	var dataAspectRatio = yExtent[1] / xExtent[1];
 
-	function getComputedAttr(element, attr) {
-		var computed = window.getComputedStyle(element)[attr];
-		return parseInt(computed, 10);
-	}
-
-	var computedWidth = getComputedAttr(d3.select(id).node(), 'width') - 2 * SYNTENY_MARGIN;
-	var computedHeight = getComputedAttr(d3.select(id).node(), 'height') - 2 * SYNTENY_MARGIN;
+	const baseID = id.substring(1);
+	const svgElement = document.getElementById(baseID);
+	var computedWidth = util.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
+	var computedHeight = util.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
 	var windowAspectRatio = computedHeight / computedWidth;
 
 	var width;
