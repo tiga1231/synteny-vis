@@ -7,6 +7,8 @@ var Y_AXIS_ORGANISM_NAME;
 
 var NUCLEOTIDE_LOWER_NAME_LIMIT = 1000 * 1000;
 
+var queue = require('queue-async');
+
 var loadksData = function(ks_filename, x_id, y_id, cb) {
   queue()
     .defer(d3.text, ks_filename)
