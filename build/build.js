@@ -22598,9 +22598,7 @@
 	
 					if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN) return;
 	
-					contextbak.beginPath();
-					contextbak.arc(cx, cy, CIRCLE_RADIUS, 0, 2 * Math.PI);
-					contextbak.fill();
+					contextbak.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
 				});
 			}
 	
