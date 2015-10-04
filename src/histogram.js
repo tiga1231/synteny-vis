@@ -6,8 +6,7 @@ var HISTOGRAM_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes 
 var NUM_HISTOGRAM_TICKS = 100;
 var UNSELECTED_BAR_FILL = '#D0D0D0';
 
-var SHOW_MAXIMA = true;
-var SHOW_MINIMA = true;
+const SHOW_MAXIMA_AND_MINIMA = true;
 
 var persist = require('./persistence');
 var util = require('./utils');
@@ -68,95 +67,64 @@ function histogram(id, dataObj, field, initialColorScale) {
 	var autoScale;
 
 	function getAutoScale() {
-		console.log(autoScale);
 		if (!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
 		return autoScale;
 	}
 
 	function generateAutoScale(summary, persistence) {
+		const start = Date.now();
 
-		function edgeDelta(A, e) {
-			return Math.abs(A[e[0]].y - A[e[1]].y);
+		const gapBetweenPoints = (A, i) => Math.abs(A[i].y - A[i + 1].y);
+
+		const isMaxima = (A, i) => A[i].y > Math.max(A[i-1].y, A[i+1].y);
+		//const isMinima = (A, i) => A[i].y < Math.min(A[i-1].y, A[i+1].y);
+
+		function indexOfSmallestPointDifference(A) {
+			return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
 		}
 
-		function minimumDeltaEdge(A) {
-			var edges = _.zip(_.range(0, A.length - 1), _.range(1, A.length));
-			return _.min(edges, _.partial(edgeDelta, A));
+		function simplify(dirtyPoints) {
+			const points = persist.removeNonExtrema(dirtyPoints);
+			const index = indexOfSmallestPointDifference(points);
+
+			if(points.length < 3 || gapBetweenPoints(points, index) > persistence)
+				return points;
+
+			points.splice(index === 0 ? 1 : index, 1);
+
+			return simplify(points);
 		}
 
-		var mm = persist.removeNonExtrema(summary);
-		while (edgeDelta(mm, minimumDeltaEdge(mm)) < persistence) {
-			var e = minimumDeltaEdge(mm);
-			if (e[0] === 0) {
-				if (mm.length <= 3) break;
-				mm.splice(1, 1);
-			} else if (e[1] === mm.length - 1) {
-				if (mm.length <= 3) break;
-				mm.splice(mm.length - 2, 1);
-			} else {
-				if (mm.length <= 4) break;
-				mm.splice(e[0], 1);
-			}
-			mm = persist.removeNonExtrema(mm);
-		}
+		const minimaAndMaximas = simplify(summary);
 
-		mm = _.partition(mm, function(p, i, a) {
-			return i === 0 || i === a.length - 1 ||
-				p.y > a[i - 1].y || p.y > a[i + 1].y;
+		const annotated = _.map(minimaAndMaximas, function(x, i, a) {
+			x.isMax = i > 0 && i < a.length - 1 && isMaxima(minimaAndMaximas, i);
+			return x;
 		});
 
-		var maxima = mm[0];
-		var minima = mm[1];
-
-		if (maxima.length > 3) {
-			maxima = _.chain(maxima).initial().rest().value();
-		}
-
-		_.each(maxima, function(m) {
-			_.defaults(m, {
-				max: true
-			});
-		});
-		_.each(minima, function(m) {
-			_.defaults(m, {
-				max: false
-			});
-		});
-
-		if (SHOW_MAXIMA || SHOW_MINIMA) {
-			var tempSelA = plot.selectAll('.maxMark').data(maxima.concat(minima));
+		if (SHOW_MAXIMA_AND_MINIMA) {
+			const tempSelA = plot.selectAll('.maxMark').data(annotated);
 			tempSelA.exit().remove();
 			tempSelA.enter().append('circle').classed('maxMark', 1);
 			tempSelA
-				.attr('cx', function(d) {
-					return xPlotScale(d.x + d.dx / 2);
-				})
-				.attr('cy', function(d) {
-					return yPlotScale(d.y) - 5;
-				})
+				.attr('cx', d => xPlotScale(d.x + d.dx / 2))
+				.attr('cy', d => yPlotScale(d.y) - 5)
 				.attr('r', 3)
-				.attr('fill', function(d) {
-					return d.max ? 'red' : 'orange';
-				})
-				.attr('opacity', function(d) {
-					return ((d.max && SHOW_MAXIMA) || (!d.max && SHOW_MINIMA)) ? 1 : 0;
-				});
+				.attr('fill', d => d.isMax ? 'red' : 'orange');
 		}
 
-		_.each(maxima, function(m, i) {
-			m.colorIndex = i;
+		_(annotated).filter(x => x.isMax).each((x, i) => x.colorIndex = i).commit();
+
+		const sorted = _.sortBy(annotated, 'x');
+		const colors = d3.scale.category10();
+		const domain = _.map(sorted, d => d.x + d.dx / 2);
+		const range = _.map(sorted, function(d) {
+			return d.isMax ? colors(d.colorIndex) : UNSELECTED_BAR_FILL;
 		});
 
-		var combined = _.sortBy(minima.concat(maxima), 'x');
+		autoScale = d3.scale.linear().domain(domain).range(range);
 
-		var colors = d3.scale.category10();
-		autoScale = d3.scale.linear()
-			.domain(_.map(combined, function(d) {
-				return d.x + d.dx / 2;
-			}))
-			.range(_.chain(combined).map(function(m) {
-				return m.max ? colors(m.colorIndex) : UNSELECTED_BAR_FILL;
-			}).value());
+		console.log(Date.now() - start);
 	}
 
 	var plotBrush = d3.svg.brush()
@@ -218,7 +186,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 		}
 		var data = dataObj.currentDataSummary(bins, field);
 		if (typeHint.indexOf('stop') > -1 || typeHint == 'autoscale')
-				setTimeout(generateAutoScale, 0 , data, env.getPersistence());
+			setTimeout(generateAutoScale, 0 , data, env.getPersistence());
 
 		if (typeHint.indexOf('stop') > - 1) {
 			lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
@@ -243,9 +211,6 @@ function histogram(id, dataObj, field, initialColorScale) {
 	dataObj.addListener(updatePlot);
 
 	function setColorScale(newColorScale) {
-		/*jshint -W087*/
-		//debugger;
-		console.log('set');
 		colorScale = newColorScale;
 		plot.selectAll('.dataBars')
 			.transition().duration(HISTOGRAM_COLOR_TRANS_LEN)
