@@ -18,10 +18,10 @@
     "lint": "eslint src/*.js test/*.js",
     "test": "mocha --compilers js:babel-core/register",
 
-		"all-three": "npm run format && npm run lint && npm run test",
+		"all": "npm run lint && npm run test",
 
-    "build": "npm run all-three && webpack",
-    "build-production": "npm run all-three && webpack -p",
+    "build": "npm run all && webpack --progress",
+    "build-production": "PRODUCTION=1 npm run all && webpack --progress -p",
 
 		"build-gh-pages": "npm run build-production && cp -r build/* gh-pages"
   },
