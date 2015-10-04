@@ -217,34 +217,25 @@ function histogram(id, dataObj, field, initialColorScale) {
 				});
 		}
 		var data = dataObj.currentDataSummary(bins, field);
-		if (typeHint === 'data-stop' || typeHint == 'autoscale')
-			generateAutoScale(data, env.getPersistence());
+		if (typeHint.indexOf('stop') > -1 || typeHint == 'autoscale')
+				setTimeout(generateAutoScale, 0 , data, env.getPersistence());
 
-		if (typeHint.indexOf('spatial-stop') >= 0 || typeHint === 'data-stop') {
+		if (typeHint.indexOf('stop') > - 1) {
 			lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
 			yPlotScale.domain(lastYExtent);
 			yAxisSel.transition()
 				.duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
 				.call(yAxis);
-			//      plot.selectAll('.dataBars')
 			dataBarSel
 				.data(data)
 				.transition()
 				.duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
 				.call(updatePlotAttrs);
 
-			plot.selectAll('.maxMark')
-				.transition().duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
-				.attr('cy', function(d) {
-					return yPlotScale(d.y) - 5;
-				});
 		} else {
-			//    plot.selectAll('.dataBars')
 			dataBarSel
 				.data(data)
 				.call(updatePlotAttrs);
-
-		// To disable sharp transitions, move that chunk above down here. 
 		}
 	}
 
