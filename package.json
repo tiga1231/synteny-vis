@@ -8,17 +8,19 @@
     "url": "hdc-arizona.github.io/synteny-vis"
   },
   "dependencies": {
+    "benchmark": "^1.0.0",
     "d3": "^3.5.6",
     "lodash": "^3.10.1",
     "queue-async": "^1.0.7"
   },
   "scripts": {
-    "lint": "eslint src/*.js",
-    "format": "esformatter -i src/*.js"
+    "lint": "eslint src/*.js test/*.js",
+    "format": "esformatter -i src/*.js test/*.js"
   },
   "devDependencies": {
     "babel-core": "^5.8.25",
     "babel-loader": "^5.3.2",
+    "esformatter-collapse-objects": "^0.5.1",
     "esformatter-quotes": "^1.0.3",
     "mocha": "^2.3.2",
     "should": "^7.1.0",
