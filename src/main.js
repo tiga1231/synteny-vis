@@ -62,14 +62,8 @@ function ksLineToSyntenyDot(line) {
 		logkskn: (Math.log(Number(fields[0])) - Math.log(Number(fields[1]))) / Math.log(10),
 		x_chromosome_id: fields[3],
 		y_chromosome_id: fields[15],
-		ge: {
-			x_relative_offset: Number(fields[10]),
-			y_relative_offset: Number(fields[22])
-		},
-		nt: {
-			x_relative_offset: Math.round((Number(fields[4]) + Number(fields[5])) / 2),
-			y_relative_offset: Math.round((Number(fields[16]) + Number(fields[17])) / 2)
-		}
+		x_relative_offset: Math.round((Number(fields[4]) + Number(fields[5])) / 2),
+		y_relative_offset: Math.round((Number(fields[16]) + Number(fields[17])) / 2)
 	};
 }
 
@@ -127,17 +121,8 @@ function inlineKSData(ks, xmap, ymap) {
 	_.each(ks, function(ksObj) {
 		var xShift = xmap.nt[ksObj.x_chromosome_id];
 		var yShift = ymap.nt[ksObj.y_chromosome_id];
-		ksObj.nt.x_relative_offset += xShift;
-		ksObj.nt.y_relative_offset += yShift;
-
-		var xNameShift = xmap.name[ksObj.x_chromosome_id];
-		var yNameShift = ymap.name[ksObj.y_chromosome_id];
-		xShift = xmap.ge[ksObj.x_chromosome_id];
-		yShift = ymap.ge[ksObj.y_chromosome_id];
-		ksObj.ge.x_relative_offset -= xNameShift;
-		ksObj.ge.y_relative_offset -= yNameShift;
-		ksObj.ge.x_relative_offset += xShift;
-		ksObj.ge.y_relative_offset += yShift;
+		ksObj.x_relative_offset += xShift;
+		ksObj.y_relative_offset += yShift;
 	});
 	return ks;
 }
@@ -227,8 +212,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 				return s(d) && l(d);
 			};
 		}
-		if (s) return s;
-		if (l) return l;
+		if (s && !(l || k || m)) return s;
+		if (l && !(s || k || m)) return l;
 		return function(d) {
 			return (!s || s(d)) && (!l || l(d)) &&
 				(!k || k(d)) && (!m || m(d));
@@ -275,10 +260,10 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 	ret.addSpatialFilter = function(extents, typeHint) {
 		dataFilters.spatial = function(dot) {
-			return dot[gentMode].x_relative_offset >= extents[0][0] &&
-				dot[gentMode].x_relative_offset <= extents[1][0] &&
-				dot[gentMode].y_relative_offset >= extents[0][1] &&
-				dot[gentMode].y_relative_offset <= extents[1][1];
+			return dot.x_relative_offset >= extents[0][0] &&
+				dot.x_relative_offset <= extents[1][0] &&
+				dot.y_relative_offset >= extents[0][1] &&
+				dot.y_relative_offset <= extents[1][1];
 		};
 		ret.notifyListeners(typeHint);
 	};

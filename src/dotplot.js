@@ -227,7 +227,6 @@ function synteny(id, dataObj, field, initialColorScale) {
 
 	function draw(elapsedMS, initialColorScale, finalColorScale, typeHint) {
 		var start = Date.now();
-		var gent = dataObj.getGEvNTMode();
 
 		var intermediateColorScale;
 		if (elapsedMS === 0 && typeHint === 'data') {
@@ -247,8 +246,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 		if (typeHint === 'zoom') {
 			contextbak.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 			contextbak.fillStyle = UNSELECTED_DOT_FILL;
-			_.each(allDots, function(dot) {
-				var d = dot[gent];
+			_.each(allDots, function(d) {
 				var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
 				var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
 
@@ -304,8 +302,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 			var hiIndex = group[1];
 			context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
 			for (var i = loIndex; i < hiIndex; i++) {
-				var dot = activeDots[i];
-				var d = dot[gent];
+				var d = activeDots[i];
 				var cx = d.x_relative_offset * xRatio - xShift;
 				var cy = d.y_relative_offset * yRatio - yShift;
 
