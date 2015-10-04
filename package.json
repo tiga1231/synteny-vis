@@ -23,7 +23,10 @@
     "build": "npm run all && webpack --progress",
     "build-production": "PRODUCTION=1 npm run all && webpack --progress -p",
 
-		"build-gh-pages": "npm run build-production && cp -r build/* gh-pages"
+		"build-gh-pages": "npm run build-production && cp -r build/* gh-pages",
+
+		"test-watch" : "mocha --compilers js:babel-core/register --watch",
+		"build-watch" : "webpack --watch"
   },
   "devDependencies": {
     "babel-core": "^5.8.25",
