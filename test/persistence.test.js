@@ -5,18 +5,18 @@ var test = require('../src/persistence.js');
 var removeNonExtrema = test.removeNonExtrema;
 
 function intsToObjects(xs) {
-  return _.map(xs, function(i) {
-    return {
-      y: i
-    };
-  });
+	return _.map(xs, function(i) {
+		return {
+			y: i
+		};
+	});
 }
 
-describe("removeNonExtrema", function() {
+describe('removeNonExtrema', function() {
 
-  it("should return empty array if given empty array", function() {
-    removeNonExtrema([]).length.should.be.exactly(0); 
-  });
+	it('should return empty array if given empty array', function() {
+		removeNonExtrema([]).length.should.be.exactly(0);
+	});
 
 });
 //assertTrue(_.isEqual([], removeNonExtrema([])));

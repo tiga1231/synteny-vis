@@ -1,0 +1,9 @@
+{
+	"rules": {
+		"no-unused-vars": 0
+	},
+	"env": {
+		"mocha": true
+	}	
+}
+
