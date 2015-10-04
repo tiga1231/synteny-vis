@@ -5,6 +5,8 @@ var dotplot = require('./dotplot');
 var _ = require('lodash');
 var d3 = require('d3');
 
+const DO_BENCHMARK = true;
+
 var COLOR_RANGES = {
 	rg: ['red', 'green'],
 	rg_quantized: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
@@ -22,6 +24,7 @@ function refreshAutoScale() {
 }
 
 var _refreshAutoDots;
+
 function refreshAutoDots() {
 	_refreshAutoDots();
 }
@@ -113,41 +116,27 @@ function controller(dataObj) {
 	};
 	dataObj.notifyListeners('initial');
 
-	var minLogKs = d3.min(_.pluck(dataObj.currentData().raw, 'logks'));
-	var maxLogKs = d3.max(_.pluck(dataObj.currentData().raw, 'logks'));
-	var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
+	/* Benchmark */
+	if (DO_BENCHMARK) {
+		var [minLogKs, maxLogKs] = d3.extent(dataObj.currentData().raw, x => x.logks);
+		var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
 
-	var i = 0;
-	var j = 0;
-	var count = 0;
-	var time = 0;
-	var slow = 0;
-	setTimeout(function bm() {
-		if (j >= points.length) {
-			i++;
-			j = 0;
-		}
-		if (i >= points.length) {
-			console.log(time, count);
-			window.alert('Average brush time: ' + (time / count) + ', max: ' + slow);
-			return;
-		}
-		if (points[i] < points[j]) {
-			var start = Date.now();
-			histograms.logks.brush.extent([points[i], points[j]]);
+		var rangeList = _.chain(points)
+			.map(lo => _.map(points, hi => [lo, hi]))
+			.flatten()
+			.filter(([lo, hi]) => lo < hi)
+			.value();
+
+		var asyncBenchmark = require('async-benchmark');
+		asyncBenchmark.benchmark(rangeList, function(range) {
+			histograms.logks.brush.extent(range);
 			histograms.logks.brush.event(histograms.logks.selection);
-			var end = Date.now();
-			time += end - start;
-			slow = Math.max(slow, end - start);
-			count++;
-		//  console.log(end - start);
-		}
-		j++;
-		setTimeout(bm, 0);
-	}, 1000);
+		}, function(info) {
+			alert('Average brush time: ' + info.average + ', max: ' + info.max);
+		});
+	}
 }
 
 exports.refreshAutoDots = refreshAutoDots;
 exports.refreshAutoScale = refreshAutoScale;
 exports.controller = controller;
-
