@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
+
 /*
  * Given a list of
  *
@@ -12,7 +13,7 @@ var _ = require('lodash');
  *
  * The first and last point are never removed.
  */
-function removeNonExtrema(A) {
+exports.removeNonExtrema = function removeNonExtrema(A) {
 	return _.filter(A, function(element, index) {
 		if (index === 0 || index === A.length - 1)
 			return true;
@@ -22,6 +23,5 @@ function removeNonExtrema(A) {
 		var after = A[index + 1].y;
 		return here > Math.max(before, after) || here < Math.min(before, after);
 	});
-}
+};
 
-exports.removeNonExtrema = removeNonExtrema;
