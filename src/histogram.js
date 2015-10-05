@@ -67,17 +67,17 @@ function histogram(id, dataObj, field, initialColorScale) {
 	var autoScale;
 
 	function getAutoScale() {
-		if (!autoScale) generateAutoScale(dataObj.currentDataSummary(bins, field), env.getPersistence());
+		const summary = dataObj.currentDataSummary(bins, field);
+		const persistence = env.getPersistence();
+		const extrema = generateAutoScale(summary, persistence);
+		autoScale = generateColorScaleFromExtrema(extrema);
+		if(SHOW_MAXIMA_AND_MINIMA)
+			updateMinMaxMarkers(extrema);
 		return autoScale;
 	}
 
 	function generateAutoScale(summary, persistence) {
-		const start = Date.now();
-
 		const gapBetweenPoints = (A, i) => Math.abs(A[i].y - A[i + 1].y);
-
-		const isMaxima = (A, i) => A[i].y > Math.max(A[i-1].y, A[i+1].y);
-		//const isMinima = (A, i) => A[i].y < Math.min(A[i-1].y, A[i+1].y);
 
 		function indexOfSmallestPointDifference(A) {
 			return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
@@ -87,44 +87,60 @@ function histogram(id, dataObj, field, initialColorScale) {
 			const points = persist.removeNonExtrema(dirtyPoints);
 			const index = indexOfSmallestPointDifference(points);
 
-			if(points.length < 3 || gapBetweenPoints(points, index) > persistence)
+			if (points.length < 3 || gapBetweenPoints(points, index) > persistence)
 				return points;
 
-			points.splice(index === 0 ? 1 : index, 1);
+			const toRemove = index === 0 ? 1 : index;
+			points.splice(toRemove, 1);
 
 			return simplify(points);
 		}
 
-		const minimaAndMaximas = simplify(summary);
+		return simplify(summary);
+	}
 
-		const annotated = _.map(minimaAndMaximas, function(x, i, a) {
-			x.isMax = i > 0 && i < a.length - 1 && isMaxima(minimaAndMaximas, i);
-			return x;
-		});
+	function isMaxima(A, i) {
+		return A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
+	} 
 
-		if (SHOW_MAXIMA_AND_MINIMA) {
-			const tempSelA = plot.selectAll('.maxMark').data(annotated);
-			tempSelA.exit().remove();
-			tempSelA.enter().append('circle').classed('maxMark', 1);
-			tempSelA
-				.attr('cx', d => xPlotScale(d.x + d.dx / 2))
-				.attr('cy', d => yPlotScale(d.y) - 5)
-				.attr('r', 3)
-				.attr('fill', d => d.isMax ? 'red' : 'orange');
-		}
+	function shouldBeMarked(x, i, A) {
+		return i > 0 && i < A.length - 1 && isMaxima(A, i);
+	}
 
-		_(annotated).filter(x => x.isMax).each((x, i) => x.colorIndex = i).commit();
-
-		const sorted = _.sortBy(annotated, 'x');
+	function generateColorScaleFromExtrema(extrema) {
 		const colors = d3.scale.category10();
-		const domain = _.map(sorted, d => d.x + d.dx / 2);
-		const range = _.map(sorted, function(d) {
-			return d.isMax ? colors(d.colorIndex) : UNSELECTED_BAR_FILL;
+
+		const [peaks, valleys] = _.partition(extrema, shouldBeMarked);
+		const coloredPeaks = _.map(peaks, function(x, i) {
+			x.color = colors(i);
+			return x;
+		}); 
+
+		const allPoints = _(coloredPeaks).concat(valleys).sortBy('x').value();
+
+		const domain = _.map(allPoints, d => d.x + d.dx / 2);
+		const range = _.map(allPoints, d => d.color || UNSELECTED_BAR_FILL);
+
+		return d3.scale.linear().domain(domain).range(range);
+	}
+
+	function updateMinMaxMarkers(extrema) {
+		const markers = _.map(extrema, function(d, i, A) {
+			return {
+				color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
+				x: d.x + d.dx / 2,
+				y: d.y
+			};
 		});
 
-		autoScale = d3.scale.linear().domain(domain).range(range);
-
-		console.log(Date.now() - start);
+		const tempSelA = plot.selectAll('.maxMark').data(markers);
+		tempSelA.exit().remove();
+		tempSelA.enter().append('circle').classed('maxMark', 1);
+		tempSelA
+			.attr('cx', d => xPlotScale(d.x))
+			.attr('cy', d => yPlotScale(d.y) - 5)
+			.attr('r', 3)
+			.attr('fill', d => d.color);
 	}
 
 	var plotBrush = d3.svg.brush()
@@ -186,9 +202,9 @@ function histogram(id, dataObj, field, initialColorScale) {
 		}
 		var data = dataObj.currentDataSummary(bins, field);
 		if (typeHint.indexOf('stop') > -1 || typeHint == 'autoscale')
-			setTimeout(generateAutoScale, 0 , data, env.getPersistence());
+			setTimeout(generateAutoScale, 0, data, env.getPersistence());
 
-		if (typeHint.indexOf('stop') > - 1) {
+		if (typeHint.indexOf('stop') > -1) {
 			lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
 			yPlotScale.domain(lastYExtent);
 			yAxisSel.transition()
