@@ -69,14 +69,14 @@ function histogram(id, dataObj, field, initialColorScale) {
 	function getAutoScale() {
 		const summary = dataObj.currentDataSummary(bins, field);
 		const persistence = env.getPersistence();
-		const extrema = generateAutoScale(summary, persistence);
+		const extrema = persistenceSimplification(summary, persistence);
 		autoScale = generateColorScaleFromExtrema(extrema);
 		if(SHOW_MAXIMA_AND_MINIMA)
 			updateMinMaxMarkers(extrema);
 		return autoScale;
 	}
 
-	function generateAutoScale(summary, persistence) {
+	function persistenceSimplification(summary, persistence) {
 		const gapBetweenPoints = (A, i) => Math.abs(A[i].y - A[i + 1].y);
 
 		function indexOfSmallestPointDifference(A) {
@@ -202,7 +202,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 		}
 		var data = dataObj.currentDataSummary(bins, field);
 		if (typeHint.indexOf('stop') > -1 || typeHint == 'autoscale')
-			setTimeout(generateAutoScale, 0, data, env.getPersistence());
+			setTimeout(getAutoScale, 0);
 
 		if (typeHint.indexOf('stop') > -1) {
 			lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
