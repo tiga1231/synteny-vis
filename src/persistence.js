@@ -2,18 +2,20 @@
 
 var _ = require('lodash');
 
-/*
- * Given a list of
- *
- * [{y: <function value>}]
- *
- * remove all the objects that are not extrema; that is, remove the objects
- * that have a y-value that is not higher than both its neighbor's y-values
- * or lower than both its neighbor's y-values.
- *
- * The first and last point are never removed.
- */
-exports.removeNonExtrema = function removeNonExtrema(A) {
+exports.simplify = function simplify(dirtyPoints, persistence) {
+	const points = removeNonExtrema(dirtyPoints);
+	const index = indexOfSmallestPointDifference(points);
+
+	if (points.length < 3 || gapBetweenPoints(points, index) > persistence)
+		return points;
+
+	const toRemove = index === 0 ? 1 : index;
+	points.splice(toRemove, 1);
+
+	return simplify(points, persistence);
+};
+
+function removeNonExtrema(A) {
 	return _.filter(A, function(element, index) {
 		if (index === 0 || index === A.length - 1)
 			return true;
@@ -23,5 +25,12 @@ exports.removeNonExtrema = function removeNonExtrema(A) {
 		var after = A[index + 1].y;
 		return here > Math.max(before, after) || here < Math.min(before, after);
 	});
-};
+}
 
+function gapBetweenPoints(A, i) {
+	return Math.abs(A[i].y - A[i + 1].y);
+}
+
+function indexOfSmallestPointDifference(A) {
+	return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
+}

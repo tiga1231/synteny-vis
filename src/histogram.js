@@ -8,7 +8,7 @@ var UNSELECTED_BAR_FILL = '#D0D0D0';
 
 const SHOW_MAXIMA_AND_MINIMA = true;
 
-var persist = require('./persistence');
+var persistence = require('persistence');
 var util = require('./utils');
 var env = require('./window');
 var _ = require('lodash');
@@ -68,35 +68,12 @@ function histogram(id, dataObj, field, initialColorScale) {
 
 	function getAutoScale() {
 		const summary = dataObj.currentDataSummary(bins, field);
-		const persistence = env.getPersistence();
-		const extrema = persistenceSimplification(summary, persistence);
+		const extrema = persistence.simplify(summary, env.getPersistence());
+
 		autoScale = generateColorScaleFromExtrema(extrema);
 		if(SHOW_MAXIMA_AND_MINIMA)
 			updateMinMaxMarkers(extrema);
 		return autoScale;
-	}
-
-	function persistenceSimplification(summary, persistence) {
-		const gapBetweenPoints = (A, i) => Math.abs(A[i].y - A[i + 1].y);
-
-		function indexOfSmallestPointDifference(A) {
-			return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
-		}
-
-		function simplify(dirtyPoints) {
-			const points = persist.removeNonExtrema(dirtyPoints);
-			const index = indexOfSmallestPointDifference(points);
-
-			if (points.length < 3 || gapBetweenPoints(points, index) > persistence)
-				return points;
-
-			const toRemove = index === 0 ? 1 : index;
-			points.splice(toRemove, 1);
-
-			return simplify(points);
-		}
-
-		return simplify(summary);
 	}
 
 	function isMaxima(A, i) {
