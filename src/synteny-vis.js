@@ -4,6 +4,7 @@ var histogram = require('./histogram');
 var dotplot = require('./dotplot');
 var _ = require('lodash');
 var d3 = require('d3');
+var css = require('generate-css');
 
 const DO_BENCHMARK = true;
 
@@ -29,7 +30,15 @@ function refreshAutoDots() {
 	_refreshAutoDots();
 }
 
-function controller(dataObj) {
+function buildDiv(element_id) {
+	const div = d3.select(element_id);
+	div.append('style').text(css.getStyleSheetForDiv(element_id));
+}
+
+function controller(dataObj, element_id) {
+
+	element_id.replace('a', '');
+	buildDiv('body'); // FIXME
 
 	_refreshAutoDots = function() {
 		_.each(histograms, function(h) {

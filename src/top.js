@@ -43,7 +43,7 @@ queue()
 		}
 	
 		main.makeSyntenyDotPlot({
-			element_id: 'myDiv',
+			element_id: 'histogram-wrapper',
 			data_url: info.data_url,
 			genome_x,
 			genome_y
