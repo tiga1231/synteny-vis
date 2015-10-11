@@ -1,32 +1,54 @@
-var sv = require('./synteny-vis');
+var queue = require('queue-async');
 var main = require('./main');
+var _ = require('lodash');
+var sv = require('synteny-vis');
+var d3 = require('d3');
 
-var refreshAutoDots = sv.refreshAutoDots;
-var refreshAutoScale = sv.refreshAutoScale;
+const files = [
+	{
+		hash: '#m',
+		id_1: '6807',
+		id_2: '8082',
+		data_url: './data/6807_8082.json'
+	},
+	{
+		hash: '#e',
+		id_1: '4241',
+		id_2: '4242',
+		data_url: './data/4241_4242.json'
+	},
+	{
+		hash: '#a',
+		id_1: '16911',
+		id_2: '3068',
+		data_url: './data/16911_3068.json'
+	},
+	{
+		hash: '', // default -- matches all window.location.hash, even empty
+		id_1: '11691',
+		id_2: '25577',
+		data_url: './data/11691_25577.json'
+	}
+];
 
-switch (window.location.hash) {
-	case '#m':
-	case '#maize':
-		main.loadksData('./data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords.ks', '6807', '8082', sv.controller);
-		break;
+const info = _.find(files, ({hash}) => window.location.hash.indexOf(hash) > -1);
 
-	case '#e':
-	case '#ecoli':
-		main.loadksData('./data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '4241', '4242', sv.controller);
-		break;
+queue()
+	.defer(d3.json, 'lengths/' + info.id_1 + '.json')
+	.defer(d3.json, 'lengths/' + info.id_2 + '.json')
+	.await((err, genome_x, genome_y) => {
+		if (err) {
+			console.log(err);
+			return;
+		}
+	
+		main.makeSyntenyDotPlot({
+			element_id: 'myDiv',
+			data_url: info.data_url,
+			genome_x,
+			genome_y
+		});
+	});
 
-	case '#a':
-	case '#arabidopsis':
-		main.loadksData('./data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '16911', '3068', sv.controller);
-		break;
-
-	default:
-	case '#h':
-	case '#homo':
-		window.location.hash = '#homo';
-		main.loadksData('./data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks', '11691', '25577', sv.controller);
-		break;
-}
-
-window.refreshAutoScale = refreshAutoScale;
-window.refreshAutoDots = refreshAutoDots;
+window.refreshAutoScale = sv.refreshAutoScale;
+window.refreshAutoDots = sv.refreshAutoDots;

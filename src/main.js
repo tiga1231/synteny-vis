@@ -8,31 +8,33 @@ var Y_AXIS_ORGANISM_NAME;
 var queue = require('queue-async');
 var _ = require('lodash');
 var d3 = require('d3');
+var sv = require('./synteny-vis');
 
-var loadksData = function(ks_filename, x_id, y_id, cb) {
+exports.makeSyntenyDotPlot = ({
+	data_url,
+	element_id,
+	genome_x,
+	genome_y
+}) => {
 	queue()
-		.defer(d3.text, ks_filename)
-		//.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + x_id)
-		//.defer(d3.json, 'https://genomevolution.org/coge/api/v1/genomes/' + y_id)
-		.defer(d3.json, 'lengths/' + x_id + '.json')
-		.defer(d3.json, 'lengths/' + y_id + '.json')
-		.await(function(err, ks, x_len, y_len) {
-			if (err) {
+		.defer(d3.text, data_url)
+		.await((err, ks) => {
+			if(err) {
 				console.log(err);
-				return;
+				return;	
 			}
 
-			X_AXIS_ORGANISM_NAME = x_len.organism.name;
-			Y_AXIS_ORGANISM_NAME = y_len.organism.name;
+			X_AXIS_ORGANISM_NAME = genome_x.organism.name;
+			Y_AXIS_ORGANISM_NAME = genome_y.organism.name;
 
 			var ksData = ksTextToObjects(ks);
-			var xCumLenMap = lengthsToCumulativeBPCounts(x_len.chromosomes);
-			var yCumLenMap = lengthsToCumulativeBPCounts(y_len.chromosomes);
+			var xCumLenMap = lengthsToCumulativeBPCounts(genome_x.chromosomes);
+			var yCumLenMap = lengthsToCumulativeBPCounts(genome_y.chromosomes);
 			var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
 			var ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
 			console.log('Total synteny dots:', ksDataObject.currentData().raw.length);
-			cb(ksDataObject);
+			sv.controller(ksDataObject, element_id);
 		});
 };
 
@@ -321,6 +323,3 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	ret.setGEvNTMode(gentMode);
 	return ret;
 }
-
-exports.loadksData = loadksData;
-
