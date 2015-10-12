@@ -10,18 +10,13 @@ var _ = require('lodash');
 var d3 = require('d3');
 var sv = require('./synteny-vis');
 
-exports.makeSyntenyDotPlot = ({
-	data_url,
-	element_id,
-	genome_x,
-	genome_y
-}) => {
+exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 	queue()
 		.defer(d3.text, data_url)
 		.await((err, ks) => {
-			if(err) {
+			if (err) {
 				console.log(err);
-				return;	
+				return;
 			}
 
 			X_AXIS_ORGANISM_NAME = genome_x.organism.name;

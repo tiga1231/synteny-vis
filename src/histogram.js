@@ -71,14 +71,14 @@ function histogram(id, dataObj, field, initialColorScale) {
 		const extrema = persistence.simplify(summary, env.getPersistence());
 
 		autoScale = generateColorScaleFromExtrema(extrema);
-		if(SHOW_MAXIMA_AND_MINIMA)
+		if (SHOW_MAXIMA_AND_MINIMA)
 			updateMinMaxMarkers(extrema);
 		return autoScale;
 	}
 
 	function isMaxima(A, i) {
 		return A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
-	} 
+	}
 
 	function shouldBeMarked(x, i, A) {
 		return i > 0 && i < A.length - 1 && isMaxima(A, i);
@@ -91,7 +91,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 		const coloredPeaks = _.map(peaks, function(x, i) {
 			x.color = colors(i);
 			return x;
-		}); 
+		});
 
 		const allPoints = _(coloredPeaks).concat(valleys).sortBy('x').value();
 

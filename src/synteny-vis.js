@@ -32,13 +32,84 @@ function refreshAutoDots() {
 
 function buildDiv(element_id) {
 	const div = d3.select(element_id);
+
 	div.append('style').text(css.getStyleSheetForDiv(element_id));
+
+	div.append('canvas').attr('id', 'dotplot-canvas-bak');
+	div.append('canvas').attr('id', 'dotplot-canvas');
+	div.append('svg').attr('id', 'dotplot');
+
+	const histogramWrapper = div.append('div').attr('id', 'histogram-wrapper');
+	histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);
+	histogramWrapper.append('svg').attr('id', 'plot2').classed('histogram', true);
+	histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
+
+	const formWrapper = div.append('div').attr('id', 'form-wrapper');
+
+	function makeForm(title, optionId, elements, checkIndex) {
+		const navOptions = formWrapper.append('div').classed('radio-button-box', true);
+		navOptions.append('strong').text(title + ': ');
+
+		const navForm = navOptions.append('form').attr('id', optionId);
+		const options = navForm.selectAll('input')
+			.data(elements).enter().append('input')
+			.attr('type', 'radio').attr('name', optionId)
+			.attr('value', d => d[0]);
+
+		options.forEach(selection => {
+			selection.forEach((element, i) => {
+				const label = document.createElement('label');
+				label.textContent = elements[i][1];
+				console.log(label);
+				console.log(element);
+				navForm.node().insertBefore(label, element);
+			});
+		});
+
+		options[0][checkIndex].checked = true;
+	}
+
+	const option = (value, text) => [value, text];
+
+	makeForm('Navigation Mode', 'mouse-options', [
+		option('brush', 'Brushing'),
+		option('pan', 'Panning')
+	], 0);
+
+	makeForm('Plotting order', 'summary-options', [
+		option('minimum', 'High to Low'),
+		option('maximum', 'Low to High')
+	], 0);
+
+	makeForm('Dot Plot Coloring', 'plot-var-options', [
+		option('logks', 'log ks'),
+		option('logkn', 'log kn'),
+		option('logkskn', 'log ks/kn')
+	], 0);
+
+	makeForm('Color Scale', 'color-options', [
+		option('rg', 'red-green'),
+		option('rg_quantized', 'rg_quantized'),
+		option('rainbow', 'rainbow'),
+		option('rainbow_quantized', 'rainbow_quantized'),
+		option('auto', 'auto')
+	], 0);
+
+	const persistenceOptions = formWrapper.append('div').classed('radio-button-box', true);
+	persistenceOptions.append('strong').text('Auto-scale persistence');
+
+	persistenceOptions.append('input').attr('id', 'persistence').attr('type', 'range').attr('min', 0).attr('max', 100)
+		.attr('value', 40).attr('step', 1)
+		.attr('oninput', 'refreshAutoDots(); document.getElementById(\'persistence-text\').innerText=this.value');
+
+	persistenceOptions.append('button').attr('type', 'button').attr('onclick', 'refreshAutoScale()').text('Refresh auto scale');
+
+	persistenceOptions.append('p').text('Largest persistence edge that will be removed: ').append('label').attr('id', 'persistence-text').text('40');
 }
 
 function controller(dataObj, element_id) {
 
-	element_id.replace('a', '');
-	buildDiv('body'); // FIXME
+	buildDiv('#' + element_id);
 
 	_refreshAutoDots = function() {
 		_.each(histograms, function(h) {

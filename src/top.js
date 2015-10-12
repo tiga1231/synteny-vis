@@ -41,9 +41,9 @@ queue()
 			console.log(err);
 			return;
 		}
-	
+
 		main.makeSyntenyDotPlot({
-			element_id: 'histogram-wrapper',
+			element_id: 'main',
 			data_url: info.data_url,
 			genome_x,
 			genome_y
