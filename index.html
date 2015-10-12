@@ -2,68 +2,75 @@
 
 <head>
   <meta charset="UTF-8">
-  <!-- Remember to replace these with CDN versions -->
-  <link rel="stylesheet" type="text/css" href="style.css">
+	<!-- You don't need to include this! I am just using the JSON loading function. Presumably you have some other method of loading data, and that is fine. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 </head>
 
 <body>
-  <canvas id="dotplot-canvas-bak"></canvas>
-  <canvas id="dotplot-canvas"></canvas>
-  <svg id="dotplot"></svg>
+	<div id="main"></div>
+	<!-- You DO need this. It actually builds the plot. -->
+  <script src="synteny-dotplot-builder.js"></script>
+	<script>
+		/* List of all possible data files */
+		var files = [{
+				hash: '#m',
+				id_1: '6807',
+				id_2: '8082',
+				data_url: './data/6807_8082.json'
+			}, {
+				hash: '#e',
+				id_1: '4241',
+				id_2: '4242',
+				data_url: './data/4241_4242.json'
+			}, {
+				hash: '#a',
+				id_1: '16911',
+				id_2: '3068',
+				data_url: './data/16911_3068.json'
+			}, {
+				hash: '', // default -- matches all window.location.hash, even empty
+				id_1: '11691',
+				id_2: '25577',
+				data_url: './data/11691_25577.json'
+			}];
+		
+		/* Pick the file that matches window.location.hash */
+		var selected = files
+			.filter(function(info) {
+			 	return window.location.hash.indexOf(info.hash) > -1; 
+			})[0];
 
-  <div id="histogram-wrapper">
-    <svg id="plot" class="histogram"></svg>
-    <svg id="plot2" class="histogram"></svg>
-    <svg id="plot3" class="histogram"></svg>
-  </div>
-
-  <div id="form-wrapper">
-    <div class="radio-button-box">
-      <strong>Navigation Mode</strong>
-      <form id="mouse-options">
-        <input type="radio" name="mouse-options" value="brush" checked>Brushing
-        <input type="radio" name="mouse-options" value="pan">Panning
-      </form>
-    </div>
-
-    <div class="radio-button-box">
-      <strong>Plotting order</strong>
-      <form id="summary-options">
-        <input type="radio" name="summary-options" value="minimum" checked>High to Low
-        <input type="radio" name="summary-options" value="maximum">Low to High
-      </form>
-    </div>
-
-    <div class="radio-button-box">
-      <strong>Dot Plot Coloring</strong>
-      <form id="plot-var-options">
-        <input type="radio" name="plot-var-options" value="logks" checked>log ks
-        <input type="radio" name="plot-var-options" value="logkn">log kn
-        <input type="radio" name="plot-var-options" value="logkskn">log ks/kn
-      </form>
-    </div>
-
-    <div class="radio-button-box">
-      <strong>Color Scale</strong>
-      <form id="color-options">
-        <input type="radio" name="color-options" value="rg" checked>red-green
-        <input type="radio" name="color-options" value="rg_quantized">rg_quantized
-        <input type="radio" name="color-options" value="rainbow">rainbow
-        <input type="radio" name="color-options" value="rainbow_quantized">rainbow_quantized
-        <input type="radio" name="color-options" value="auto">auto
-      </form>
-    </div>
-
-    <div class="radio-button-box">
-      <strong>Auto-scale persistence</strong>
-      <input type=range id=persistence min=0 max=100 value=40 step=1 oninput="refreshAutoDots(); document.getElementById('persistence-text').innerText=this.value">
-      <button type=button onclick="refreshAutoScale()">Refresh auto scale</button>
-      Largest persistence edge that will be removed:
-      <label id="persistence-text">25</label>
-    </div>
-  </div>
-
-  <script src="build.js"></script>
+		/* Load the auxillary data */
+		d3.json('lengths/' + selected.id_1 + '.json', function(err1, genome_x_extra) {
+			d3.json('lengths/' + selected.id_2 + '.json', function(err2, genome_y_extra) {
+				if (err1 || err2) {
+					console.log(err1, err2);
+					return;
+				}
+		
+				/* Make sure we aren't using things we aren't allowed to. */
+				var genome_x = {
+					name: genome_x_extra.organism.name,
+					id: selected.id_1,
+					chromosomes: genome_x_extra.chromosomes
+				};
+		
+				var genome_y = {
+					name: genome_y_extra.organism.name,
+					id: selected.id_2,
+					chromosomes: genome_y_extra.chromosomes
+				};
+		
+				/* This is the call that actually builds the plots! */
+				makeSyntenyDotPlot({
+					element_id: 'main', /* div from above */
+					data_url: selected.data_url, 
+					genome_x: genome_x, 
+					genome_y: genome_y
+				});
+			});
+		});
+	</script>
 </body>
 
 </html>
