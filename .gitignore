@@ -1,4 +1,4 @@
 node_modules
-build/build.js
-build/build.js.map
+build/*.js
+build/*.js.map
 gh-pages/

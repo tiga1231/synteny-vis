@@ -60,8 +60,6 @@ function buildDiv(element_id) {
 			selection.forEach((element, i) => {
 				const label = document.createElement('label');
 				label.textContent = elements[i][1];
-				console.log(label);
-				console.log(element);
 				navForm.node().insertBefore(label, element);
 			});
 		});

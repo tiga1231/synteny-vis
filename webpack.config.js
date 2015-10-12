@@ -1,8 +1,8 @@
 module.exports = {
-  entry: __dirname + '/src/top.js',
+  entry: __dirname + '/src/main.js',
   output: {
     path: __dirname + '/build',
-    filename: 'build.js'
+    filename: 'synteny-dotplot-builder.js'
   },
   module: {
     loaders: [

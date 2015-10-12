@@ -19,8 +19,8 @@ exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 				return;
 			}
 
-			X_AXIS_ORGANISM_NAME = genome_x.organism.name;
-			Y_AXIS_ORGANISM_NAME = genome_y.organism.name;
+			X_AXIS_ORGANISM_NAME = genome_x.name;
+			Y_AXIS_ORGANISM_NAME = genome_y.name;
 
 			var ksData = ksTextToObjects(ks);
 			var xCumLenMap = lengthsToCumulativeBPCounts(genome_x.chromosomes);
@@ -140,7 +140,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	var xmap = xmapPair.ge;
 	var ymap = ymapPair.ge;
 	var ret = {};
-	console.log(xmap);
 
 	var sortedDots = {};
 	var dataFilters = {};
@@ -318,3 +317,11 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	ret.setGEvNTMode(gentMode);
 	return ret;
 }
+
+// We need to expose this to the outside world.
+window.makeSyntenyDotPlot = exports.makeSyntenyDotPlot;
+
+// hacks. this should get moved.
+window.refreshAutoScale = sv.refreshAutoScale;
+window.refreshAutoDots = sv.refreshAutoDots;
+

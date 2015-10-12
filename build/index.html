@@ -2,11 +2,75 @@
 
 <head>
   <meta charset="UTF-8">
+	<!-- You don't need to include this! I am just using the JSON loading function. Presumably you have some other method of loading data, and that is fine. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 </head>
 
 <body>
 	<div id="main"></div>
-  <script src="build.js"></script>
+	<!-- You DO need this. It actually builds the plot. -->
+  <script src="synteny-dotplot-builder.js"></script>
+	<script>
+		/* List of all possible data files */
+		var files = [{
+				hash: '#m',
+				id_1: '6807',
+				id_2: '8082',
+				data_url: './data/6807_8082.json'
+			}, {
+				hash: '#e',
+				id_1: '4241',
+				id_2: '4242',
+				data_url: './data/4241_4242.json'
+			}, {
+				hash: '#a',
+				id_1: '16911',
+				id_2: '3068',
+				data_url: './data/16911_3068.json'
+			}, {
+				hash: '', // default -- matches all window.location.hash, even empty
+				id_1: '11691',
+				id_2: '25577',
+				data_url: './data/11691_25577.json'
+			}];
+		
+		/* Pick the file that matches window.location.hash */
+		var selected = files
+			.filter(function(info) {
+			 	return window.location.hash.indexOf(info.hash) > -1; 
+			})[0];
+
+		/* Load the auxillary data */
+		d3.json('lengths/' + selected.id_1 + '.json', function(err1, genome_x_extra) {
+			d3.json('lengths/' + selected.id_2 + '.json', function(err2, genome_y_extra) {
+				if (err1 || err2) {
+					console.log(err1, err2);
+					return;
+				}
+		
+				/* Make sure we aren't using things we aren't allowed to. */
+				var genome_x = {
+					name: genome_x_extra.organism.name,
+					id: selected.id_1,
+					chromosomes: genome_x_extra.chromosomes
+				};
+		
+				var genome_y = {
+					name: genome_y_extra.organism.name,
+					id: selected.id_2,
+					chromosomes: genome_y_extra.chromosomes
+				};
+		
+				/* This is the call that actually builds the plots! */
+				makeSyntenyDotPlot({
+					element_id: 'main', /* div from above */
+					data_url: selected.data_url, 
+					genome_x: genome_x, 
+					genome_y: genome_y
+				});
+			});
+		});
+	</script>
 </body>
 
 </html>
