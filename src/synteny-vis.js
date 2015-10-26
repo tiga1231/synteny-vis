@@ -1,19 +1,12 @@
 'use strict';
 
-var histogram = require('./histogram');
-var dotplot = require('./dotplot');
-var _ = require('lodash');
-var d3 = require('d3');
-var css = require('generate-css');
+const histogram = require('./histogram');
+const dotplot = require('./dotplot');
+const _ = require('lodash');
+const d3 = require('d3');
+const css = require('generate-css');
 
-const DO_BENCHMARK = true;
-
-var COLOR_RANGES = {
-	rg: ['red', 'green'],
-	rg_quantized: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
-	rainbow: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange'],
-	rainbow_quantized: ['blue', 'magenta', 'aqua', 'lime', 'red', 'orange']
-};
+const DO_BENCHMARK = false;
 
 function refreshAutoScale() {
 	var radio = document.getElementById('color-options');
@@ -131,14 +124,14 @@ function controller(dataObj, element_id) {
 	/* Plot variable switching */
 	d3.selectAll('#plot-var-options input[name=plot-var-options]')
 		.on('change', function() {
-			histograms[activeField].setColorScale(steelBlueCS);
+			histograms[activeField].setColorScale(colorScale(activeField, 'unselected'));
 			activeField = this.value;
 			syntenyPlot.setField(activeField);
 			var newCS;
 			if (activeCS === 'auto') {
 				newCS = histograms[activeField].getAutoScale();
 			} else {
-				newCS = colorScales[activeField][activeCS];
+				newCS = colorScale(activeField, activeCS);
 			}
 			syntenyPlot.setColorScale(newCS);
 			histograms[activeField].setColorScale(newCS);
@@ -153,44 +146,24 @@ function controller(dataObj, element_id) {
 			if (this.value === 'auto') {
 				newCS = histograms[activeField].getAutoScale();
 			} else {
-				newCS = colorScales[activeField][this.value];
+				console.log('here');
+				newCS = colorScale(activeField, this.value);
 			}
 			histograms[activeField].setColorScale(newCS);
 			syntenyPlot.setColorScale(newCS);
 			activeCS = this.value;
 		});
 
-	var fields = ['logks', 'logkn', 'logkskn'];
-	var colorScales = _.chain(fields)
-		.map(function(field) {
-			return [field, d3.extent(_.pluck(dataObj.currentData().raw, field))];
-		})
-		.object()
-		.mapValues(function(extent) {
-			var max = extent[1];
-			var min = extent[0];
-			var range = max - min;
+	const colorScale = require('colorscales').onData(dataObj.currentData().raw);
 
-			return _.mapValues(COLOR_RANGES, function(colorRange, colorScaleName) {
-				var step = range / (colorRange.length - 1);
-				// Extra .5 * step is to avoid missing a value because of floating point precision
-				var domain = _.range(min, max + 0.5 * step, step);
+	const initial = colorScale(activeField, 'rg');
+	const unselected = colorScale(activeField, 'unselected');
 
-				var scale = colorScaleName.indexOf('quantized') > -1 ? d3.scale.quantize() : d3.scale.linear();
-				return scale.domain(domain).range(colorRange);
-			});
-		})
-		.value();
-
-
-	var steelBlueCS = _.constant('steelblue');
-	var initialColorScale = colorScales[activeField].rg;
-
-	syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initialColorScale);
+	syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial);
 	var histograms = {
-		'logks': histogram.histogram('#plot', dataObj, 'logks', initialColorScale),
-		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', steelBlueCS),
-		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', steelBlueCS)
+		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
+		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', unselected),
+		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', unselected)
 	};
 	dataObj.notifyListeners('initial');
 

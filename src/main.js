@@ -35,28 +35,33 @@ exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 
 function ksTextToObjects(text) {
 	/* .ks files are delimited with a combination of tabs and double bars. */
-	var csv = text.replace(/\|\|/g, ',').replace(/\t/g, ',').replace(' ', '');
-	var ksLines = _.compact(csv.split('\n'));
-	return _.chain(ksLines)
-		.reject(function(line) {
-			return line[0] === '#';
-		})
+	const csvLines = text
+		.replace(/\|\|/g, ',')
+		.replace(/\t/g, ',')
+		.replace(' ', '')
+		.split('\n');
+
+	return _.chain(csvLines)
+		.filter(line => line && line[0] !== '#')
 		.map(ksLineToSyntenyDot)
-		.filter(function(line) {
-			return isFinite(line.logks) && isFinite(line.logkn);
-		})
+		.filter(line => isFinite(line.logks) && isFinite(line.logkn))
 		.value();
 }
 
 function ksLineToSyntenyDot(line) {
-	var fields = line.split(',');
+	const fields = line.split(',');
+
+	const ks = Number(fields[0]);
+	const kn = Number(fields[1]);
+	const log10 = n => Math.log(n) / Math.log(10);
+
 	return {
-		ks: Number(fields[0]),
-		logks: Math.log(Number(fields[0])) / Math.log(10),
-		roundedlogks: Math.floor(Math.log(Number(fields[0])) / Math.log(10) * 10) / 10,
-		kn: Number(fields[1]),
-		logkn: Math.log(Number(fields[1])) / Math.log(10),
-		logkskn: (Math.log(Number(fields[0])) - Math.log(Number(fields[1]))) / Math.log(10),
+		ks,
+		logks: log10(ks),
+		roundedlogks: Math.floor(log10(ks) * 10) / 10,
+		kn,
+		logkn: log10(kn),
+		logkskn: log10(ks) - log10(kn),
 		x_chromosome_id: fields[3],
 		y_chromosome_id: fields[15],
 		x_relative_offset: Math.round((Number(fields[4]) + Number(fields[5])) / 2),
@@ -65,7 +70,7 @@ function ksLineToSyntenyDot(line) {
 }
 
 function lengthsToCumulativeBPCounts(len_list) {
-	var ntLenList = _.chain(len_list)
+	const ntLenList = _.chain(len_list)
 		.sortBy('length')
 		.reverse()
 		.reduce(function(map, kv) {
@@ -77,7 +82,7 @@ function lengthsToCumulativeBPCounts(len_list) {
 		})
 		.value();
 
-	var geLenList = _.chain(len_list)
+	const geLenList = _.chain(len_list)
 		.sortBy('length')
 		.reverse()
 		.reduce(function(map, kv) {
@@ -89,7 +94,7 @@ function lengthsToCumulativeBPCounts(len_list) {
 		})
 		.value();
 
-	var nameLenList = _.chain(len_list)
+	const nameLenList = _.chain(len_list)
 		.sortBy('name')
 		.reduce(function(map, kv) {
 			map[kv.name] = map.total;
@@ -100,10 +105,10 @@ function lengthsToCumulativeBPCounts(len_list) {
 		})
 		.value();
 
-	var geneCounts = _.reduce(len_list, function(map, kv) {
-		map[kv.name] = kv.gene_count;
-		return map;
-	}, {});
+	const geneCounts = _.object(
+		_.map(len_list, x => x.name), 
+		_.map(len_list, x => x.gene_count)
+	);
 
 	return {
 		nt: ntLenList,
@@ -126,13 +131,9 @@ function inlineKSData(ks, xmap, ymap) {
 
 function between(low, high, field) {
 	if (field) {
-		return function(x) {
-			return low <= x[field] && x[field] < high;
-		};
+		return x => low <= x[field] && x[field] < high;
 	} else {
-		return function(x) {
-			return low <= x && x < high;
-		};
+		return x => low <= x && x < high;
 	}
 }
 
@@ -186,34 +187,15 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	function filterMapForNames(map) {
 		return _.chain(map)
 			.pairs()
-			// Filter out short names
-			//.reject(function(x, i, A) {
-			//  return i > 0 && x[1] - A[i-1][1] < NUCLEOTIDE_LOWER_NAME_LIMIT;
-			//})
 			.sortBy('1')
 			.pluck('0')
-			.reject(function(x) {
-				return x === 'total';
-			})
+			.reject(x => x === 'total')
 			.value();
 	}
 
 	function getFilterFunction() {
-		var s = dataFilters.spatial;
-		var l = dataFilters.logks;
-		var k = dataFilters.logkn;
-		var m = dataFilters.logkskn;
-		if (s && l) {
-			return function(d) {
-				return s(d) && l(d);
-			};
-		}
-		if (s && !(l || k || m)) return s;
-		if (l && !(s || k || m)) return l;
-		return function(d) {
-			return (!s || s(d)) && (!l || l(d)) &&
-				(!k || k(d)) && (!m || m(d));
-		};
+		const filters = _.values(dataFilters);
+		return x => _.all(_.map(filters, f => f(x)));
 	}
 
 	ret.currentData = function currentData() {
