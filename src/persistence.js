@@ -1,6 +1,6 @@
 'use strict';
 
-var _ = require('lodash');
+const _ = require('lodash');
 
 exports.simplify = function simplify(dirtyPoints, persistence) {
 	const points = removeNonExtrema(dirtyPoints);
@@ -20,9 +20,9 @@ function removeNonExtrema(A) {
 		if (index === 0 || index === A.length - 1)
 			return true;
 
-		var before = A[index - 1].y;
-		var here = element.y;
-		var after = A[index + 1].y;
+		const before = A[index - 1].y;
+		const here = element.y;
+		const after = A[index + 1].y;
 		return here > Math.max(before, after) || here < Math.min(before, after);
 	});
 }

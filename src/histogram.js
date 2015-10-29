@@ -1,16 +1,16 @@
 'use strict';
 
-var HISTOGRAM_MARGIN = 50; /* Padding around histogram */
-var HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
-var HISTOGRAM_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
-var NUM_HISTOGRAM_TICKS = 100;
-var UNSELECTED_BAR_FILL = '#D0D0D0';
+const HISTOGRAM_MARGIN = 50; /* Padding around histogram */
+const HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
+const HISTOGRAM_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
+const NUM_HISTOGRAM_TICKS = 100;
+const UNSELECTED_BAR_FILL = '#D0D0D0';
 
-var persistenceFuncs = require('persistence');
-var utils = require('utils');
-var _ = require('lodash');
-var d3 = require('d3');
-var transform = require('svg-transform');
+const persistenceFuncs = require('persistence');
+const utils = require('utils');
+const _ = require('lodash');
+const d3 = require('d3');
+const transform = require('svg-transform');
 
 function histogram(id, dataObj, field, initialColorScale) {
 	var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));

@@ -1,16 +1,15 @@
 'use strict';
 
-var utils = require('utils');
-var transform = require('svg-transform');
-var _ = require('lodash');
-var d3 = require('d3');
-var transform = require('svg-transform');
+const utils = require('utils');
+const _ = require('lodash');
+const d3 = require('d3');
+const transform = require('svg-transform');
 
-var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
-var CIRCLE_RADIUS = 2;
-var UNSELECTED_DOT_FILL = '#D0D0D0';
-var NUM_COLOR_SCALE_INTERPOLATION_SAMPLES = 100;
-var DOTPLOT_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
+const SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
+const CIRCLE_RADIUS = 2;
+const UNSELECTED_DOT_FILL = '#D0D0D0';
+const NUM_COLOR_SCALE_INTERPOLATION_SAMPLES = 100;
+const DOTPLOT_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 
 function synteny(id, dataObj, field, initialColorScale) {
 

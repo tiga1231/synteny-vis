@@ -113,7 +113,6 @@ function controller(dataObj, element_id) {
 			refreshAutoScale(getPersistence());
 		});
 
-	var syntenyPlot;
 	/* zoom/pan switching */
 	d3.selectAll('#mouse-options input[name=mouse-options]')
 		.on('change', function() {
@@ -163,8 +162,8 @@ function controller(dataObj, element_id) {
 	const initial = colorScale(activeField, 'rg');
 	const unselected = colorScale(activeField, 'unselected');
 
-	syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial);
-	var histograms = {
+	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial);
+	const histograms = {
 		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
 		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', unselected),
 		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', unselected)
@@ -181,16 +180,16 @@ function controller(dataObj, element_id) {
 
 	/* Benchmark */
 	if (DO_BENCHMARK) {
-		var [minLogKs, maxLogKs] = d3.extent(dataObj.currentData().raw, x => x.logks);
-		var points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
+		const [minLogKs, maxLogKs] = d3.extent(dataObj.currentData().raw, x => x.logks);
+		const points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
 
-		var rangeList = _.chain(points)
+		const rangeList = _.chain(points)
 			.map(lo => _.map(points, hi => [lo, hi]))
 			.flatten()
 			.filter(([lo, hi]) => lo < hi)
 			.value();
 
-		var asyncBenchmark = require('async-benchmark');
+		const asyncBenchmark = require('async-benchmark');
 		asyncBenchmark.benchmark(rangeList, function(range) {
 			histograms.logks.brush.extent(range);
 			histograms.logks.brush.event(histograms.logks.selection);

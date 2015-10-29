@@ -1,4 +1,4 @@
-var _ = require('lodash');
+const _ = require('lodash');
 
 /*
  * I want to run a benchmark, but I don't want to block UI updates 

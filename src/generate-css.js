@@ -1,4 +1,4 @@
-const lines = [
+const cssString = [
 	'{name} .extent {',
 	'  /* Brushes */',
 	'  fill: grey;',
@@ -57,7 +57,6 @@ const lines = [
 	'{name} form {',
 	'  display: inline;',
 	'}'
-];
+].join('\n');
 
-const cssString = lines.join('\n');
 exports.getStyleSheetForDiv = (name) => cssString.replace(/{name}/g, name);

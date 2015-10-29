@@ -1,14 +1,14 @@
 'use strict';
 
-var DATA_OP_TIMING = false;
+const DATA_OP_TIMING = false;
 
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;
 
-var queue = require('queue-async');
-var _ = require('lodash');
-var d3 = require('d3');
-var sv = require('./synteny-vis');
+const queue = require('queue-async');
+const _ = require('lodash');
+const d3 = require('d3');
+const sv = require('./synteny-vis');
 
 exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 	queue()
