@@ -7,16 +7,17 @@ var NUM_HISTOGRAM_TICKS = 100;
 var UNSELECTED_BAR_FILL = '#D0D0D0';
 
 var persistenceFuncs = require('persistence');
-var util = require('./utils');
+var utils = require('utils');
 var _ = require('lodash');
 var d3 = require('d3');
+var transform = require('svg-transform');
 
 function histogram(id, dataObj, field, initialColorScale) {
 	var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
 
 	var plot = d3.select(id);
-	var plotWidth = util.getComputedAttr(plot.node(), 'width');
-	var plotHeight = util.getComputedAttr(plot.node(), 'height');
+	var plotWidth = utils.getComputedAttr(plot.node(), 'width');
+	var plotHeight = utils.getComputedAttr(plot.node(), 'height');
 
 	var prettyNames = {
 		logks: 'log(ks)',
@@ -125,7 +126,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 		.append('rect').classed('dataBars', true);
 
 	var brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
-		.attr('transform', util.translate(0, HISTOGRAM_MARGIN))
+		.attr('transform', transform([{translate: [0, HISTOGRAM_MARGIN]}]))
 		.call(plotBrush);
 	brushSelectForBM.selectAll('rect')
 		.attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
@@ -135,10 +136,10 @@ function histogram(id, dataObj, field, initialColorScale) {
 	var yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
 
 	plot.append('g')
-		.attr('transform', util.translate(0, plotHeight - HISTOGRAM_MARGIN))
+		.attr('transform', transform([{translate: [0, plotHeight - HISTOGRAM_MARGIN]}]))
 		.classed('xAxis', true).call(xAxis);
 	var yAxisSel = plot.append('g')
-		.attr('transform', util.translate(HISTOGRAM_MARGIN, 0))
+		.attr('transform', transform([{translate: [HISTOGRAM_MARGIN, 0]}]))
 		.classed('yAxis', true).call(yAxis);
 
 	function updatePlotAttrs(selection) {

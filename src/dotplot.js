@@ -1,8 +1,10 @@
 'use strict';
 
-var util = require('./utils.js');
+var utils = require('utils');
+var transform = require('svg-transform');
 var _ = require('lodash');
 var d3 = require('d3');
+var transform = require('svg-transform');
 
 var SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
 var CIRCLE_RADIUS = 2;
@@ -18,8 +20,8 @@ function synteny(id, dataObj, field, initialColorScale) {
 
 	const baseID = id.substring(1);
 	const svgElement = document.getElementById(baseID);
-	var computedWidth = util.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
-	var computedHeight = util.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
+	var computedWidth = utils.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
+	var computedHeight = utils.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
 	var windowAspectRatio = computedHeight / computedWidth;
 
 	var width;
@@ -48,7 +50,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 		// have to "scroll back" onto the canvas if you pan past the edge.
 		zoom.translate(t);
 
-		brushGroup.attr('transform', util.translate(t[0], t[1]) + 'scale(' + s + ')');
+		brushGroup.attr('transform', transform([{translate: t}, {scale: s}]));
 
 		var tempXOffsets = _.filter(xOffsets, function(x) {
 			return 0 <= xScale(x) && xScale(x) <= width;
@@ -181,7 +183,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 		.orient('bottom')
 		.tickSize(0);
 
-	var xAxisWrapper = svg.append('g').attr('transform', util.translate(SYNTENY_MARGIN, height + SYNTENY_MARGIN));
+	var xAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, height + SYNTENY_MARGIN]}]));
 	var xAxisGapsGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xGapsAxis);
 	var xAxisLineGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xLineAxis);
 
@@ -208,13 +210,13 @@ function synteny(id, dataObj, field, initialColorScale) {
 		.orient('left')
 		.tickSize(0);
 
-	var yAxisWrapper = svg.append('g').attr('transform', util.translate(SYNTENY_MARGIN, SYNTENY_MARGIN));
+	var yAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]));
 	var yAxisGapsGroup = yAxisWrapper.append('g').classed('yAxis', true).call(yGapsAxis);
 	var yAxisLineGroup = yAxisWrapper.append('g').classed('yAxis', true).call(yLineAxis);
 
 	svg = svg
 		.append('g')
-		.attr('transform', util.translate(SYNTENY_MARGIN, SYNTENY_MARGIN))
+		.attr('transform', transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]))
 		.append('g').attr('id', 'zoom-group')
 		.call(zoom).on('mousedown.zoom', null); //disable panning
 
