@@ -302,8 +302,3 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 // We need to expose this to the outside world.
 window.makeSyntenyDotPlot = exports.makeSyntenyDotPlot;
-
-// hacks. this should get moved.
-window.refreshAutoScale = sv.refreshAutoScale;
-window.refreshAutoDots = sv.refreshAutoDots;
-

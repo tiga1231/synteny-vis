@@ -7,21 +7,7 @@ const d3 = require('d3');
 const css = require('generate-css');
 
 const DO_BENCHMARK = false;
-
-function refreshAutoScale() {
-	var radio = document.getElementById('color-options');
-	var auto = _.find(radio.children, {
-		value: 'auto'
-	});
-	auto.checked = false;
-	auto.click();
-}
-
-var _refreshAutoDots;
-
-function refreshAutoDots() {
-	_refreshAutoDots();
-}
+const SHOW_MAXIMA_AND_MINIMA = true;
 
 function buildDiv(element_id) {
 	const div = d3.select(element_id);
@@ -90,10 +76,9 @@ function buildDiv(element_id) {
 	persistenceOptions.append('strong').text('Auto-scale persistence');
 
 	persistenceOptions.append('input').attr('id', 'persistence').attr('type', 'range').attr('min', 0).attr('max', 100)
-		.attr('value', 40).attr('step', 1)
-		.attr('oninput', 'refreshAutoDots(); document.getElementById(\'persistence-text\').innerText=this.value');
+		.attr('value', 40).attr('step', 1);
 
-	persistenceOptions.append('button').attr('type', 'button').attr('onclick', 'refreshAutoScale()').text('Refresh auto scale');
+	persistenceOptions.append('button').attr('id', 'persistence-button').attr('type', 'button').text('Refresh auto scale');
 
 	persistenceOptions.append('p').text('Largest persistence edge that will be removed: ').append('label').attr('id', 'persistence-text').text('40');
 }
@@ -101,12 +86,32 @@ function buildDiv(element_id) {
 function controller(dataObj, element_id) {
 
 	buildDiv('#' + element_id);
+	
+	const refreshAutoScale = (persistence) => {
+		const radio = document.getElementById('color-options');
+		const auto = _.find(radio.children, child => child.value === 'auto');
+		auto.checked = true;
 
-	_refreshAutoDots = function() {
-		_.each(histograms, function(h) {
-			h.refreshAutoScale('autoscale');
-		});
+		const h = histograms[activeField];
+		h.setColorScale(h.getAutoScale(persistence));
+
+		if (SHOW_MAXIMA_AND_MINIMA)
+			_.each(histograms, h => h.updateMinMaxMarkers(persistence));
 	};
+
+	const getPersistence = () => d3.select('#persistence').node().value;
+
+	d3.select('#persistence')
+		.on('input', () => {
+			const p = getPersistence();
+			refreshAutoScale(p);
+			d3.select('#persistence-text').node().innerText = p;
+		});
+
+	d3.select('#persistence-button')
+		.on('click', () => {
+			refreshAutoScale(getPersistence());
+		});
 
 	var syntenyPlot;
 	/* zoom/pan switching */
@@ -129,7 +134,7 @@ function controller(dataObj, element_id) {
 			syntenyPlot.setField(activeField);
 			var newCS;
 			if (activeCS === 'auto') {
-				newCS = histograms[activeField].getAutoScale();
+				newCS = histograms[activeField].getAutoScale(getPersistence());
 			} else {
 				newCS = colorScale(activeField, activeCS);
 			}
@@ -144,9 +149,8 @@ function controller(dataObj, element_id) {
 		.on('change', function() {
 			var newCS;
 			if (this.value === 'auto') {
-				newCS = histograms[activeField].getAutoScale();
+				newCS = histograms[activeField].getAutoScale(getPersistence());
 			} else {
-				console.log('here');
 				newCS = colorScale(activeField, this.value);
 			}
 			histograms[activeField].setColorScale(newCS);
@@ -165,6 +169,14 @@ function controller(dataObj, element_id) {
 		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', unselected),
 		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', unselected)
 	};
+
+	// Since the histograms aren't controlling their own color scale policy 
+	// now (a good thing), we need to manually fire of their update methods. 
+	// Eventually, we should fix this up.
+	dataObj.addListener((typeHint) => {
+		if(typeHint.indexOf('stop') > -1)
+			_.each(histograms, h => h.updateMinMaxMarkers(getPersistence()));
+	});
 	dataObj.notifyListeners('initial');
 
 	/* Benchmark */
@@ -188,6 +200,4 @@ function controller(dataObj, element_id) {
 	}
 }
 
-exports.refreshAutoDots = refreshAutoDots;
-exports.refreshAutoScale = refreshAutoScale;
 exports.controller = controller;

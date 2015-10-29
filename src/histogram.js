@@ -6,11 +6,8 @@ var HISTOGRAM_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes 
 var NUM_HISTOGRAM_TICKS = 100;
 var UNSELECTED_BAR_FILL = '#D0D0D0';
 
-const SHOW_MAXIMA_AND_MINIMA = true;
-
-var persistence = require('persistence');
+var persistenceFuncs = require('persistence');
 var util = require('./utils');
-var env = require('./window');
 var _ = require('lodash');
 var d3 = require('d3');
 
@@ -44,7 +41,7 @@ function histogram(id, dataObj, field, initialColorScale) {
 		if (plotBrush.empty()) {
 			dataObj.removeDataFilter(field);
 		}
-		dataObj.notifyListeners('autoscale');
+		dataObj.notifyListeners('histogram-stop');
 	}
 
 	var colorScale = initialColorScale;
@@ -64,16 +61,11 @@ function histogram(id, dataObj, field, initialColorScale) {
 
 	var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
-	var autoScale;
-
-	function getAutoScale() {
+	function getAutoScale(persistence) {
 		const summary = dataObj.currentDataSummary(bins, field);
-		const extrema = persistence.simplify(summary, env.getPersistence());
+		const extrema = persistenceFuncs.simplify(summary, persistence);
 
-		autoScale = generateColorScaleFromExtrema(extrema);
-		if (SHOW_MAXIMA_AND_MINIMA)
-			updateMinMaxMarkers(extrema);
-		return autoScale;
+		return generateColorScaleFromExtrema(extrema);
 	}
 
 	function isMaxima(A, i) {
@@ -101,7 +93,9 @@ function histogram(id, dataObj, field, initialColorScale) {
 		return d3.scale.linear().domain(domain).range(range);
 	}
 
-	function updateMinMaxMarkers(extrema) {
+	function updateMinMaxMarkers(persistence) {
+		const summary = dataObj.currentDataSummary(bins, field);
+		const extrema = persistenceFuncs.simplify(summary, persistence);
 		const markers = _.map(extrema, function(d, i, A) {
 			return {
 				color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
@@ -178,8 +172,6 @@ function histogram(id, dataObj, field, initialColorScale) {
 				});
 		}
 		var data = dataObj.currentDataSummary(bins, field);
-		if (typeHint.indexOf('stop') > -1 || typeHint == 'autoscale')
-			setTimeout(getAutoScale, 0);
 
 		if (typeHint.indexOf('stop') > -1) {
 			lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
@@ -213,10 +205,10 @@ function histogram(id, dataObj, field, initialColorScale) {
 	return {
 		setColorScale: setColorScale,
 		getAutoScale: getAutoScale,
-		refreshAutoScale: updatePlot,
 		brush: plotBrush,
 		sendBrushEvent: plotBrushBrush,
-		selection: brushSelectForBM
+		selection: brushSelectForBM,
+		updateMinMaxMarkers: updateMinMaxMarkers
 	};
 }
 
