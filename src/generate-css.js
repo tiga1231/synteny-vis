@@ -61,5 +61,5 @@ const lines = [
 	'}'
 ];
 
-const cssString = _.reduce(lines, (a, b) => a + '\n' + b);
+const cssString = lines.join('\n');
 exports.getStyleSheetForDiv = (name) => cssString.replace(/{name}/g, name);
