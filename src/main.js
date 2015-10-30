@@ -1,6 +1,6 @@
 'use strict';
 
-const DATA_OP_TIMING = false;
+const DATA_OP_TIMING = true;
 
 var X_AXIS_ORGANISM_NAME;
 var Y_AXIS_ORGANISM_NAME;
@@ -142,7 +142,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	var ymap = ymapPair.ge;
 	var ret = {};
 
-	var sortedDots = {};
 	var dataFilters = {};
 
 	ret.X_AXIS_ORGANISM_NAME = X_AXIS_ORGANISM_NAME;
@@ -193,47 +192,29 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 			.value();
 	}
 
-	function getFilterFunction() {
-		const filters = _.values(dataFilters);
-		return x => _.all(_.map(filters, f => f(x)));
+	function getFilterFunction(filter) {
+		const filterFuncs = _.values(filter);
+		return x => _.all(_.map(filterFuncs, f => f(x)));
 	}
 
 	ret.currentData = function currentData() {
 		return {
 			raw: syntenyDots,
-			active: _.filter(syntenyDots, getFilterFunction())
+			active: _.filter(syntenyDots, getFilterFunction(dataFilters))
 		};
 	};
 
+	const sortedDots = _.memoize(_.partial(_.sortBy, syntenyDots));
 	ret.currentDataSummary = function currentDataSummary(ticks, field) {
-		var oldFilters = dataFilters;
-		dataFilters = _.omit(dataFilters, field);
+		const filtersWithoutField = getFilterFunction(_.omit(dataFilters, field));
+		const validPoints = _.filter(sortedDots(field), filtersWithoutField);
+		const dx = ticks[1] - ticks[0];
 
-		if (!sortedDots[field]) {
-			sortedDots[field] = _.sortBy(syntenyDots, field);
-		}
-
-		var validPoints = _.filter(sortedDots[field], getFilterFunction());
-		dataFilters = oldFilters;
-
-		var diff = ticks[1] - ticks[0];
-
-		var lastLow = 0;
-		return _.chain(ticks)
-			.map(function(tick) {
-				var start = {},
-					end = {};
-				start[field] = tick;
-				end[field] = tick + diff;
-				var hi = _.sortedIndex(validPoints, end, field);
-				var ret = {
-					x: tick,
-					dx: diff,
-					y: hi - lastLow
-				};
-				lastLow = hi;
-				return ret;
-			}).value();
+		return _.map(ticks, x => {
+				var hi = _.sortedIndex(validPoints, {[field]: x + dx}, field);
+				var lo = _.sortedIndex(validPoints, {[field]: x}, field);
+				return { x, dx, y: hi - lo };
+			});
 	};
 
 	ret.addSpatialFilter = function(extents, typeHint) {
@@ -274,27 +255,20 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	};
 
 	if (DATA_OP_TIMING) {
-		var t = ret.currentData;
-		ret.currentData = function() {
-			var start = Date.now();
-			var x = t();
-			console.log('currentData', Date.now() - start);
-			return x;
+		const logIt = (f, name) => {
+			return (...args) => {
+				var start = Date.now();
+				var x = f.call(null, ...args);
+				console.log(name, Date.now() - start);
+				return x;
+			};
 		};
 
-		var s = ret.currentDataSummary;
-		ret.currentDataSummary = function(a, b) {
-			var start = Date.now();
-			var x = s(a, b);
-			console.log('currentDataSummary', Date.now() - start);
-			return x;
-		};
-		var r = ret.notifyListeners;
-		ret.notifyListeners = function(x) {
-			console.log('notifyListeners');
-			r(x);
-		};
+		ret.currentData = logIt(ret.currentData, 'currentData');
+		ret.currentDataSummary = logIt(ret.currentDataSummary, 'currentDataSummary');
+		ret.notifyListeners = logIt(ret.notifyListeners, 'notifyListeners');
 	}
+
 	ret.setOrder('logks', true);
 	ret.setGEvNTMode(gentMode);
 	return ret;
