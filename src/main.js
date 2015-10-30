@@ -2,9 +2,6 @@
 
 const DATA_OP_TIMING = true;
 
-var X_AXIS_ORGANISM_NAME;
-var Y_AXIS_ORGANISM_NAME;
-
 const queue = require('queue-async');
 const _ = require('lodash');
 const d3 = require('d3');
@@ -19,17 +16,17 @@ exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 				return;
 			}
 
-			X_AXIS_ORGANISM_NAME = genome_x.name;
-			Y_AXIS_ORGANISM_NAME = genome_y.name;
+			const x_name = genome_x.name;
+			const y_name = genome_y.name;
 
-			var ksData = ksTextToObjects(ks);
-			var xCumLenMap = lengthsToCumulativeBPCounts(genome_x.chromosomes);
-			var yCumLenMap = lengthsToCumulativeBPCounts(genome_y.chromosomes);
-			var inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
+			const ksData = ksTextToObjects(ks);
+			const xCumLenMap = lengthsToCumulativeBPCounts(genome_x.chromosomes);
+			const yCumLenMap = lengthsToCumulativeBPCounts(genome_y.chromosomes);
+			const inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
 
-			var ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
+			const ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
 			console.log('Total synteny dots:', ksDataObject.currentData().raw.length);
-			sv.controller(ksDataObject, element_id);
+			sv.controller(ksDataObject, element_id, {x_names, y_names});
 		});
 };
 
@@ -143,9 +140,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	var ret = {};
 
 	var dataFilters = {};
-
-	ret.X_AXIS_ORGANISM_NAME = X_AXIS_ORGANISM_NAME;
-	ret.Y_AXIS_ORGANISM_NAME = Y_AXIS_ORGANISM_NAME;
 
 	ret.getXLineOffsets = function() {
 		return _.chain(xmap).values().sortBy().value();

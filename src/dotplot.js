@@ -11,7 +11,7 @@ const UNSELECTED_DOT_FILL = '#D0D0D0';
 const NUM_COLOR_SCALE_INTERPOLATION_SAMPLES = 100;
 const DOTPLOT_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 
-function synteny(id, dataObj, field, initialColorScale) {
+function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var xExtent = [0, _.max(dataObj.getXLineOffsets())];
 	var yExtent = [0, _.max(dataObj.getYLineOffsets())];
@@ -136,7 +136,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 		.attr('y', SYNTENY_MARGIN + height + TEXT_OFFSET)
 		.attr('height', TEXT_BOX_HEIGHT)
 		.classed('plot-title', true)
-		.text(dataObj.X_AXIS_ORGANISM_NAME);
+		.text(meta.x_name);
 
 	svg.append('text')
 		.attr('transform', 'rotate(-90)')
@@ -145,7 +145,7 @@ function synteny(id, dataObj, field, initialColorScale) {
 		.attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
 		.attr('height', TEXT_BOX_HEIGHT)
 		.classed('plot-title', true)
-		.text(dataObj.Y_AXIS_ORGANISM_NAME);
+		.text(meta.y_name);
 
 	svg
 		.append('defs')

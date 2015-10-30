@@ -83,7 +83,7 @@ function buildDiv(element_id) {
 	persistenceOptions.append('p').text('Largest persistence edge that will be removed: ').append('label').attr('id', 'persistence-text').text('40');
 }
 
-function controller(dataObj, element_id) {
+function controller(dataObj, element_id, meta) {
 
 	buildDiv('#' + element_id);
 	
@@ -162,7 +162,7 @@ function controller(dataObj, element_id) {
 	const initial = colorScale(activeField, 'rg');
 	const unselected = colorScale(activeField, 'unselected');
 
-	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial);
+	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial, meta);
 	const histograms = {
 		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
 		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', unselected),
