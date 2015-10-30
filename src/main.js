@@ -205,10 +205,10 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 		const dx = ticks[1] - ticks[0];
 
 		return _.map(ticks, x => {
-				var hi = _.sortedIndex(validPoints, {[field]: x + dx}, field);
-				var lo = _.sortedIndex(validPoints, {[field]: x}, field);
-				return { x, dx, y: hi - lo };
-			});
+			const hi = _.sortedIndex(validPoints, {[field]: x + dx}, field);
+			const lo = _.sortedIndex(validPoints, {[field]: x}, field);
+			return { x, dx, y: hi - lo };
+		});
 	};
 
 	ret.addSpatialFilter = function(extents, typeHint) {
