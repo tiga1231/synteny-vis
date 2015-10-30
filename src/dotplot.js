@@ -264,22 +264,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 
 		/* On top, active dots */
-		var minDomX = xScale.domain()[0];
-		var maxDomX = xScale.domain()[1];
-		var minDomY = yScale.domain()[0];
-		var maxDomY = yScale.domain()[1];
-		var minRanX = xScale.range()[0];
-		var maxRanX = xScale.range()[1];
-		var minRanY = yScale.range()[0];
-		var maxRanY = yScale.range()[1];
-		var widthDomX = maxDomX - minDomX;
-		var widthDomY = maxDomY - minDomY;
-		var widthRanX = maxRanX - minRanX;
-		var widthRanY = maxRanY - minRanY;
-		var xRatio = widthRanX / widthDomX;
-		var xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
-		var yRatio = widthRanY / widthDomY;
-		var yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
+		const [minDomX, maxDomX] = xScale.domain();
+		const [minDomY, maxDomY] = yScale.domain();
+		const [minRanX, maxRanX] = xScale.range();
+		const [minRanY, maxRanY] = yScale.range();
+		const widthDomX = maxDomX - minDomX;
+		const widthDomY = maxDomY - minDomY;
+		const widthRanX = maxRanX - minRanX;
+		const widthRanY = maxRanY - minRanY;
+		const xRatio = widthRanX / widthDomX;
+		const xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
+		const yRatio = widthRanY / widthDomY;
+		const yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
 
 		var groups = [];
 		var index = 0;

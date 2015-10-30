@@ -1,6 +1,6 @@
 'use strict';
 
-const DATA_OP_TIMING = true;
+const DATA_OP_TIMING = false;
 
 const queue = require('queue-async');
 const _ = require('lodash');
@@ -26,7 +26,7 @@ exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 
 			const ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
 			console.log('Total synteny dots:', ksDataObject.currentData().raw.length);
-			sv.controller(ksDataObject, element_id, {x_names, y_names});
+			sv.controller(ksDataObject, element_id, {x_name, y_name});
 		});
 };
 
