@@ -1,5 +1,6 @@
 const d3 = require('d3');
 const _ = require('lodash');
+const utils = require('utils.js');
 
 const colorRanges = {
 	rg: { 
@@ -25,17 +26,13 @@ const colorRanges = {
 	}
 };
 
-const samplePointsInRange = (extent, n) => {
-	return _.map(_.range(n), d3.scale.linear().domain([0, n-1]).range(extent));
-};
-
 exports.onData = (data) => {
 	const generateScale = (field, name) => {
 		const extent = d3.extent(data, point => point[field]);
 
 		const colorScale = colorRanges[name];
 		const range = colorScale.range;
-		const domain = samplePointsInRange(extent, range.length);
+		const domain = utils.samplePointsInRange(extent, range.length);
 	
 		const scale = colorScale.quantized ? d3.scale.quantize() : d3.scale.linear();
 	

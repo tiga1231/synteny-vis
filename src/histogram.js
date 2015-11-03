@@ -1,6 +1,6 @@
 'use strict';
 
-const HISTOGRAM_MARGIN = 50; /* Padding around histogram */
+const MARGIN = 50; /* Padding around histogram */
 const HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
 const HISTOGRAM_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
 const NUM_HISTOGRAM_TICKS = 100;
@@ -12,14 +12,14 @@ const _ = require('lodash');
 const d3 = require('d3');
 const transform = require('svg-transform');
 
-function histogram(id, dataObj, field, initialColorScale) {
-	var dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
+function histogram(id, dataObj, field, colorScale) {
+	const dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
 
-	var plot = d3.select(id);
-	var plotWidth = utils.getComputedAttr(plot.node(), 'width');
-	var plotHeight = utils.getComputedAttr(plot.node(), 'height');
+	const plot = d3.select(id);
+	const plotWidth = utils.getComputedAttr(plot.node(), 'width');
+	const plotHeight = utils.getComputedAttr(plot.node(), 'height');
 
-	var prettyNames = {
+	const prettyNames = {
 		logks: 'log(ks)',
 		logkn: 'log(kn)',
 		logkskn: 'log(ks/kn)'
@@ -45,22 +45,16 @@ function histogram(id, dataObj, field, initialColorScale) {
 		dataObj.notifyListeners('histogram-stop');
 	}
 
-	var colorScale = initialColorScale;
-	var xPlotScale = d3.scale.linear().domain(dataExtent).range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
+	const xPlotScale = d3.scale.linear()
+		.domain(dataExtent)
+		.range([MARGIN, plotWidth - MARGIN]);
 
-	function makeBins() {
-		var n = NUM_HISTOGRAM_TICKS;
-		var min = dataExtent[0];
-		var max = dataExtent[1];
-		var range = max - min;
-		var step = range / n;
-		return _.range(min, max, step);
-	}
+	const bins = utils.samplePointsInRange(dataExtent, NUM_HISTOGRAM_TICKS);
+	const getYExtent = (summary) => [0, 3 / 2 * d3.max(_.pluck(summary, 'y'))];
 
-	var bins = makeBins();
-	var lastYExtent = [0, 3 / 2 * d3.max(_.pluck(dataObj.currentDataSummary(bins, field), 'y'))];
-
-	var yPlotScale = d3.scale.linear().domain(lastYExtent).range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
+	const yPlotScale = d3.scale.linear()
+		.domain(getYExtent(dataObj.currentDataSummary(bins, field)))
+		.range([plotHeight - MARGIN, MARGIN]);
 
 	function getAutoScale(persistence) {
 		const summary = dataObj.currentDataSummary(bins, field);
@@ -115,92 +109,66 @@ function histogram(id, dataObj, field, initialColorScale) {
 			.attr('fill', d => d.color);
 	}
 
-	var plotBrush = d3.svg.brush()
+	const plotBrush = d3.svg.brush()
 		.x(xPlotScale)
 		.on('brush', plotBrushBrush)
 		.on('brushend', plotBrushEnd);
 
-	var dataBarSel = plot.selectAll('.dataBars')
-		.data(bins)
+	const dataBarSel = plot.selectAll('.dataBars')
+		.data(dataObj.currentDataSummary(bins, field))
 		.enter()
-		.append('rect').classed('dataBars', true);
+		.append('rect').classed('dataBars', true)
+		.attr('x', d => xPlotScale(d.x))
+		.attr('width', d => xPlotScale(d.x + d.dx) - xPlotScale(d.x));
 
-	var brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
-		.attr('transform', transform([{translate: [0, HISTOGRAM_MARGIN]}]))
+	const brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
+		.attr('transform', transform([{translate: [0, MARGIN]}]))
 		.call(plotBrush);
 	brushSelectForBM.selectAll('rect')
-		.attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
+		.attr('height', plotHeight - 2 * MARGIN);
 
-
-	var xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
-	var yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
+	const xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
+	const yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
 
 	plot.append('g')
-		.attr('transform', transform([{translate: [0, plotHeight - HISTOGRAM_MARGIN]}]))
+		.attr('transform', transform([{translate: [0, plotHeight - MARGIN]}]))
 		.classed('xAxis', true).call(xAxis);
-	var yAxisSel = plot.append('g')
-		.attr('transform', transform([{translate: [HISTOGRAM_MARGIN, 0]}]))
+	const yAxisSel = plot.append('g')
+		.attr('transform', transform([{translate: [MARGIN, 0]}]))
 		.classed('yAxis', true).call(yAxis);
 
 	function updatePlotAttrs(selection) {
-		var activeFunc = plotBrush.empty() ? _.constant(true) : function(bin) {
-			return bin.x + bin.dx > plotBrush.extent()[0] &&
-				bin.x < plotBrush.extent()[1];
-		};
+		const extent = plotBrush.empty() ? [-Infinity, Infinity] : plotBrush.extent();
+		const active = bin => bin.x + bin.dx > extent[0] && bin.x < extent[1];
+
 		selection
-			.attr('y', function(d) {
-				return yPlotScale(d.y);
-			})
-			.attr('height', function(d) {
-				return plotHeight - HISTOGRAM_MARGIN - yPlotScale(d.y);
-			})
-			.attr('fill', function(d) {
-				return activeFunc(d) ? colorScale(d.x + d.dx / 2) : 'grey';
-			});
+			.attr('y', d => yPlotScale(d.y))
+			.attr('height', d => plotHeight - MARGIN - yPlotScale(d.y))
+			.attr('fill', d => active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL);
 	}
 
 	function updatePlot(typeHint) {
+		dataBarSel.transition(); /* cancel previous transition */
 
 		typeHint = typeHint || '';
-		if (typeHint === 'initial') {
-			dataBarSel
-				.data(dataObj.currentDataSummary(bins, field))
-				.attr('x', function(d) {
-					return xPlotScale(d.x);
-				})
-				.attr('width', function(d) {
-					return (xPlotScale(d.x + d.dx) - xPlotScale(d.x));
-				});
-		}
-		var data = dataObj.currentDataSummary(bins, field);
+
+		const summary = dataObj.currentDataSummary(bins, field);
+		let tempSel = dataBarSel.data(summary);
 
 		if (typeHint.indexOf('stop') > -1) {
-			lastYExtent = [0, 3 / 2 * d3.max(_.pluck(data, 'y'))];
-			yPlotScale.domain(lastYExtent);
-			yAxisSel.transition()
-				.duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
-				.call(yAxis);
-			dataBarSel
-				.data(data)
-				.transition()
-				.duration(HISTOGRAM_Y_SCALE_TRANS_LEN)
-				.call(updatePlotAttrs);
+			yPlotScale.domain(getYExtent(summary));
+			yAxisSel.transition().duration(HISTOGRAM_Y_SCALE_TRANS_LEN).call(yAxis);
+			tempSel = tempSel.transition().duration(HISTOGRAM_Y_SCALE_TRANS_LEN);
+		} 
 
-		} else {
-			dataBarSel
-				.data(data)
-				.call(updatePlotAttrs);
-		}
+		tempSel.call(updatePlotAttrs);
 	}
 
-	updatePlot('initial');
 	dataObj.addListener(updatePlot);
 
 	function setColorScale(newColorScale) {
 		colorScale = newColorScale;
-		plot.selectAll('.dataBars')
-			.transition().duration(HISTOGRAM_COLOR_TRANS_LEN)
-			.call(updatePlotAttrs);
+		updatePlot('stop'); /* trigger animation -- FIXME */
 	}
 
 	return {
