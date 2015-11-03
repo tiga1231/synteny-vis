@@ -4,15 +4,14 @@ const histogram = require('./histogram');
 const dotplot = require('./dotplot');
 const _ = require('lodash');
 const d3 = require('d3');
-const css = require('generate-css');
+
+require('style.css');
 
 const DO_BENCHMARK = false;
 const SHOW_MAXIMA_AND_MINIMA = true;
 
 function buildDiv(element_id) {
-	const div = d3.select(element_id);
-
-	div.append('style').text(css.getStyleSheetForDiv(element_id));
+	const div = d3.select(element_id).append('div').classed('_synteny-dotplot-builder', true);
 
 	div.append('canvas').attr('id', 'dotplot-canvas-bak');
 	div.append('canvas').attr('id', 'dotplot-canvas');
