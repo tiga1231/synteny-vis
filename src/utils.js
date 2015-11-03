@@ -1,3 +1,8 @@
+'use strict';
+
+const _ = require('lodash');
+const d3 = require('d3');
+
 exports.getComputedAttr = function getComputedAttr(element, attr) {
 	const computed = getComputedStyle(element)[attr];
 	return parseInt(computed, 10);

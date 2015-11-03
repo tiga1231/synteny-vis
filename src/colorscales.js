@@ -10,7 +10,7 @@ exports.onData = (data) => {
 	const generateScale = (field, name) => {
 		const extent = d3.extent(data, point => point[field]);
 
-		const colorScale = colorRanges[name];
+		const colorScale = COLOR_RANGES[name];
 		const range = colorScale.range;
 		const domain = utils.samplePointsInRange(extent, range.length);
 	

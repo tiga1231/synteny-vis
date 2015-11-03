@@ -22,7 +22,7 @@ exports.benchmark = (testArgs, f, done) => {
 		const start = Date.now();
 		f(arg);
 		return Date.now() - start;
-	}
+	};
 
 	const stats = times => ({
 		totalTime: _.sum(times),

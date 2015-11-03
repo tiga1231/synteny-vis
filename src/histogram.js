@@ -3,7 +3,6 @@
 const {
 	HISTOGRAM_MARGIN,
 	HISTOGRAM_Y_SCALE_TRANS_LEN,
-	HISTOGRAM_COLOR_TRANS_LEN,
 	NUM_HISTOGRAM_TICKS,
 	UNSELECTED_BAR_FILL
 } = require('constants');
@@ -128,7 +127,7 @@ function histogram(id, dataObj, field, colorScale) {
 	const updatePlotAttrs = selection => {
 		updateHeights(selection);
 		updateColors(selection);
-	}
+	};
 
 	function updatePlot(typeHint) {
 		dataBarSel.transition(); /* cancel previous transition */
