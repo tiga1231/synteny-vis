@@ -6,33 +6,28 @@ const _ = require('lodash');
  *
  * My guess is that this isn't super accurate for fast functions.
  */
-exports.benchmark = function(tests, f, done) {
+exports.benchmark = (testArgs, f, done) => {
 
-	var results = [];
-	var testIndex = 0;
-
-	setTimeout(function runOne() {
-		if (testIndex >= tests.length)
+	const results = [];
+	const runOne = tests => {
+		if (!tests.length)
 			return done(stats(results));
 
-		var time = timeIt(f, tests[testIndex++]);
-		results.push(time);
+		results.push(timeIt(f, tests[0]));
+		setTimeout(runOne, 0, tests.slice(1));
+	};
+	setTimeout(runOne, 0, testArgs);
 
-		setTimeout(runOne, 0);
-	}, 0);
-
-	function timeIt(f, arg) {
-		var start = Date.now();
+	const timeIt = (f, arg) => {
+		const start = Date.now();
 		f(arg);
 		return Date.now() - start;
 	}
 
-	function stats(times) {
-		return {
-			totalTime: _.sum(times),
-			count: times.length,
-			max: _.max(times),
-			average: _.sum(times) / times.length
-		};
-	}
+	const stats = times => ({
+		totalTime: _.sum(times),
+		count: times.length,
+		max: _.max(times),
+		average: _.sum(times) / times.length
+	});
 };
