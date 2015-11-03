@@ -1,10 +1,12 @@
 'use strict';
 
-const MARGIN = 50; /* Padding around histogram */
-const HISTOGRAM_Y_SCALE_TRANS_LEN = 750; /* How long a y-axis histogram rescale takes */
-const HISTOGRAM_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
-const NUM_HISTOGRAM_TICKS = 100;
-const UNSELECTED_BAR_FILL = '#D0D0D0';
+const {
+	HISTOGRAM_MARGIN,
+	HISTOGRAM_Y_SCALE_TRANS_LEN,
+	HISTOGRAM_COLOR_TRANS_LEN,
+	NUM_HISTOGRAM_TICKS,
+	UNSELECTED_BAR_FILL
+} = require('constants');
 
 const persistenceFuncs = require('persistence');
 const utils = require('utils');
@@ -48,14 +50,14 @@ function histogram(id, dataObj, field, colorScale) {
 
 	const xPlotScale = d3.scale.linear()
 		.domain(dataExtent)
-		.range([MARGIN, plotWidth - MARGIN]);
+		.range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
 
 	const bins = utils.samplePointsInRange(dataExtent, NUM_HISTOGRAM_TICKS);
 	const getYExtent = (summary) => [0, 3 / 2 * d3.max(_.pluck(summary, 'y'))];
 
 	const yPlotScale = d3.scale.linear()
 		.domain(getYExtent(dataObj.currentDataSummary(bins, field)))
-		.range([plotHeight - MARGIN, MARGIN]);
+		.range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
 	function updateMinMaxMarkers(persistence) {
 		const summary = dataObj.currentDataSummary(bins, field);
@@ -94,19 +96,19 @@ function histogram(id, dataObj, field, colorScale) {
 		.attr('width', d => xPlotScale(d.x + d.dx) - xPlotScale(d.x));
 
 	const brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
-		.attr('transform', transform([{translate: [0, MARGIN]}]))
+		.attr('transform', transform([{translate: [0, HISTOGRAM_MARGIN]}]))
 		.call(plotBrush);
 	brushSelectForBM.selectAll('rect')
-		.attr('height', plotHeight - 2 * MARGIN);
+		.attr('height', plotHeight - 2 * HISTOGRAM_MARGIN);
 
 	const xAxis = d3.svg.axis().scale(xPlotScale).orient('bottom').tickSize(10);
 	const yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
 
 	plot.append('g')
-		.attr('transform', transform([{translate: [0, plotHeight - MARGIN]}]))
+		.attr('transform', transform([{translate: [0, plotHeight - HISTOGRAM_MARGIN]}]))
 		.classed('xAxis', true).call(xAxis);
 	const yAxisSel = plot.append('g')
-		.attr('transform', transform([{translate: [MARGIN, 0]}]))
+		.attr('transform', transform([{translate: [HISTOGRAM_MARGIN, 0]}]))
 		.classed('yAxis', true).call(yAxis);
 
 	const updateHeights = selection => {
@@ -119,7 +121,7 @@ function histogram(id, dataObj, field, colorScale) {
 		const active = bin => bin.x + bin.dx > extent[0] && bin.x < extent[1];
 
 		selection
-			.attr('height', d => plotHeight - MARGIN - yPlotScale(d.y))
+			.attr('height', d => plotHeight - HISTOGRAM_MARGIN - yPlotScale(d.y))
 			.attr('fill', d => active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL);
 	};
 

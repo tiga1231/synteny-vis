@@ -1,10 +1,12 @@
 'use strict';
 
-const persistenceFuncs = require('persistence.js');
+const persistenceFuncs = require('persistence');
 const d3 = require('d3');
 const _ = require('lodash');
 
-const VALLEY_FILL = '#D0D0D0';
+const { 
+	AUTO_SCALE_VALLEY_FILL 
+} = require('constants');
 
 exports.generateAutoScale = (points, persistence) => {
 	const extrema = persistenceFuncs.simplify(points, persistence);
@@ -18,7 +20,7 @@ const generateColorScaleFromExtrema = (extrema) => {
 		const colors = d3.scale.category10();
 
 		const colored = _.map(extrema, (x, i, A) => {
-			const color = shouldBeMarked(x, i, A) ? colors(i) : VALLEY_FILL;
+			const color = shouldBeMarked(x, i, A) ? colors(i) : AUTO_SCALE_VALLEY_FILL;
 			return _.defaults({}, x, {color});
 		});
 

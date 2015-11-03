@@ -1,15 +1,17 @@
 'use strict';
 
-const histogram = require('./histogram');
-const dotplot = require('./dotplot');
+const histogram = require('histogram');
+const dotplot = require('dotplot');
 const _ = require('lodash');
 const d3 = require('d3');
-const autoscale = require('auto-colorscale.js');
+const autoscale = require('auto-colorscale');
 
 require('style.css');
 
-const DO_BENCHMARK = false;
-const SHOW_MAXIMA_AND_MINIMA = true;
+const { 
+	RUN_BENCHMARKS, 
+	SHOW_MAXIMA_AND_MINIMA 
+} = require('constants');
 
 function buildDiv(element_id) {
 	const div = d3.select(element_id).append('div').classed('_synteny-dotplot-builder', true);
@@ -179,7 +181,7 @@ function controller(dataObj, element_id, meta) {
 	dataObj.notifyListeners('initial');
 
 	/* Benchmark */
-	if (DO_BENCHMARK) {
+	if (RUN_BENCHMARKS) {
 		const [minLogKs, maxLogKs] = d3.extent(dataObj.currentData().raw, x => x.logks);
 		const points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
 

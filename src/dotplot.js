@@ -5,11 +5,13 @@ const _ = require('lodash');
 const d3 = require('d3');
 const transform = require('svg-transform');
 
-const SYNTENY_MARGIN = 50; /* Padding around synteny plot for axes */
-const CIRCLE_RADIUS = 2;
-const UNSELECTED_DOT_FILL = '#D0D0D0';
-const NUM_COLOR_SCALE_INTERPOLATION_SAMPLES = 100;
-const DOTPLOT_COLOR_TRANS_LEN = 500; /* How long a color scale transition takes */
+const { 
+	SYNTENY_MARGIN ,
+	CIRCLE_RADIUS,
+	UNSELECTED_DOT_FILL,
+	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
+	DOTPLOT_COLOR_TRANS_LEN
+} = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
 

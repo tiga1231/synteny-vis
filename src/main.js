@@ -1,11 +1,13 @@
 'use strict';
 
-const DATA_OP_TIMING = false;
+const { 
+	TIME_DATA_OPERATIONS 
+} = require('constants');
 
 const queue = require('queue-async');
 const _ = require('lodash');
 const d3 = require('d3');
-const sv = require('./synteny-vis');
+const sv = require('synteny-vis');
 
 exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
 	queue()
@@ -248,7 +250,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 		});
 	};
 
-	if (DATA_OP_TIMING) {
+	if (TIME_DATA_OPERATIONS) {
 		const logIt = (f, name) => {
 			return (...args) => {
 				var start = Date.now();
