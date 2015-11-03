@@ -43,6 +43,7 @@ function histogram(id, dataObj, field, colorScale) {
 			dataObj.removeDataFilter(field);
 		}
 		dataObj.notifyListeners('histogram-stop');
+		updateColors(dataBarSel); // Cancel color animation -- just brushing
 	}
 
 	const xPlotScale = d3.scale.linear()
@@ -137,14 +138,23 @@ function histogram(id, dataObj, field, colorScale) {
 		.attr('transform', transform([{translate: [MARGIN, 0]}]))
 		.classed('yAxis', true).call(yAxis);
 
-	function updatePlotAttrs(selection) {
+	const updateHeights = selection => {
+		selection.transition(); // cancel transition
+		selection.attr('y', d => yPlotScale(d.y));
+	};
+	const updateColors = selection => {
+		selection.transition(); // cancel transition
 		const extent = plotBrush.empty() ? [-Infinity, Infinity] : plotBrush.extent();
 		const active = bin => bin.x + bin.dx > extent[0] && bin.x < extent[1];
 
 		selection
-			.attr('y', d => yPlotScale(d.y))
 			.attr('height', d => plotHeight - MARGIN - yPlotScale(d.y))
 			.attr('fill', d => active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL);
+	};
+
+	const updatePlotAttrs = selection => {
+		updateHeights(selection);
+		updateColors(selection);
 	}
 
 	function updatePlot(typeHint) {
