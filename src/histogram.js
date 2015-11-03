@@ -57,41 +57,12 @@ function histogram(id, dataObj, field, colorScale) {
 		.domain(getYExtent(dataObj.currentDataSummary(bins, field)))
 		.range([plotHeight - MARGIN, MARGIN]);
 
-	function getAutoScale(persistence) {
-		const summary = dataObj.currentDataSummary(bins, field);
-		const extrema = persistenceFuncs.simplify(summary, persistence);
-
-		return generateColorScaleFromExtrema(extrema);
-	}
-
-	function isMaxima(A, i) {
-		return A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
-	}
-
-	function shouldBeMarked(x, i, A) {
-		return i > 0 && i < A.length - 1 && isMaxima(A, i);
-	}
-
-	function generateColorScaleFromExtrema(extrema) {
-		const colors = d3.scale.category10();
-
-		const [peaks, valleys] = _.partition(extrema, shouldBeMarked);
-		const coloredPeaks = _.map(peaks, function(x, i) {
-			x.color = colors(i);
-			return x;
-		});
-
-		const allPoints = _(coloredPeaks).concat(valleys).sortBy('x').value();
-
-		const domain = _.map(allPoints, d => d.x + d.dx / 2);
-		const range = _.map(allPoints, d => d.color || UNSELECTED_BAR_FILL);
-
-		return d3.scale.linear().domain(domain).range(range);
-	}
-
 	function updateMinMaxMarkers(persistence) {
 		const summary = dataObj.currentDataSummary(bins, field);
 		const extrema = persistenceFuncs.simplify(summary, persistence);
+
+		const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
+		const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
 		const markers = _.map(extrema, function(d, i, A) {
 			return {
 				color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
@@ -183,11 +154,11 @@ function histogram(id, dataObj, field, colorScale) {
 
 	return {
 		setColorScale: setColorScale,
-		getAutoScale: getAutoScale,
 		brush: plotBrush,
 		sendBrushEvent: plotBrushBrush,
 		selection: brushSelectForBM,
-		updateMinMaxMarkers: updateMinMaxMarkers
+		updateMinMaxMarkers: updateMinMaxMarkers,
+		bins: () => dataObj.currentDataSummary(bins, field)
 	};
 }
 

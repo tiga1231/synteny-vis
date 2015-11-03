@@ -4,6 +4,7 @@ const histogram = require('./histogram');
 const dotplot = require('./dotplot');
 const _ = require('lodash');
 const d3 = require('d3');
+const autoscale = require('auto-colorscale.js');
 
 require('style.css');
 
@@ -92,7 +93,7 @@ function controller(dataObj, element_id, meta) {
 		auto.checked = true;
 
 		const h = histograms[activeField];
-		h.setColorScale(h.getAutoScale(persistence));
+		h.setColorScale(autoscale.generateAutoScale(h.bins(), persistence));
 
 		if (SHOW_MAXIMA_AND_MINIMA)
 			_.each(histograms, h => h.updateMinMaxMarkers(persistence));
@@ -132,7 +133,7 @@ function controller(dataObj, element_id, meta) {
 			syntenyPlot.setField(activeField);
 			var newCS;
 			if (activeCS === 'auto') {
-				newCS = histograms[activeField].getAutoScale(getPersistence());
+				newCS = autoscale.generateAutoScale(histograms[activeField].bins(), getPersistence());
 			} else {
 				newCS = colorScale(activeField, activeCS);
 			}
@@ -147,7 +148,7 @@ function controller(dataObj, element_id, meta) {
 		.on('change', function() {
 			var newCS;
 			if (this.value === 'auto') {
-				newCS = histograms[activeField].getAutoScale(getPersistence());
+				newCS = autoscale.generateAutoScale(histograms[activeField].bins(), getPersistence());
 			} else {
 				newCS = colorScale(activeField, this.value);
 			}
