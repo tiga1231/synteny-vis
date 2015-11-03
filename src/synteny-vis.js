@@ -13,9 +13,9 @@ const SHOW_MAXIMA_AND_MINIMA = true;
 function buildDiv(element_id) {
 	const div = d3.select(element_id).append('div').classed('_synteny-dotplot-builder', true);
 
-	div.append('canvas').attr('id', 'dotplot-canvas-bak');
-	div.append('canvas').attr('id', 'dotplot-canvas');
-	div.append('svg').attr('id', 'dotplot');
+	div.append('canvas').attr('id', 'dotplot-canvas-bak').classed('dotplot', true);
+	div.append('canvas').attr('id', 'dotplot-canvas').classed('dotplot', true);
+	div.append('svg').attr('id', 'dotplot').classed('dotplot', true);
 
 	const histogramWrapper = div.append('div').attr('id', 'histogram-wrapper');
 	histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);

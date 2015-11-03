@@ -1,36 +1,37 @@
+/* Global rules */
+
+/* Brushes */
 ._synteny-dotplot-builder .extent {
-  /* Brushes */
   fill: grey;
   opacity: .2;
 }
+/* axes */
 ._synteny-dotplot-builder .domain {
-  /* Plot "dodotplot." This controls the axis lines on the histograms and the
-   * box around the dotplot */
   fill: none;
   stroke: black;
 }
-._synteny-dotplot-builder #dotplot-canvas {
-  /* The float and position properties here are some sort of black magic to
-   * get the canvas and svg to sit on top of each other. */
-  float: left;
-  position: absolute;
-}
-._synteny-dotplot-builder #dotplot-canvas-bak {
-  /* The float and position properties here are some sort of black magic to
-   * get the canvas and svg to sit on top of each other. */
+
+
+/* Dot plot */
+
+/* The float and position properties here are black magic to get the 
+ * canvas and svg to sit on top of each other. */
+._synteny-dotplot-builder .dotplot {
   float: left;
   position: absolute;
 }
 ._synteny-dotplot-builder #dotplot {
-  float: left;
-  position: absolute;
   width: 50%;
   height: 100%;
 }
+/* chromosome boundary lines in dotplot */
 ._synteny-dotplot-builder #dotplot .tick line {
-  /* chromosome boundary lines in dotplot */
   stroke: grey;
 }
+
+
+/* Histograms */
+
 ._synteny-dotplot-builder #histogram-wrapper {
   float: right;
   width: 50%;
@@ -42,10 +43,14 @@
 ._synteny-dotplot-builder .histogram .histogram-title {
   font-size: 14pt;
 }
+/* axis ticks for histograms */
 ._synteny-dotplot-builder .histogram .tick line {
-  /* axis ticks for histograms */
   stroke: grey;
 }
+
+
+/* Forms */
+
 ._synteny-dotplot-builder #form-wrapper {
   position: absolute;
   bottom: 10;
