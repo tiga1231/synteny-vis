@@ -178,7 +178,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var xLineAxis = d3.svg.axis()
 		.scale(xScale)
 		.tickValues(xOffsets)
-		.tickFormat(_.constant(''))
+		.tickFormat('')
 		.orient('bottom')
 		.tickSize(-height);
 
@@ -205,7 +205,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var yLineAxis = d3.svg.axis()
 		.scale(yScale)
 		.tickValues(yOffsets)
-		.tickFormat(_.constant(''))
+		.tickFormat('')
 		.orient('left')
 		.tickSize(-width);
 
