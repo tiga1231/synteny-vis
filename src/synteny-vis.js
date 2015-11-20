@@ -16,9 +16,10 @@ const {
 function buildDiv(element_id) {
 	const div = d3.select(element_id).append('div').classed('_synteny-dotplot-builder', true);
 
-	div.append('canvas').attr('id', 'dotplot-canvas-bak').classed('dotplot', true);
-	div.append('canvas').attr('id', 'dotplot-canvas').classed('dotplot', true);
 	div.append('svg').attr('id', 'dotplot').classed('dotplot', true);
+	const subdiv = div.append('div').style('position', 'relative');
+	subdiv.append('canvas').attr('id', 'dotplot-canvas-bak').classed('dotplot', true).style('pointer-events', 'none');
+	subdiv.append('canvas').attr('id', 'dotplot-canvas').classed('dotplot', true).style('pointer-events', 'none');
 
 	const histogramWrapper = div.append('div').attr('id', 'histogram-wrapper');
 	histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);
