@@ -26,7 +26,7 @@
 }
 /* chromosome boundary lines in dotplot */
 ._synteny-dotplot-builder #dotplot .tick line {
-  stroke: grey;
+  stroke: rgba(0,0,0, 0.25);
 }
 
 
