@@ -203,3 +203,8 @@ function controller(dataObj, element_id, meta) {
 }
 
 exports.controller = controller;
+
+// Local Variables:
+// mode: js2
+// js2-basic-offset: 8
+// End:

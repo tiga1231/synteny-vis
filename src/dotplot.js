@@ -364,3 +364,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 }
 
 exports.synteny = synteny;
+
+// Local Variables:
+// mode: js2
+// js2-basic-offset: 8
+// End:
