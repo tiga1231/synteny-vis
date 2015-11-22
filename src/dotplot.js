@@ -10,7 +10,8 @@ const {
 	CIRCLE_RADIUS,
 	UNSELECTED_DOT_FILL,
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
-	DOTPLOT_COLOR_TRANS_LEN
+	DOTPLOT_COLOR_TRANS_LEN,
+	ROUNDING_FACTOR
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
@@ -246,12 +247,25 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		//console.log('Time after collecting data', Date.now() - start);
 		start = Date.now();
 
+		const [minDomX, maxDomX] = xScale.domain();
+		const [minDomY, maxDomY] = yScale.domain();
+		const [minRanX, maxRanX] = xScale.range();
+		const [minRanY, maxRanY] = yScale.range();
+		const widthDomX = maxDomX - minDomX;
+		const widthDomY = maxDomY - minDomY;
+		const widthRanX = maxRanX - minRanX;
+		const widthRanY = maxRanY - minRanY;
+		const xRatio = widthRanX / widthDomX;
+		const xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
+		const yRatio = widthRanY / widthDomY;
+		const yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
+
 		if (typeHint === 'zoom') {
 			contextbak.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 			contextbak.fillStyle = UNSELECTED_DOT_FILL;
 			_.each(allDots, function(d) {
-				var cx = SYNTENY_MARGIN + xScale(d.x_relative_offset);
-				var cy = SYNTENY_MARGIN + yScale(d.y_relative_offset);
+				const cx = d.x_relative_offset * xRatio - xShift;
+				const cy = d.y_relative_offset * yRatio - yShift;
 
 				if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
 					return;
@@ -266,58 +280,37 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
 
 		/* On top, active dots */
-		const [minDomX, maxDomX] = xScale.domain();
-		const [minDomY, maxDomY] = yScale.domain();
-		const [minRanX, maxRanX] = xScale.range();
-		const [minRanY, maxRanY] = yScale.range();
-		const widthDomX = maxDomX - minDomX;
-		const widthDomY = maxDomY - minDomY;
-		const widthRanX = maxRanX - minRanX;
-		const widthRanY = maxRanY - minRanY;
-		const xRatio = widthRanX / widthDomX;
-		const xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
-		const yRatio = widthRanY / widthDomY;
-		const yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
-
 		var groups = [];
 		var index = 0;
-		function makeComp(v) {
-			return function(x) {
-				return x.roundedlogks < v;
-			};
-		}
+
+		const first = activeDots[0].roundedlogks;
+		const last = _.last(activeDots).roundedlogks;
+		const descending = first > last;
+
 		while (index < activeDots.length) {
 			var lo = index;
 			var val = activeDots[index].roundedlogks;
 			index = _.sortedLastIndex(activeDots, {
 				roundedlogks: val
-			}, makeComp(val));
+			}, x => descending ? -x.roundedlogks : x.roundedlogks);
 			groups.push([lo, index]);
 		}
 
-		for (var g = 0; g < groups.length; g++) {
-			var group = groups[g];
-			var loIndex = group[0];
-			var hiIndex = group[1];
+		_.each(groups, ([loIndex, hiIndex]) => {
 			context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
 			for (var i = loIndex; i < hiIndex; i++) {
-				var d = activeDots[i];
-				var cx = d.x_relative_offset * xRatio - xShift;
-				var cy = d.y_relative_offset * yRatio - yShift;
+				const d = activeDots[i];
+				const cx = d.x_relative_offset * xRatio - xShift;
+				const cy = d.y_relative_offset * yRatio - yShift;
 
 				if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
 					continue;
 
 				context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
 			}
-		}
-		context.fillStyle = 'white';
-		context.fillRect(0, 0, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
-		context.fillRect(0, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
-		context.fillRect(SYNTENY_MARGIN + width, 0, SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
-		context.fillRect(0, height + SYNTENY_MARGIN, width + 2 * SYNTENY_MARGIN, SYNTENY_MARGIN);
+		});
 
-		var diff = Date.now() - start;
+		const diff = Date.now() - start;
 		//console.log('Start of call to end of draw call:', diff);
 		if (elapsedMS > 0) {
 			setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
@@ -325,13 +318,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	}
 
 	function interpolateScales(a, b, t) {
-		var aDomain = a.domain();
-		var bDomain = b.domain();
-		var min = Math.min(aDomain[0], bDomain[0]);
-		var max = Math.max(aDomain[1], bDomain[1]);
-		var step = (max - min) / NUM_COLOR_SCALE_INTERPOLATION_SAMPLES;
-		var domain = _.range(min, max + 1, step);
-		var range = _.map(domain, function(input) {
+		const aDomain = a.domain();
+		const bDomain = b.domain();
+		const min = Math.min(aDomain[0], bDomain[0]);
+		const max = Math.max(aDomain[1], bDomain[1]);
+		const step = (max - min) / NUM_COLOR_SCALE_INTERPOLATION_SAMPLES;
+		const domain = _.range(min, max + 1, step);
+		const range = _.map(domain, function(input) {
 			return d3.interpolateRgb(a(input), b(input))(t);
 		});
 		return d3.scale.linear().domain(domain).range(range);
