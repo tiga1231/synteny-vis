@@ -1,3 +1,9 @@
+Requirements
+============
+
+Make sure you have a relatively recent version of node (v4.1.1 is
+known to work).
+
 To build, do
 
 ```
