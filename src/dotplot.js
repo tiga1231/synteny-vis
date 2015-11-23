@@ -11,7 +11,6 @@ const {
 	UNSELECTED_DOT_FILL,
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
 	DOTPLOT_COLOR_TRANS_LEN,
-	ROUNDING_FACTOR
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
@@ -257,19 +256,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 		//console.log('Time after collecting data', Date.now() - start);
 		start = Date.now();
-
-		const [minDomX, maxDomX] = xScale.domain();
-		const [minDomY, maxDomY] = yScale.domain();
-		const [minRanX, maxRanX] = xScale.range();
-		const [minRanY, maxRanY] = yScale.range();
-		const widthDomX = maxDomX - minDomX;
-		const widthDomY = maxDomY - minDomY;
-		const widthRanX = maxRanX - minRanX;
-		const widthRanY = maxRanY - minRanY;
-		const xRatio = widthRanX / widthDomX;
-		const xShift = minDomX * xRatio + minRanX - SYNTENY_MARGIN;
-		const yRatio = widthRanY / widthDomY;
-		const yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
 
 		if (typeHint === 'zoom') {
 			contextbak.clearRect(0, 0, width, height);
