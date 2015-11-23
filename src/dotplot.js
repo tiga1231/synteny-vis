@@ -22,8 +22,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	const baseID = id.substring(1);
 	const svgElement = document.getElementById(baseID);
-	var computedWidth = utils.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
-	var computedHeight = utils.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
+	var computedWidth = utils.getComputedAttr(svgElement, 'width');
+	var computedHeight = utils.getComputedAttr(svgElement, 'height');
 	var windowAspectRatio = computedHeight / computedWidth;
 
 	var width;
@@ -37,8 +37,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		width = 1 / dataAspectRatio * height;
 	}
 
-	d3.select(id).attr('width', width + 2 * SYNTENY_MARGIN);
-	d3.select(id).attr('height', height + 2 * SYNTENY_MARGIN);
+	d3.select(id).style('width', width + 2*SYNTENY_MARGIN);
+	d3.select(id).style('height', height + 2*SYNTENY_MARGIN);
+
+	/* This fixes the alignment of the svg element and the canvas elements. 
+	 * Not really sure what is going on here -- we are close to a consistent
+	 * transformation/offset scheme, but needs a bit more work. */
+	width -= 2*SYNTENY_MARGIN;
+	height -= 2*SYNTENY_MARGIN;
 
 	var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
 	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
@@ -120,13 +126,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		});
 
 	d3.select(id + '-canvas')
-		.attr('width', width + 2 * SYNTENY_MARGIN)
-		.attr('height', height + 2 * SYNTENY_MARGIN);
+		.attr('width', width)
+		.attr('height', height)
+		.style('left', SYNTENY_MARGIN)
+		.style('top', SYNTENY_MARGIN);
 	var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
 
 	d3.select(id + '-canvas-bak')
-		.attr('width', width + 2 * SYNTENY_MARGIN)
-		.attr('height', height + 2 * SYNTENY_MARGIN);
+		.attr('width', width)
+		.attr('height', height)
+		.style('left', SYNTENY_MARGIN)
+		.style('top', SYNTENY_MARGIN);
+
 	var contextbak = document.getElementById(id.substring(1) + '-canvas-bak').getContext('2d');
 
 	var svg = d3.select(id);
@@ -172,7 +183,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var xLineAxis = d3.svg.axis()
 		.scale(xScale)
 		.tickValues(xOffsets)
-		.tickFormat(_.constant(''))
+		.tickFormat('')
 		.orient('bottom')
 		.tickSize(-height);
 
@@ -199,7 +210,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var yLineAxis = d3.svg.axis()
 		.scale(yScale)
 		.tickValues(yOffsets)
-		.tickFormat(_.constant(''))
+		.tickFormat('')
 		.orient('left')
 		.tickSize(-width);
 
@@ -261,13 +272,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		const yShift = maxDomY * yRatio + maxRanY - SYNTENY_MARGIN;
 
 		if (typeHint === 'zoom') {
-			contextbak.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+			contextbak.clearRect(0, 0, width, height);
 			contextbak.fillStyle = UNSELECTED_DOT_FILL;
 			_.each(allDots, function(d) {
-				const cx = d.x_relative_offset * xRatio - xShift;
-				const cy = d.y_relative_offset * yRatio - yShift;
+				const cx = xScale(d.x_relative_offset);
+				const cy = yScale(d.y_relative_offset);
 
-				if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
+				if (cx < 0 || cx > width || cy < 0 || cy > height)
 					return;
 
 				contextbak.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
@@ -277,39 +288,40 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		//console.log('Time to draw bg points:', Date.now() - start);
 		start = Date.now();
 
-		context.clearRect(0, 0, width + 2 * SYNTENY_MARGIN, height + 2 * SYNTENY_MARGIN);
+		context.clearRect(0, 0, width, height);
 
 		/* On top, active dots */
 		var groups = [];
 		var index = 0;
 
-		const first = activeDots[0].roundedlogks;
-		const last = _.last(activeDots).roundedlogks;
-		const descending = first > last;
+		if(activeDots.length > 0) {
+			const first = activeDots[0].roundedlogks;
+			const last = _.last(activeDots).roundedlogks;
+			const descending = first > last;
 
-		while (index < activeDots.length) {
-			var lo = index;
-			var val = activeDots[index].roundedlogks;
-			index = _.sortedLastIndex(activeDots, {
-				roundedlogks: val
-			}, x => descending ? -x.roundedlogks : x.roundedlogks);
-			groups.push([lo, index]);
-		}
-
-		_.each(groups, ([loIndex, hiIndex]) => {
-			context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
-			for (var i = loIndex; i < hiIndex; i++) {
-				const d = activeDots[i];
-				const cx = d.x_relative_offset * xRatio - xShift;
-				const cy = d.y_relative_offset * yRatio - yShift;
-
-				if (cx < SYNTENY_MARGIN || cx > width + SYNTENY_MARGIN || cy < SYNTENY_MARGIN || cy > height + SYNTENY_MARGIN)
-					continue;
-
-				context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+			while (index < activeDots.length) {
+				var lo = index;
+				var val = activeDots[index].roundedlogks;
+				index = _.sortedLastIndex(activeDots, {
+					roundedlogks: val
+				}, x => descending ? -x.roundedlogks : x.roundedlogks);
+				groups.push([lo, index]);
 			}
-		});
 
+			_.each(groups, ([loIndex, hiIndex]) => {
+				context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
+				for (var i = loIndex; i < hiIndex; i++) {
+					const d = activeDots[i];
+					const cx = xScale(d.x_relative_offset);
+					const cy = yScale(d.y_relative_offset);
+
+					if (cx < 0 || cx > width || cy < 0 || cy > height)
+						continue;
+					context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+				}
+			});
+
+		}
 		const diff = Date.now() - start;
 		//console.log('Start of call to end of draw call:', diff);
 		if (elapsedMS > 0) {
@@ -368,3 +380,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 }
 
 exports.synteny = synteny;
+
+// Local Variables:
+// mode: js2
+// js2-basic-offset: 8
+// End:
