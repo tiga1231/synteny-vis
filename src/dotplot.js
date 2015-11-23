@@ -10,7 +10,7 @@ const {
 	CIRCLE_RADIUS,
 	UNSELECTED_DOT_FILL,
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
-	DOTPLOT_COLOR_TRANS_LEN,
+	DOTPLOT_COLOR_TRANS_LEN
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
