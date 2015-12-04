@@ -63,23 +63,9 @@ function buildDiv(element_id) {
 		option('pan', 'Panning')
 	], 0);
 
-	makeForm('Plotting order', 'summary-options', [
-		option('minimum', 'High to Low'),
-		option('maximum', 'Low to High')
-	], 0);
-
-	makeForm('Dot Plot Coloring', 'plot-var-options', [
-		option('logks', 'log ks'),
-		option('logkn', 'log kn'),
-		option('logkskn', 'log ks/kn')
-	], 0);
-
 	makeForm('Color Scale', 'color-options', [
-		option('rg', 'red-green'),
-		option('rg_quantized', 'rg_quantized'),
-		option('rainbow', 'rainbow'),
-		option('rainbow_quantized', 'rainbow_quantized'),
-		option('auto', 'auto')
+		option('auto', 'auto'),
+		option('rainbow_quantized', 'rainbow_quantized')
 	], 0);
 
 	const persistenceOptions = formWrapper.append('div').classed('radio-button-box', true);
@@ -129,31 +115,10 @@ function controller(dataObj, element_id, meta) {
 			syntenyPlot.setNavMode(this.value);
 		});
 
-	/* summary mode switching */
-	d3.selectAll('#summary-options input[name=summary-options]')
-		.on('change', function() {
-			dataObj.setOrder('logks', this.value === 'minimum');
-		});
-
-	/* Plot variable switching */
-	d3.selectAll('#plot-var-options input[name=plot-var-options]')
-		.on('change', function() {
-			histograms[activeField].setColorScale(colorScale(activeField, 'unselected'));
-			activeField = this.value;
-			syntenyPlot.setField(activeField);
-			var newCS;
-			if (activeCS === 'auto') {
-				newCS = autoscale.generateAutoScale(histograms[activeField].bins(), getPersistence());
-			} else {
-				newCS = colorScale(activeField, activeCS);
-			}
-			syntenyPlot.setColorScale(newCS);
-			histograms[activeField].setColorScale(newCS);
-		});
-
 	/* color mode switching */
 	var activeField = 'logks';
-	var activeCS = 'rg';
+	var activeCS = 'auto'; // FIXME this should depend on the checked box, not 
+												 // a hard coded value.
 	d3.selectAll('#color-options input[name=color-options]')
 		.on('change', function() {
 			var newCS;
@@ -175,9 +140,10 @@ function controller(dataObj, element_id, meta) {
 	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial, meta);
 	const histograms = {
 		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
-		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', unselected),
-		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', unselected)
 	};
+
+	const activePlot = histograms[activeField]
+	activePlot.setColorScale(autoscale.generateAutoScale(activePlot.bins(), getPersistence()));
 
 	// Since the histograms aren't controlling their own color scale policy 
 	// now (a good thing), we need to manually fire of their update methods. 
