@@ -65,25 +65,25 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			var tempXOffsets = _.filter(xOffsets, function(x) {
 				return 0 <= xScale(x) && xScale(x) <= width;
 			});
-			var tempXGaps = _.filter(xAxisTickValues, function(x) {
+			var tempXGaps = _.filter(xMidpoints, function(x) {
 				return 0 <= xScale(x) && xScale(x) <= width;
 			});
 			var tempYOffsets = _.filter(yOffsets, function(y) {
 				return 0 <= yScale(y) && yScale(y) <= height;
 			});
-			var tempYGaps = _.filter(yAxisTickValues, function(y) {
+			var tempYGaps = _.filter(yMidpoints, function(y) {
 				return 0 <= yScale(y) && yScale(y) <= height;
 			});
 
-			xLineAxis.tickValues(tempXOffsets);
-			xGapsAxis.tickValues(tempXGaps);
-			yLineAxis.tickValues(tempYOffsets);
-			yGapsAxis.tickValues(tempYGaps);
+			xGridLines.tickValues(tempXOffsets);
+			xLabels.tickValues(tempXGaps);
+			yGridLines.tickValues(tempYOffsets);
+			yLabels.tickValues(tempYGaps);
 
-			xAxisGapsGroup.call(xGapsAxis);
-			yAxisGapsGroup.call(yGapsAxis);
-			xAxisLineGroup.call(xLineAxis);
-			yAxisLineGroup.call(yLineAxis);
+			xAxisGapsGroup.call(xLabels);
+			yAxisGapsGroup.call(yLabels);
+			xAxisLineGroup.call(xGridLines);
+			yAxisLineGroup.call(yGridLines);
 
 			setSyntenyData('zoom');
 		});
@@ -174,60 +174,50 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.attr('height', height)
 		.attr('fill', 'black');
 
+  const midpoints = points => {
+		const pairs = _.zip(_.initial(points), _.rest(points));
+		return pairs.map(([p1, p2]) => (p1 + p2) / 2);
+	}
+	
 	var xOffsets = dataObj.getXLineOffsets();
-	var xPairs = _.zip(_.initial(xOffsets), _.rest(xOffsets));
-	var xAxisTickValues = _.map(xPairs, function(p) {
-		return (p[0] + p[1]) / 2;
-	});
+	var xMidpoints = midpoints(xOffsets);
 
-	var xOffsetToNameMap = _.object(xAxisTickValues, dataObj.getXLineNames());
+	const xOffsetToName = _.object(xMidpoints, dataObj.getXLineNames());
+	const xAxisBase = () => d3.svg.axis().scale(xScale).orient('bottom');
 
-	var xLineAxis = d3.svg.axis()
-		.scale(xScale)
+	var xGridLines = xAxisBase()
 		.tickValues(xOffsets)
 		.tickFormat('')
-		.orient('bottom')
 		.tickSize(-height);
 
-	var xGapsAxis = d3.svg.axis()
-		.scale(xScale)
-		.tickValues(xAxisTickValues)
-		.tickFormat(function(x) {
-			return xOffsetToNameMap[x];
-		})
-		.orient('bottom')
+	var xLabels = xAxisBase()
+		.tickValues(xMidpoints)
+		.tickFormat(x => xOffsetToName[x])
 		.tickSize(0);
 
 	var xAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, height + SYNTENY_MARGIN]}]));
-	var xAxisGapsGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xGapsAxis);
-	var xAxisLineGroup = xAxisWrapper.append('g').classed('xAxis', true).call(xLineAxis);
+	var xAxisGapsGroup = xAxisWrapper.append('g').call(xLabels);
+	var xAxisLineGroup = xAxisWrapper.append('g').call(xGridLines);
 
 	var yOffsets = dataObj.getYLineOffsets();
-	var yPairs = _.zip(_.initial(yOffsets), _.rest(yOffsets));
-	var yAxisTickValues = _.map(yPairs, function(p) {
-		return (p[0] + p[1]) / 2;
-	});
-	var yOffsetToNameMap = _.object(yAxisTickValues, dataObj.getYLineNames());
+	var yMidpoints = midpoints(yOffsets);
 
-	var yLineAxis = d3.svg.axis()
-		.scale(yScale)
+	const yOffsetToName = _.object(yMidpoints, dataObj.getYLineNames());
+	const yAxisBase = () => d3.svg.axis().scale(yScale).orient('left');
+
+	var yGridLines = yAxisBase()
 		.tickValues(yOffsets)
 		.tickFormat('')
-		.orient('left')
 		.tickSize(-width);
 
-	var yGapsAxis = d3.svg.axis()
-		.scale(yScale)
-		.tickValues(yAxisTickValues)
-		.tickFormat(function(x) {
-			return yOffsetToNameMap[x];
-		})
-		.orient('left')
+	var yLabels = yAxisBase()
+		.tickValues(yMidpoints)
+		.tickFormat(x => yOffsetToName[x])
 		.tickSize(0);
 
 	var yAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]));
-	var yAxisGapsGroup = yAxisWrapper.append('g').classed('yAxis', true).call(yGapsAxis);
-	var yAxisLineGroup = yAxisWrapper.append('g').classed('yAxis', true).call(yLineAxis);
+	var yAxisGapsGroup = yAxisWrapper.append('g').call(yLabels);
+	var yAxisLineGroup = yAxisWrapper.append('g').call(yGridLines);
 
 	svg = svg
 		.append('g')
