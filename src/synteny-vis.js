@@ -111,16 +111,14 @@ function controller(dataObj, element_id, meta) {
 
 	/* zoom/pan switching */
 	d3.selectAll('#mouse-options input[name=mouse-options]')
-		.on('change', function() {
-			syntenyPlot.setNavMode(this.value);
-		});
+		.on('change', () => syntenyPlot.setNavMode(this.value));
 
 	/* color mode switching */
 	var activeField = 'logks';
 	var activeCS = 'auto'; // FIXME this should depend on the checked box, not 
 												 // a hard coded value.
 	d3.selectAll('#color-options input[name=color-options]')
-		.on('change', function() {
+		.on('change', () => {
 			var newCS;
 			if (this.value === 'auto') {
 				newCS = autoscale.generateAutoScale(histograms[activeField].bins(), getPersistence());
@@ -166,11 +164,11 @@ function controller(dataObj, element_id, meta) {
 			.value();
 
 		const asyncBenchmark = require('async-benchmark');
-		asyncBenchmark.benchmark(rangeList, function(range) {
+		asyncBenchmark.benchmark(rangeList, (range) => {
 			histograms.logks.brush.extent(range);
 			histograms.logks.brush.event(histograms.logks.selection);
-		}, function(info) {
-			alert('Average brush time: ' + info.average + ', max: ' + info.max);
+		}, ({ average, max }) => {
+			alert('Average: ' + average + ', max: ' + max)
 		});
 	}
 }

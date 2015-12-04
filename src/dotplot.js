@@ -49,42 +49,44 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
 	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
-	var zoom = d3.behavior.zoom().x(xScale).y(yScale).scaleExtent([1, 100]).on('zoom', function() {
-		var t = d3.event.translate;
-		var s = d3.event.scale;
-		t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
-		t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
-		// prevents the translate from growing large. This way, you don't 
-		// have to "scroll back" onto the canvas if you pan past the edge.
-		zoom.translate(t);
+	var zoom = d3.behavior.zoom()
+		.x(xScale).y(yScale)
+		.scaleExtent([1, 100]).on('zoom', () => {
+			var t = d3.event.translate;
+			var s = d3.event.scale;
+			t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
+			t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
+			// prevents the translate from growing large. This way, you don't 
+			// have to "scroll back" onto the canvas if you pan past the edge.
+			zoom.translate(t);
 
-		brushGroup.attr('transform', transform([{translate: t}, {scale: s}]));
+			brushGroup.attr('transform', transform([{translate: t}, {scale: s}]));
 
-		var tempXOffsets = _.filter(xOffsets, function(x) {
-			return 0 <= xScale(x) && xScale(x) <= width;
+			var tempXOffsets = _.filter(xOffsets, function(x) {
+				return 0 <= xScale(x) && xScale(x) <= width;
+			});
+			var tempXGaps = _.filter(xAxisTickValues, function(x) {
+				return 0 <= xScale(x) && xScale(x) <= width;
+			});
+			var tempYOffsets = _.filter(yOffsets, function(y) {
+				return 0 <= yScale(y) && yScale(y) <= height;
+			});
+			var tempYGaps = _.filter(yAxisTickValues, function(y) {
+				return 0 <= yScale(y) && yScale(y) <= height;
+			});
+
+			xLineAxis.tickValues(tempXOffsets);
+			xGapsAxis.tickValues(tempXGaps);
+			yLineAxis.tickValues(tempYOffsets);
+			yGapsAxis.tickValues(tempYGaps);
+
+			xAxisGapsGroup.call(xGapsAxis);
+			yAxisGapsGroup.call(yGapsAxis);
+			xAxisLineGroup.call(xLineAxis);
+			yAxisLineGroup.call(yLineAxis);
+
+			setSyntenyData('zoom');
 		});
-		var tempXGaps = _.filter(xAxisTickValues, function(x) {
-			return 0 <= xScale(x) && xScale(x) <= width;
-		});
-		var tempYOffsets = _.filter(yOffsets, function(y) {
-			return 0 <= yScale(y) && yScale(y) <= height;
-		});
-		var tempYGaps = _.filter(yAxisTickValues, function(y) {
-			return 0 <= yScale(y) && yScale(y) <= height;
-		});
-
-		xLineAxis.tickValues(tempXOffsets);
-		xGapsAxis.tickValues(tempXGaps);
-		yLineAxis.tickValues(tempYOffsets);
-		yGapsAxis.tickValues(tempYGaps);
-
-		xAxisGapsGroup.call(xGapsAxis);
-		yAxisGapsGroup.call(yGapsAxis);
-		xAxisLineGroup.call(xLineAxis);
-		yAxisLineGroup.call(yLineAxis);
-
-		setSyntenyData('zoom');
-	});
 
 	function resizeBrushBoundary() {
 		var scaling = zoom.scale();
