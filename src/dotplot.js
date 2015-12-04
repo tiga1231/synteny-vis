@@ -10,7 +10,8 @@ const {
 	CIRCLE_RADIUS,
 	UNSELECTED_DOT_FILL,
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
-	DOTPLOT_COLOR_TRANS_LEN
+	DOTPLOT_COLOR_TRANS_LEN,
+	MAXIMIZE_WIDTH
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
@@ -28,7 +29,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var width;
 	var height;
 
-	if (windowAspectRatio / dataAspectRatio > 1) {
+	if (MAXIMIZE_WIDTH || windowAspectRatio / dataAspectRatio > 1) {
 		width = computedWidth;
 		height = dataAspectRatio * width;
 	} else {
