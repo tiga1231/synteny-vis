@@ -248,25 +248,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		});
 	}
 
-	function draw(elapsedMS, initialColorScale, finalColorScale, typeHint) {
+	function draw(elapsedMS, initialColorScale, finalColorScale) {
 		var start = Date.now();
 
 		var intermediateColorScale;
-		if (elapsedMS === 0 && typeHint === 'data') {
-			intermediateColorScale = finalColorScale;
-		} else {
-			var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
-			intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
-		}
+		var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
+		intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
 
 		var allData = dataObj.currentData();
 		var activeDots = allData.active;
 		var allDots = allData.raw;
 
 		//console.log('Time after collecting data', Date.now() - start);
-		start = Date.now();
-
-		//console.log('Time to draw bg points:', Date.now() - start);
 		start = Date.now();
 
 		context.clearRect(0, 0, width, height);
@@ -314,7 +307,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		const aDomain = a.domain();
 		const bDomain = b.domain();
 		const min = Math.min(aDomain[0], bDomain[0]);
-		const max = Math.max(aDomain[1], bDomain[1]);
+		const max = Math.max(aDomain[aDomain.length - 1], bDomain[bDomain.length - 1]);
 		const step = (max - min) / NUM_COLOR_SCALE_INTERPOLATION_SAMPLES;
 		const domain = _.range(min, max + 1, step);
 		const range = _.map(domain, function(input) {
