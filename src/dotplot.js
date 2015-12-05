@@ -93,8 +93,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		var corners = ['.nw', '.ne', '.se', '.sw'];
 		var vertical = ['.e', '.w'];
 		var horizontal = ['.n', '.s'];
-		var horizontalRescale = _.union(corners, vertical);
-		var verticalRescale = _.union(corners, horizontal);
+		var horizontalRescale = corners.concat(vertical);
+		var verticalRescale = corners.concat(horizontal);
 
 		_.map(horizontalRescale, function(name) {
 			d3.select('.resize' + name).select('rect')

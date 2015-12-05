@@ -129,14 +129,6 @@ function inlineKSData(ks, xmap, ymap) {
 	return ks;
 }
 
-function between(low, high, field) {
-	if (field) {
-		return x => low <= x[field] && x[field] < high;
-	} else {
-		return x => low <= x && x < high;
-	}
-}
-
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	var xmap = xmapPair.ge;
 	var ymap = ymapPair.ge;
@@ -189,9 +181,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 			.value();
 	}
 
-	function getFilterFunction(filter) {
+	const getFilterFunction = filter => {
 		const filterFuncs = _.values(filter);
-		return x => _.all(_.map(filterFuncs, f => f(x)));
+		return x => _.all(filterFuncs.map(f => f(x)));
 	}
 
 	ret.currentData = function currentData() {
@@ -201,7 +193,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 		};
 	};
 
-	const sortedDots = _.memoize(_.partial(_.sortBy, syntenyDots));
+	const sortedDots = _.memoize(_.sortBy.bind(null, syntenyDots));
+
 	ret.currentDataSummary = function currentDataSummary(ticks, field) {
 		const filtersWithoutField = getFilterFunction(_.omit(dataFilters, field));
 		const validPoints = _.filter(sortedDots(field), filtersWithoutField);
@@ -230,13 +223,12 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	};
 
 	ret.addDataFilter = function(extent, field, typeHint) {
-		dataFilters[field] = between(extent[0], extent[1], field);
+		dataFilters[field] = x => extent[0] <= x[field] && x[field] < extent[1];
 		ret.notifyListeners(typeHint || 'data');
 	};
 
 	ret.removeDataFilter = function(field) {
-		delete dataFilters[field]
-		;
+		delete dataFilters[field];
 		ret.notifyListeners('data-stop');
 	};
 
