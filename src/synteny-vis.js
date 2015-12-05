@@ -115,10 +115,12 @@ function controller(dataObj, element_id, meta) {
 
 	/* color mode switching */
 	var activeField = 'logks';
-	var activeCS = 'auto'; // FIXME this should depend on the checked box, not 
-												 // a hard coded value.
+	
+	/* Don't be cute and use fat arrow functions here. Fat arrow functions
+	 * have a lexically bound "this" and we really really need the old "this"
+	 * scoping, since we are getting value from a form. */
 	d3.selectAll('#color-options input[name=color-options]')
-		.on('change', () => {
+		.on('change', function() {
 			var newCS;
 			if (this.value === 'auto') {
 				newCS = autoscale.generateAutoScale(histograms[activeField].bins(), getPersistence());
@@ -127,7 +129,6 @@ function controller(dataObj, element_id, meta) {
 			}
 			histograms[activeField].setColorScale(newCS);
 			syntenyPlot.setColorScale(newCS);
-			activeCS = this.value;
 		});
 
 	const colorScale = require('colorscales').onData(dataObj.currentData().raw);
@@ -135,13 +136,15 @@ function controller(dataObj, element_id, meta) {
 	const initial = colorScale(activeField, 'rg');
 	const unselected = colorScale(activeField, 'unselected');
 
-	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initial, meta);
 	const histograms = {
 		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
 	};
+	const activePlot = histograms[activeField];
+	const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(), getPersistence());
+	activePlot.setColorScale(initialAutoScale);
 
-	const activePlot = histograms[activeField]
-	activePlot.setColorScale(autoscale.generateAutoScale(activePlot.bins(), getPersistence()));
+	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initialAutoScale, meta);
+
 
 	// Since the histograms aren't controlling their own color scale policy 
 	// now (a good thing), we need to manually fire of their update methods. 

@@ -85,7 +85,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			xAxisLineGroup.call(xGridLines);
 			yAxisLineGroup.call(yGridLines);
 
-			setSyntenyData('zoom');
+			drawBG();
+			setSyntenyData();
 		});
 
 	function resizeBrushBoundary() {
@@ -232,6 +233,21 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var colorScale = initialColorScale;
 
+	function drawBG() {
+		var allDots = dataObj.currentData().raw;
+		contextbak.clearRect(0, 0, width, height);
+		contextbak.fillStyle = UNSELECTED_DOT_FILL;
+		_.each(allDots, function(d) {
+			const cx = xScale(d.x_relative_offset);
+			const cy = yScale(d.y_relative_offset);
+
+			if (cx < 0 || cx > width || cy < 0 || cy > height)
+				return;
+
+			contextbak.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+		});
+	}
+
 	function draw(elapsedMS, initialColorScale, finalColorScale, typeHint) {
 		var start = Date.now();
 
@@ -249,20 +265,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 		//console.log('Time after collecting data', Date.now() - start);
 		start = Date.now();
-
-		if (typeHint === 'zoom') {
-			contextbak.clearRect(0, 0, width, height);
-			contextbak.fillStyle = UNSELECTED_DOT_FILL;
-			_.each(allDots, function(d) {
-				const cx = xScale(d.x_relative_offset);
-				const cy = yScale(d.y_relative_offset);
-
-				if (cx < 0 || cx > width || cy < 0 || cy > height)
-					return;
-
-				contextbak.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
-			});
-		}
 
 		//console.log('Time to draw bg points:', Date.now() - start);
 		start = Date.now();
@@ -321,12 +323,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		return d3.scale.linear().domain(domain).range(range);
 	}
 
-	function setSyntenyData(typeHint) {
-		if (typeHint == 'autoscale') return;
-		draw(0, colorScale, colorScale, typeHint);
+	function setSyntenyData() {
+		draw(0, colorScale, colorScale);
 	}
 	dataObj.addListener(setSyntenyData);
-	setSyntenyData('zoom');
+	drawBG();
+	setSyntenyData();
 
 	function setNavigationMode(mode) {
 		if (mode === 'pan') {
