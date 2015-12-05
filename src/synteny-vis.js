@@ -112,7 +112,7 @@ function controller(dataObj, element_id, meta) {
 	/* zoom/pan switching */
 	d3.selectAll('#mouse-options input[name=mouse-options]')
 		.on('change', function() {
-		 	syntenyPlot.setNavMode(this.value);
+			syntenyPlot.setNavMode(this.value);
 		});
 
 	/* color mode switching */
@@ -136,10 +136,9 @@ function controller(dataObj, element_id, meta) {
 	const colorScale = require('colorscales').onData(dataObj.currentData().raw);
 
 	const initial = colorScale(activeField, 'rg');
-	const unselected = colorScale(activeField, 'unselected');
 
 	const histograms = {
-		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
+		'logks': histogram.histogram('#plot', dataObj, 'logks', initial)
 	};
 	const activePlot = histograms[activeField];
 	const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(), getPersistence());
@@ -173,7 +172,7 @@ function controller(dataObj, element_id, meta) {
 			histograms.logks.brush.extent(range);
 			histograms.logks.brush.event(histograms.logks.selection);
 		}, function({ average, max }) {
-			alert('Average: ' + average + ', max: ' + max)
+			alert('Average: ' + average + ', max: ' + max);
 		});
 	}
 }

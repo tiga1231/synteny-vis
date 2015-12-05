@@ -182,7 +182,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	const getFilterFunction = function(filter) {
 		const filterFuncs = _.values(filter);
 		return x => _.all(filterFuncs.map(f => f(x)));
-	}
+	};
 
 	ret.currentData = function currentData() {
 		return {

@@ -186,10 +186,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.attr('height', height)
 		.attr('fill', 'black');
 
-  const midpoints = function(points) {
+	const midpoints = function(points) {
 		const pairs = _.zip(_.initial(points), _.rest(points));
 		return pairs.map(([p1, p2]) => (p1 + p2) / 2);
-	}
+	};
 	
 	var xOffsets = dataObj.getXLineOffsets();
 	var xMidpoints = midpoints(xOffsets);
@@ -267,7 +267,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 		var allData = dataObj.currentData();
 		var activeDots = allData.active;
-		var allDots = allData.raw;
 
 		//console.log('Time after collecting data', Date.now() - start);
 		start = Date.now();
