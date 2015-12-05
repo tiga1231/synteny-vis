@@ -6,10 +6,10 @@ const _ = require('lodash');
  *
  * My guess is that this isn't super accurate for fast functions.
  */
-exports.benchmark = (testArgs, f, done) => {
+exports.benchmark = function(testArgs, f, done) {
 
 	const results = [];
-	const runOne = tests => {
+	const runOne = function(tests) {
 		if (!tests.length)
 			return done(stats(results));
 
@@ -18,7 +18,7 @@ exports.benchmark = (testArgs, f, done) => {
 	};
 	setTimeout(runOne, 0, testArgs);
 
-	const timeIt = (f, arg) => {
+	const timeIt = function(f, arg) {
 		const start = Date.now();
 		f(arg);
 		return Date.now() - start;

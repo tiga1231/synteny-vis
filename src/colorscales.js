@@ -6,8 +6,8 @@ const {
 	COLOR_RANGES
 } = require('constants');
 
-exports.onData = (data) => {
-	const generateScale = (field, name) => {
+exports.onData = function(data) {
+	const generateScale = function(field, name) {
 		const extent = d3.extent(data, point => point[field]);
 
 		const colorScale = COLOR_RANGES[name];

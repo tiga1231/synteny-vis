@@ -10,10 +10,10 @@ const _ = require('lodash');
 const d3 = require('d3');
 const sv = require('synteny-vis');
 
-exports.makeSyntenyDotPlot = ({data_url, element_id, genome_x, genome_y}) => {
+exports.makeSyntenyDotPlot = function({data_url, element_id, genome_x, genome_y}) {
 	queue()
 		.defer(d3.text, data_url)
-		.await((err, ks) => {
+		.await(function(err, ks) {
 			if (err) {
 				console.log(err);
 				return;
@@ -181,7 +181,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 			.value();
 	}
 
-	const getFilterFunction = filter => {
+	const getFilterFunction = function(filter) {
 		const filterFuncs = _.values(filter);
 		return x => _.all(filterFuncs.map(f => f(x)));
 	}
@@ -200,7 +200,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 		const validPoints = _.filter(sortedDots(field), filtersWithoutField);
 		const dx = ticks[1] - ticks[0];
 
-		return _.map(ticks, x => {
+		return _.map(ticks, function(x) {
 			const hi = _.sortedIndex(validPoints, {[field]: x + dx}, field);
 			const lo = _.sortedIndex(validPoints, {[field]: x}, field);
 			return { x, dx, y: hi - lo };
@@ -244,8 +244,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	};
 
 	if (TIME_DATA_OPERATIONS) {
-		const logIt = (f, name) => {
-			return (...args) => {
+		const logIt = function(f, name) {
+			return function(...args) {
 				var start = Date.now();
 				var x = f.call(null, ...args);
 				console.log(name, Date.now() - start);

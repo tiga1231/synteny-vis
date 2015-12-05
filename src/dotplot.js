@@ -51,7 +51,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
 	const filterTextGaps = function(values, scale) {
-		return values.reduce((out, next) => {
+		return values.reduce(function(out, next) {
 			if(out.length === 0 || Math.abs(scale(next) - scale(_.last(out))) > MIN_TEXT_GAP)	
 				out.push(next);
 			return out;
@@ -81,7 +81,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var zoom = d3.behavior.zoom()
 		.x(xScale).y(yScale)
-		.scaleExtent([1, 100]).on('zoom', () => {
+		.scaleExtent([1, 100]).on('zoom', function() {
 			var t = d3.event.translate;
 			var s = d3.event.scale;
 			t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
@@ -291,7 +291,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 				groups.push([lo, index]);
 			}
 
-			_.each(groups, ([loIndex, hiIndex]) => {
+			_.each(groups, function([loIndex, hiIndex]) {
 				context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
 				for (var i = loIndex; i < hiIndex; i++) {
 					const d = activeDots[i];

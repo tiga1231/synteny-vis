@@ -45,8 +45,8 @@ function buildDiv(element_id) {
 			.attr('type', 'radio').attr('name', optionId)
 			.attr('value', d => d[0]);
 
-		options.forEach(selection => {
-			selection.forEach((element, i) => {
+		options.forEach(function(selection) {
+			selection.forEach(function(element, i) {
 				const label = document.createElement('label');
 				label.textContent = elements[i][1];
 				navForm.node().insertBefore(label, element);
@@ -83,7 +83,7 @@ function controller(dataObj, element_id, meta) {
 
 	buildDiv('#' + element_id);
 	
-	const refreshAutoScale = (persistence) => {
+	const refreshAutoScale = function(persistence) {
 		const radio = document.getElementById('color-options');
 		const auto = _.find(radio.children, child => child.value === 'auto');
 		auto.checked = true;
@@ -98,20 +98,22 @@ function controller(dataObj, element_id, meta) {
 	const getPersistence = () => d3.select('#persistence').node().value;
 
 	d3.select('#persistence')
-		.on('input', () => {
+		.on('input', function() {
 			const p = getPersistence();
 			refreshAutoScale(p);
 			d3.select('#persistence-text').node().innerText = p;
 		});
 
 	d3.select('#persistence-button')
-		.on('click', () => {
+		.on('click', function() {
 			refreshAutoScale(getPersistence());
 		});
 
 	/* zoom/pan switching */
 	d3.selectAll('#mouse-options input[name=mouse-options]')
-		.on('change', () => syntenyPlot.setNavMode(this.value));
+		.on('change', function() {
+		 	syntenyPlot.setNavMode(this.value);
+		});
 
 	/* color mode switching */
 	var activeField = 'logks';
@@ -149,7 +151,7 @@ function controller(dataObj, element_id, meta) {
 	// Since the histograms aren't controlling their own color scale policy 
 	// now (a good thing), we need to manually fire of their update methods. 
 	// Eventually, we should fix this up.
-	dataObj.addListener((typeHint) => {
+	dataObj.addListener(function(typeHint) {
 		if(typeHint.indexOf('stop') > -1)
 			_.each(histograms, h => h.updateMinMaxMarkers(getPersistence()));
 	});
@@ -167,10 +169,10 @@ function controller(dataObj, element_id, meta) {
 			.value();
 
 		const asyncBenchmark = require('async-benchmark');
-		asyncBenchmark.benchmark(rangeList, (range) => {
+		asyncBenchmark.benchmark(rangeList, function(range) {
 			histograms.logks.brush.extent(range);
 			histograms.logks.brush.event(histograms.logks.selection);
-		}, ({ average, max }) => {
+		}, function({ average, max }) {
 			alert('Average: ' + average + ', max: ' + max)
 		});
 	}

@@ -110,11 +110,11 @@ function histogram(id, dataObj, field, colorScale) {
 		.attr('transform', transform([{translate: [HISTOGRAM_MARGIN, 0]}]))
 		.classed('yAxis', true).call(yAxis);
 
-	const updateHeights = selection => {
+	const updateHeights = function(selection) {
 		selection.transition(); // cancel transition
 		selection.attr('y', d => yPlotScale(d.y));
 	};
-	const updateColors = selection => {
+	const updateColors = function(selection) {
 		selection.transition(); // cancel transition
 		const extent = plotBrush.empty() ? [-Infinity, Infinity] : plotBrush.extent();
 		const active = bin => bin.x + bin.dx > extent[0] && bin.x < extent[1];
@@ -124,7 +124,7 @@ function histogram(id, dataObj, field, colorScale) {
 			.attr('fill', d => active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL);
 	};
 
-	const updatePlotAttrs = selection => {
+	const updatePlotAttrs = function(selection) {
 		updateHeights(selection);
 		updateColors(selection);
 	};
