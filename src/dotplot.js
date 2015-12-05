@@ -135,13 +135,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.style('top', SYNTENY_MARGIN);
 	var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
 
-	d3.select(id + '-canvas-bak')
+	d3.select(id + '-canvas-background')
 		.attr('width', width)
 		.attr('height', height)
 		.style('left', SYNTENY_MARGIN)
 		.style('top', SYNTENY_MARGIN);
 
-	var contextbak = document.getElementById(id.substring(1) + '-canvas-bak').getContext('2d');
+	var contextbackground = document.getElementById(id.substring(1) + '-canvas-background').getContext('2d');
 
 	var svg = d3.select(id);
 
@@ -235,8 +235,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	function drawBG() {
 		var allDots = dataObj.currentData().raw;
-		contextbak.clearRect(0, 0, width, height);
-		contextbak.fillStyle = UNSELECTED_DOT_FILL;
+		contextbackground.clearRect(0, 0, width, height);
+		contextbackground.fillStyle = UNSELECTED_DOT_FILL;
 		_.each(allDots, function(d) {
 			const cx = xScale(d.x_relative_offset);
 			const cy = yScale(d.y_relative_offset);
@@ -244,7 +244,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			if (cx < 0 || cx > width || cy < 0 || cy > height)
 				return;
 
-			contextbak.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+			contextbackground.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
 		});
 	}
 

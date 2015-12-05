@@ -22,7 +22,7 @@ function buildDiv(element_id) {
 	/* pointer-events = none stops the canvas from intercepting brush events
 	 * before they get to the svg element below. */
 	subdiv.append('canvas')
-		.attr('id', 'dotplot-canvas-bak').classed('dotplot', true)
+		.attr('id', 'dotplot-canvas-background').classed('dotplot', true)
 		.style('pointer-events', 'none');
 	subdiv.append('canvas')
 		.attr('id', 'dotplot-canvas').classed('dotplot', true)
