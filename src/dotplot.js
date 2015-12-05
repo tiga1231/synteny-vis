@@ -11,13 +11,14 @@ const {
 	UNSELECTED_DOT_FILL,
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
 	DOTPLOT_COLOR_TRANS_LEN,
-	MAXIMIZE_WIDTH
+	MAXIMIZE_WIDTH,
+	MIN_TEXT_GAP
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
 
-	var xExtent = [0, _.max(dataObj.getXLineOffsets())];
-	var yExtent = [0, _.max(dataObj.getYLineOffsets())];
+	var xExtent = d3.extent(dataObj.getXLineOffsets());
+	var yExtent = d3.extent(dataObj.getYLineOffsets());
 	var dataAspectRatio = yExtent[1] / xExtent[1];
 
 	const baseID = id.substring(1);
@@ -49,6 +50,35 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
 	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
+	const filterTextGaps = function(values, scale) {
+		return values.reduce((out, next) => {
+			if(out.length === 0 || Math.abs(scale(next) - scale(_.last(out))) > MIN_TEXT_GAP)	
+				out.push(next);
+			return out;
+		}, []);
+	};
+
+	const makeLabels = function() {
+
+		const xFilter = x => (0 <= xScale(x) && xScale(x) <= width);
+		const yFilter = y => (0 <= yScale(y) && yScale(y) <= height);
+
+		const tempXOffsets = filterTextGaps(_.filter(xOffsets, xFilter), xScale);
+		const tempXGaps = filterTextGaps(_.filter(xMidpoints, xFilter), xScale);
+		const tempYOffsets = filterTextGaps(_.filter(yOffsets, yFilter), yScale);
+		const tempYGaps = filterTextGaps(_.filter(yMidpoints, yFilter), yScale);
+
+		xGridLines.tickValues(tempXOffsets);
+		xLabels.tickValues(tempXGaps);
+		yGridLines.tickValues(tempYOffsets);
+		yLabels.tickValues(tempYGaps);
+
+		xAxisGapsGroup.call(xLabels);
+		yAxisGapsGroup.call(yLabels);
+		xAxisLineGroup.call(xGridLines);
+		yAxisLineGroup.call(yGridLines);
+	};
+
 	var zoom = d3.behavior.zoom()
 		.x(xScale).y(yScale)
 		.scaleExtent([1, 100]).on('zoom', () => {
@@ -62,29 +92,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 			brushGroup.attr('transform', transform([{translate: t}, {scale: s}]));
 
-			var tempXOffsets = _.filter(xOffsets, function(x) {
-				return 0 <= xScale(x) && xScale(x) <= width;
-			});
-			var tempXGaps = _.filter(xMidpoints, function(x) {
-				return 0 <= xScale(x) && xScale(x) <= width;
-			});
-			var tempYOffsets = _.filter(yOffsets, function(y) {
-				return 0 <= yScale(y) && yScale(y) <= height;
-			});
-			var tempYGaps = _.filter(yMidpoints, function(y) {
-				return 0 <= yScale(y) && yScale(y) <= height;
-			});
-
-			xGridLines.tickValues(tempXOffsets);
-			xLabels.tickValues(tempXGaps);
-			yGridLines.tickValues(tempYOffsets);
-			yLabels.tickValues(tempYGaps);
-
-			xAxisGapsGroup.call(xLabels);
-			yAxisGapsGroup.call(yLabels);
-			xAxisLineGroup.call(xGridLines);
-			yAxisLineGroup.call(yGridLines);
-
+			resizeBrushBoundary();
+			makeLabels();
 			drawBG();
 			setSyntenyData();
 		});
@@ -125,6 +134,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 				dataObj.removeSpatialFilter('spatial-stop');
 			} else {
 				dataObj.addSpatialFilter(brush.extent(), 'spatial-stop');
+				resizeBrushBoundary();
 			}
 		});
 
@@ -175,7 +185,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.attr('height', height)
 		.attr('fill', 'black');
 
-  const midpoints = points => {
+  const midpoints = function(points) {
 		const pairs = _.zip(_.initial(points), _.rest(points));
 		return pairs.map(([p1, p2]) => (p1 + p2) / 2);
 	}
@@ -187,18 +197,16 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	const xAxisBase = () => d3.svg.axis().scale(xScale).orient('bottom');
 
 	var xGridLines = xAxisBase()
-		.tickValues(xOffsets)
 		.tickFormat('')
 		.tickSize(-height);
 
 	var xLabels = xAxisBase()
-		.tickValues(xMidpoints)
 		.tickFormat(x => xOffsetToName[x])
 		.tickSize(0);
 
 	var xAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, height + SYNTENY_MARGIN]}]));
-	var xAxisGapsGroup = xAxisWrapper.append('g').call(xLabels);
-	var xAxisLineGroup = xAxisWrapper.append('g').call(xGridLines);
+	var xAxisGapsGroup = xAxisWrapper.append('g');
+	var xAxisLineGroup = xAxisWrapper.append('g');
 
 	var yOffsets = dataObj.getYLineOffsets();
 	var yMidpoints = midpoints(yOffsets);
@@ -207,18 +215,19 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	const yAxisBase = () => d3.svg.axis().scale(yScale).orient('left');
 
 	var yGridLines = yAxisBase()
-		.tickValues(yOffsets)
 		.tickFormat('')
 		.tickSize(-width);
 
 	var yLabels = yAxisBase()
-		.tickValues(yMidpoints)
 		.tickFormat(x => yOffsetToName[x])
 		.tickSize(0);
 
 	var yAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]));
-	var yAxisGapsGroup = yAxisWrapper.append('g').call(yLabels);
-	var yAxisLineGroup = yAxisWrapper.append('g').call(yGridLines);
+	var yAxisGapsGroup = yAxisWrapper.append('g');
+	var yAxisLineGroup = yAxisWrapper.append('g');
+
+	makeLabels();
+
 
 	svg = svg
 		.append('g')
