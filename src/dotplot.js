@@ -12,7 +12,8 @@ const {
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
 	DOTPLOT_COLOR_TRANS_LEN,
 	MAXIMIZE_WIDTH,
-	MIN_TEXT_GAP
+	MIN_TEXT_GAP,
+	ROUNDING_FACTOR
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
@@ -277,34 +278,30 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		var groups = [];
 		var index = 0;
 
-		if(activeDots.length > 0) {
-			const first = activeDots[0].roundedlogks;
-			const last = _.last(activeDots).roundedlogks;
-			const descending = first > last;
+		const roundlogks = x => Math.floor(x.logks * ROUNDING_FACTOR) / ROUNDING_FACTOR; 
 
-			while (index < activeDots.length) {
-				var lo = index;
-				var val = activeDots[index].roundedlogks;
-				index = _.sortedLastIndex(activeDots, {
-					roundedlogks: val
-				}, x => descending ? -x.roundedlogks : x.roundedlogks);
-				groups.push([lo, index]);
-			}
-
-			_.each(groups, function([loIndex, hiIndex]) {
-				context.fillStyle = intermediateColorScale(activeDots[loIndex].roundedlogks);
-				for (var i = loIndex; i < hiIndex; i++) {
-					const d = activeDots[i];
-					const cx = xScale(d.x_relative_offset);
-					const cy = yScale(d.y_relative_offset);
-
-					if (cx < 0 || cx > width || cy < 0 || cy > height)
-						continue;
-					context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
-				}
-			});
-
+		while (index < activeDots.length) {
+			var low = index;
+			var val = roundlogks(activeDots[index]);
+			index = _.sortedLastIndex(activeDots, {
+				logks: val
+			}, x => -roundlogks(x));
+			groups.push([low, index]);
 		}
+
+		_.each(groups, function([loIndex, hiIndex]) {
+			context.fillStyle = intermediateColorScale(roundlogks(activeDots[loIndex]));
+			for (var i = loIndex; i < hiIndex; i++) {
+				const d = activeDots[i];
+				const cx = xScale(d.x_relative_offset);
+				const cy = yScale(d.y_relative_offset);
+
+				if (cx < 0 || cx > width || cy < 0 || cy > height)
+					continue;
+				context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+			}
+		});
+
 		const diff = Date.now() - start;
 		//console.log('Start of call to end of draw call:', diff);
 		if (elapsedMS > 0) {

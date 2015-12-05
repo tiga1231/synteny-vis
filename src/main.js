@@ -1,8 +1,7 @@
 'use strict';
 
 const { 
-	TIME_DATA_OPERATIONS,
-	ROUNDING_FACTOR
+	TIME_DATA_OPERATIONS
 } = require('constants');
 
 const queue = require('queue-async');
@@ -58,7 +57,6 @@ function ksLineToSyntenyDot(line) {
 	return {
 		ks,
 		logks: log10(ks),
-		roundedlogks: Math.floor(log10(ks) * ROUNDING_FACTOR) / ROUNDING_FACTOR,
 		kn,
 		logkn: log10(kn),
 		logkskn: log10(ks) - log10(kn),
