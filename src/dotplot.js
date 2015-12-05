@@ -139,20 +139,20 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			}
 		});
 
-	d3.select(id + '-canvas')
-		.attr('width', width)
-		.attr('height', height)
-		.style('left', SYNTENY_MARGIN)
-		.style('top', SYNTENY_MARGIN);
-	var context = document.getElementById(id.substring(1) + '-canvas').getContext('2d');
-
-	d3.select(id + '-canvas-background')
+	const canvas = d3.select(id + '-canvas')
 		.attr('width', width)
 		.attr('height', height)
 		.style('left', SYNTENY_MARGIN)
 		.style('top', SYNTENY_MARGIN);
 
-	var contextbackground = document.getElementById(id.substring(1) + '-canvas-background').getContext('2d');
+	const backCanvas = d3.select(id + '-canvas-background')
+		.attr('width', width)
+		.attr('height', height)
+		.style('left', SYNTENY_MARGIN)
+		.style('top', SYNTENY_MARGIN);
+
+	const context = canvas.node().getContext('2d');
+	const background = backCanvas.node().getContext('2d');
 
 	var svg = d3.select(id);
 
@@ -187,8 +187,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.attr('fill', 'black');
 
 	const midpoints = function(points) {
-		const pairs = _.zip(_.initial(points), _.rest(points));
-		return pairs.map(([p1, p2]) => (p1 + p2) / 2);
+		return _.zipWith(_.initial(points), _.rest(points), (a, b) => (a + b) / 2);
 	};
 	
 	var xOffsets = dataObj.getXLineOffsets();
@@ -245,8 +244,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	function drawBG() {
 		var allDots = dataObj.currentData().raw;
-		contextbackground.clearRect(0, 0, width, height);
-		contextbackground.fillStyle = UNSELECTED_DOT_FILL;
+		background.clearRect(0, 0, width, height);
+		background.fillStyle = UNSELECTED_DOT_FILL;
 		_.each(allDots, function(d) {
 			const cx = xScale(d.x_relative_offset);
 			const cy = yScale(d.y_relative_offset);
@@ -254,7 +253,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			if (cx < 0 || cx > width || cy < 0 || cy > height)
 				return;
 
-			contextbackground.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+			background.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
 		});
 	}
 

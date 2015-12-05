@@ -52,7 +52,7 @@ function histogram(id, dataObj, field, colorScale) {
 		.range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
 
 	const bins = utils.samplePointsInRange(dataExtent, NUM_HISTOGRAM_TICKS);
-	const getYExtent = (summary) => [0, 3 / 2 * d3.max(_.pluck(summary, 'y'))];
+	const getYExtent = (summary) => [0, 3 / 2 * _.max(_.pluck(summary, 'y'))];
 
 	const yPlotScale = d3.scale.linear()
 		.domain(getYExtent(dataObj.currentDataSummary(bins, field)))

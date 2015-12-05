@@ -21,7 +21,7 @@ const generateColorScaleFromExtrema = function(extrema) {
 
 	const colored = _.map(extrema, function(x, i, A) {
 		const color = shouldBeMarked(x, i, A) ? colors(i) : AUTO_SCALE_VALLEY_FILL;
-		return _.defaults({}, x, {color});
+		return Object.assign({}, x, {color});
 	});
 
 	const domain = _.map(colored, d => d.x + d.dx / 2);

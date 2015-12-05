@@ -85,7 +85,7 @@ function controller(dataObj, element_id, meta) {
 	
 	const refreshAutoScale = function(persistence) {
 		const radio = document.getElementById('color-options');
-		const auto = _.find(radio.children, child => child.value === 'auto');
+		const auto = _.find(radio.children, { value: 'auto' });
 		auto.checked = true;
 
 		const h = histograms[activeField];
