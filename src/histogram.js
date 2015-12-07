@@ -52,14 +52,15 @@ function histogram(id, dataObj, field, colorScale) {
 		.range([HISTOGRAM_MARGIN, plotWidth - HISTOGRAM_MARGIN]);
 
 	const bins = utils.samplePointsInRange(dataExtent, NUM_HISTOGRAM_TICKS);
+	const summaryF = dataObj.currentDataSummary(bins);
 	const getYExtent = (summary) => [0, 3 / 2 * _.max(_.pluck(summary, 'y'))];
 
 	const yPlotScale = d3.scale.linear()
-		.domain(getYExtent(dataObj.currentDataSummary(bins, field)))
+		.domain(getYExtent(summaryF()))
 		.range([plotHeight - HISTOGRAM_MARGIN, HISTOGRAM_MARGIN]);
 
 	function updateMinMaxMarkers(persistence) {
-		const summary = dataObj.currentDataSummary(bins, field);
+		const summary = summaryF();
 		const extrema = persistenceFuncs.simplify(summary, persistence);
 
 		const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
@@ -88,7 +89,7 @@ function histogram(id, dataObj, field, colorScale) {
 		.on('brushend', plotBrushEnd);
 
 	const dataBarSel = plot.selectAll('.dataBars')
-		.data(dataObj.currentDataSummary(bins, field))
+		.data(summaryF())
 		.enter()
 		.append('rect').classed('dataBars', true)
 		.attr('x', d => xPlotScale(d.x))
@@ -134,7 +135,7 @@ function histogram(id, dataObj, field, colorScale) {
 
 		typeHint = typeHint || '';
 
-		const summary = dataObj.currentDataSummary(bins, field);
+		const summary = summaryF();
 		let tempSel = dataBarSel.data(summary);
 
 		if (typeHint.indexOf('stop') > -1) {
@@ -159,7 +160,7 @@ function histogram(id, dataObj, field, colorScale) {
 		sendBrushEvent: plotBrushBrush,
 		selection: brushSelectForBM,
 		updateMinMaxMarkers: updateMinMaxMarkers,
-		bins: () => dataObj.currentDataSummary(bins, field)
+		bins: summaryF
 	};
 }
 

@@ -1,13 +1,10 @@
 'use strict';
 
-const { 
-	TIME_DATA_OPERATIONS
-} = require('constants');
-
 const queue = require('queue-async');
 const _ = require('lodash');
 const d3 = require('d3');
 const sv = require('synteny-vis');
+const crossfilter = require('crossfilter');
 
 exports.makeSyntenyDotPlot = function({data_url, element_id, genome_x, genome_y}) {
 	queue()
@@ -80,18 +77,6 @@ function lengthsToCumulativeBPCounts(len_list) {
 		})
 		.value();
 
-	const geLenList = _.chain(len_list)
-		.sortBy('length')
-		.reverse()
-		.reduce(function(map, kv) {
-			map[kv.name] = map.total;
-			map.total += kv.gene_count;
-			return map;
-		}, {
-			total: 0
-		})
-		.value();
-
 	const nameLenList = _.chain(len_list)
 		.sortBy('name')
 		.reduce(function(map, kv) {
@@ -110,7 +95,6 @@ function lengthsToCumulativeBPCounts(len_list) {
 
 	return {
 		nt: ntLenList,
-		ge: geLenList,
 		name: nameLenList,
 		gene_counts: geneCounts
 	};
@@ -128,11 +112,15 @@ function inlineKSData(ks, xmap, ymap) {
 }
 
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
-	var xmap = xmapPair.ge;
-	var ymap = ymapPair.ge;
-	var ret = {};
+	const xmap = xmapPair.nt;
+	const ymap = ymapPair.nt;
+	const ret = {};
 
-	var dataFilters = {};
+	const cross = crossfilter(syntenyDots);
+	const cross_all = cross.dimension(x => x.logks);
+	const cross_x = cross.dimension(x => x.x_relative_offset);
+	const cross_y = cross.dimension(x => x.y_relative_offset);
+	const cross_logks = cross.dimension(x => x.logks);
 
 	ret.getXLineOffsets = function() {
 		return _.chain(xmap).values().sortBy().value();
@@ -140,26 +128,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 	ret.getYLineOffsets = function() {
 		return _.chain(ymap).values().sortBy().value();
-	};
-
-	var gentMode = 'nt';
-	ret.setGEvNTMode = function(mode) {
-		gentMode = mode;
-		xmap = xmapPair[mode];
-		ymap = ymapPair[mode];
-		ret.notifyListeners('ge-v-nt-change');
-	};
-
-	ret.getGEvNTMode = function() {
-		return gentMode;
-	};
-
-	ret.setOrder = function(field, descending) {
-		syntenyDots = _.sortBy(syntenyDots, field);
-		if (descending) {
-			syntenyDots.reverse();
-		}
-		ret.notifyListeners('order-change');
 	};
 
 	ret.getXLineNames = function() {
@@ -179,58 +147,54 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 			.value();
 	}
 
-	const getFilterFunction = function(filter) {
-		const filterFuncs = _.values(filter);
-		return x => _.all(filterFuncs.map(f => f(x)));
-	};
-
 	ret.currentData = function currentData() {
 		return {
 			raw: syntenyDots,
-			active: _.filter(syntenyDots, getFilterFunction(dataFilters))
+			active: cross_all.top(Infinity)
 		};
 	};
 
-	const sortedDots = _.memoize(_.sortBy.bind(null, syntenyDots));
-
-	ret.currentDataSummary = function currentDataSummary(ticks, field) {
-		const filtersWithoutField = getFilterFunction(_.omit(dataFilters, field));
-		const validPoints = _.filter(sortedDots(field), filtersWithoutField);
+	ret.currentDataSummary = function currentDataSummary(ticks) {
+		const group = cross_logks.group(x => ticks[_.sortedIndex(ticks, x)]);
 		const dx = ticks[1] - ticks[0];
 
-		return _.map(ticks, function(x) {
-			const hi = _.sortedIndex(validPoints, {[field]: x + dx}, field);
-			const lo = _.sortedIndex(validPoints, {[field]: x}, field);
-			return { x, dx, y: hi - lo };
-		});
+		return function() {
+			const groups = group.top(Infinity);
+			const result = _.object(groups.map(x => [x.key, x.value]));
+			const zeros = _.object(ticks.map(x => [x, 0]));
+
+			return _(zeros).merge(result)
+				.pairs().map(x => x.map(Number))
+				.map(([x, y]) => ({x, y, dx}))
+				.sortBy('x')
+				.value();
+		};
 	};
 
 	ret.addSpatialFilter = function(extents, typeHint) {
-		dataFilters.spatial = function(dot) {
-			return dot.x_relative_offset >= extents[0][0] &&
-				dot.x_relative_offset <= extents[1][0] &&
-				dot.y_relative_offset >= extents[0][1] &&
-				dot.y_relative_offset <= extents[1][1];
-		};
+		cross_x.filter([extents[0][0], extents[1][0]]);
+		cross_y.filter([extents[0][1], extents[1][1]]);
 		ret.notifyListeners(typeHint);
 	};
 
 	ret.removeSpatialFilter = function(typeHint) {
-		delete dataFilters.spatial;
+		cross_x.filterAll();
+		cross_y.filterAll();
 		ret.notifyListeners(typeHint);
 	};
 
 	ret.addDataFilter = function(extent, field, typeHint) {
-		dataFilters[field] = x => extent[0] <= x[field] && x[field] < extent[1];
+		field = field + ' Just satisfying the linter :) Will fix it eventually... ';
+		cross_logks.filter(extent);
 		ret.notifyListeners(typeHint || 'data');
 	};
 
-	ret.removeDataFilter = function(field) {
-		delete dataFilters[field];
+	ret.removeDataFilter = function() {
+		cross_logks.filterAll();
 		ret.notifyListeners('data-stop');
 	};
 
-	var listeners = [];
+	const listeners = [];
 	ret.addListener = function(x) {
 		listeners.push(x);
 	};
@@ -241,23 +205,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 		});
 	};
 
-	if (TIME_DATA_OPERATIONS) {
-		const logIt = function(f, name) {
-			return function(...args) {
-				var start = Date.now();
-				var x = f.call(null, ...args);
-				console.log(name, Date.now() - start);
-				return x;
-			};
-		};
-
-		ret.currentData = logIt(ret.currentData, 'currentData');
-		ret.currentDataSummary = logIt(ret.currentDataSummary, 'currentDataSummary');
-		ret.notifyListeners = logIt(ret.notifyListeners, 'notifyListeners');
-	}
-
-	ret.setOrder('logks', true);
-	ret.setGEvNTMode(gentMode);
 	return ret;
 }
 

@@ -1,6 +1,5 @@
 'use strict';
 
-exports.TIME_DATA_OPERATIONS = false;
 exports.ROUNDING_FACTOR = 10;
 
 exports.RUN_BENCHMARKS = false;

@@ -277,7 +277,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		var index = 0;
 
 		const roundlogks = x => Math.floor(x.logks * ROUNDING_FACTOR) / ROUNDING_FACTOR; 
-
 		while (index < activeDots.length) {
 			var low = index;
 			var val = roundlogks(activeDots[index]);
