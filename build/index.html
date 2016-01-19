@@ -54,6 +54,8 @@
 			}];
 		
 		var load = function(dataset) {
+			window.location.hash = '#' + dataset; // Persist dataset between refreshes
+
 			/* Clear out whatever was there, if anything. */
 			var main = document.getElementById('main');
 			while(main.firstChild) main.removeChild(main.firstChild);

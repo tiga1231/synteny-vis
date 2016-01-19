@@ -69,31 +69,36 @@ function buildDiv(element_id) {
 	], 0);
 
 	const persistenceOptions = formWrapper.append('div').classed('radio-button-box', true);
-	persistenceOptions.append('strong').text('Auto-scale persistence');
+	persistenceOptions.append('strong').text('Auto-scale sensitivity: ');
 
 	persistenceOptions.append('input').attr('id', 'persistence').attr('type', 'range').attr('min', 0).attr('max', 100)
 		.attr('value', 40).attr('step', 1);
 
-	persistenceOptions.append('button').attr('id', 'persistence-button').attr('type', 'button').text('Refresh auto scale');
-
-	persistenceOptions.append('p').text('Largest persistence edge that will be removed: ').append('label').attr('id', 'persistence-text').text('40');
+	persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
 }
 
 function controller(dataObj, element_id, meta) {
 
 	buildDiv('#' + element_id);
 	
-	const refreshAutoScale = function(persistence) {
+	const refreshPlot = _.debounce(function(colorScale) {
+		syntenyPlot.setColorScale(colorScale);
+	}, 100);
+
+	const refreshAutoScale = _.throttle(function(persistence) {
 		const radio = document.getElementById('color-options');
 		const auto = _.find(radio.children, { value: 'auto' });
 		auto.checked = true;
 
-		const h = histograms[activeField];
-		h.setColorScale(autoscale.generateAutoScale(h.bins(), persistence));
+		const bins = histograms[activeField].bins()
+		const newAutoScale = autoscale.generateAutoScale(bins, persistence);
+
+		histograms[activeField].setColorScale(newAutoScale);
+		refreshPlot(newAutoScale);
 
 		if (SHOW_MAXIMA_AND_MINIMA)
 			_.each(histograms, h => h.updateMinMaxMarkers(persistence));
-	};
+	}, 50);
 
 	const getPersistence = () => d3.select('#persistence').node().value;
 
@@ -102,11 +107,6 @@ function controller(dataObj, element_id, meta) {
 			const p = getPersistence();
 			refreshAutoScale(p);
 			d3.select('#persistence-text').node().innerText = p;
-		});
-
-	d3.select('#persistence-button')
-		.on('click', function() {
-			refreshAutoScale(getPersistence());
 		});
 
 	/* zoom/pan switching */
