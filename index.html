@@ -8,6 +8,9 @@
 		.grey-text {
 			color: grey;
 		}
+		.black-text {
+			color: black;
+		}
 		.underline {
 			text-decoration: underline;
 		}
@@ -20,10 +23,10 @@
 <body>
 	<div class="grey-text">
 		Datasets: 
-		<span class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
-		<span class="underline hover-black" onClick="load('a')">Aribidopsis</span>,
-		<span class="underline hover-black" onClick="load('e')">Ecoli</span>,
-		<span class="underline hover-black" onClick="load('')">Homo Sapiens - Pan Troglodytes</span>
+		<span id='m-link' class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
+		<span id='a-link' class="underline hover-black" onClick="load('a')">Aribidopsis</span>,
+		<span id='e-link' class="underline hover-black" onClick="load('e')">Ecoli</span>,
+		<span id='h-link' class="underline hover-black" onClick="load('h')">Homo Sapiens - Pan Troglodytes</span>
 	</div>
 
 	<div id="main"></div>
@@ -47,13 +50,26 @@
 				id_2: '3068',
 				data_url: './data/16911_3068.json'
 			}, {
-				identifier: '', // default -- matches all window.location.hash, even empty
+				identifier: 'h',
 				id_1: '11691',
 				id_2: '25577',
 				data_url: './data/11691_25577.json'
 			}];
 		
 		var load = function(dataset) {
+			/* Persist dataset between refreshes */
+			window.location.hash = '#' + dataset;
+
+			/* highlight current link */
+			files.forEach(function(file) {
+				var link = document.getElementById(file.identifier + '-link');
+				var classes = link.className.split(' ');
+				link.className = classes.filter(function(x) {
+					return x !== 'black-text';
+				}).join(' ');
+			});
+			document.getElementById(dataset + '-link').className += ' black-text';
+
 			/* Clear out whatever was there, if anything. */
 			var main = document.getElementById('main');
 			while(main.firstChild) main.removeChild(main.firstChild);
@@ -96,8 +112,12 @@
 			});
 		};
 
-		/* Initial dataset is still determined by hash so old links still work. */
-		load(window.location.hash.substring(1));
+		/*
+		 * Initial dataset is still determined by hash so old links still work.
+		 * Default to 'h' manually now that we don't do that through identifiers.
+		 */
+		var hash = window.location.hash;
+		load(hash ? hash.substring(1) : 'h');
 	</script>
 </body>
 
