@@ -90,7 +90,7 @@ function controller(dataObj, element_id, meta) {
 		const auto = _.find(radio.children, { value: 'auto' });
 		auto.checked = true;
 
-		const bins = histograms[activeField].bins()
+		const bins = histograms[activeField].bins();
 		const newAutoScale = autoscale.generateAutoScale(bins, persistence);
 
 		histograms[activeField].setColorScale(newAutoScale);
