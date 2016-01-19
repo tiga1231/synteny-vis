@@ -51,6 +51,15 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
 	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
+	const darknessOfTextGaps = function(values, scale) {
+		return _.zipWith(values, _.rest(values), function(a, b) {
+			return b ? Math.abs(scale(b) - scale(a)) : 10000;
+		})
+		.map(v => v > MIN_TEXT_GAP ? 1 : v / MIN_TEXT_GAP)
+		.map(v => 255 - Math.floor(v * 256))
+		.map(v => Math.min(v, 245));
+	};
+
 	const filterTextGaps = function(values, scale) {
 		return values.reduce(function(out, next) {
 			if(out.length === 0 || Math.abs(scale(next) - scale(_.last(out))) > MIN_TEXT_GAP)	
@@ -64,9 +73,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		const xFilter = x => (0 <= xScale(x) && xScale(x) <= width);
 		const yFilter = y => (0 <= yScale(y) && yScale(y) <= height);
 
-		const tempXOffsets = filterTextGaps(_.filter(xOffsets, xFilter), xScale);
+		const tempXOffsets = _.filter(xOffsets, xFilter);
+		const tempYOffsets = _.filter(yOffsets, yFilter);
 		const tempXGaps = filterTextGaps(_.filter(xMidpoints, xFilter), xScale);
-		const tempYOffsets = filterTextGaps(_.filter(yOffsets, yFilter), yScale);
 		const tempYGaps = filterTextGaps(_.filter(yMidpoints, yFilter), yScale);
 
 		xGridLines.tickValues(tempXOffsets);
@@ -78,6 +87,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		yAxisGapsGroup.call(yLabels);
 		xAxisLineGroup.call(xGridLines);
 		yAxisLineGroup.call(yGridLines);
+
+		const tempXOffsetDarknesses = darknessOfTextGaps(tempXOffsets, xScale);
+		const tempYOffsetDarknesses = darknessOfTextGaps(tempYOffsets, yScale);
+
+		xAxisLineGroup.selectAll('line')
+			.data(tempXOffsetDarknesses)
+			.style('stroke', d => d3.rgb(d, d, d));
+
+		yAxisLineGroup.selectAll('line')
+			.data(tempYOffsetDarknesses)
+			.style('stroke', d => d3.rgb(d, d, d));
+
 	};
 
 	var zoom = d3.behavior.zoom()
