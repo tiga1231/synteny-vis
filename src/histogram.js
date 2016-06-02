@@ -5,10 +5,10 @@ const {
 	HISTOGRAM_Y_SCALE_TRANS_LEN,
 	NUM_HISTOGRAM_TICKS,
 	UNSELECTED_BAR_FILL
-} = require('constants');
+} = require('./constants');
 
-const persistenceFuncs = require('persistence');
-const utils = require('utils');
+const persistenceFuncs = require('./persistence');
+const utils = require('./utils');
 const _ = require('lodash');
 const d3 = require('d3');
 const transform = require('svg-transform');

@@ -1,6 +1,6 @@
 const d3 = require('d3');
 const _ = require('lodash');
-const utils = require('utils');
+const utils = require('./utils');
 
 const {
 	COLOR_RANGES

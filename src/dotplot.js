@@ -1,6 +1,6 @@
 'use strict';
 
-const utils = require('utils');
+const utils = require('./utils');
 const _ = require('lodash');
 const d3 = require('d3');
 const transform = require('svg-transform');

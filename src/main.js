@@ -1,13 +1,13 @@
 'use strict';
 
-const queue = require('queue-async');
 const _ = require('lodash');
 const d3 = require('d3');
-const sv = require('synteny-vis');
+const queue = require('d3-queue');
+const sv = require('./synteny-vis');
 const crossfilter = require('crossfilter');
 
 exports.makeSyntenyDotPlot = function({data_url, element_id, genome_x, genome_y}) {
-	queue()
+	queue.queue()
 		.defer(d3.text, data_url)
 		.await(function(err, ks) {
 			if (err) {
@@ -59,6 +59,8 @@ function ksLineToSyntenyDot(line) {
 		logkskn: log10(ks) - log10(kn),
 		x_chromosome_id: fields[3],
 		y_chromosome_id: fields[15],
+		x_feature_id: fields[9],
+		y_feature_id: fields[20],
 		x_relative_offset: Math.round((Number(fields[4]) + Number(fields[5])) / 2),
 		y_relative_offset: Math.round((Number(fields[16]) + Number(fields[17])) / 2)
 	};
@@ -208,5 +210,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	return ret;
 }
 
-// We need to expose this to the outside world.
-window.makeSyntenyDotPlot = exports.makeSyntenyDotPlot;
+// Expose in the browser
+if(typeof process !== 'object') {
+	window.makeSyntenyDotPlot = exports.makeSyntenyDotPlot;
+}

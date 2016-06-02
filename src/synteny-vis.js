@@ -1,12 +1,12 @@
 'use strict';
 
-const histogram = require('histogram');
-const dotplot = require('dotplot');
+const histogram = require('./histogram');
+const dotplot = require('./dotplot');
 const _ = require('lodash');
 const d3 = require('d3');
-const autoscale = require('auto-colorscale');
+const autoscale = require('./auto-colorscale');
 
-require('style.css');
+require('./style.css');
 
 const { 
 	RUN_BENCHMARKS, 

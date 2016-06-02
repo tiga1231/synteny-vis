@@ -1,6 +1,6 @@
 'use strict';
 
-const persistenceFuncs = require('persistence');
+const persistenceFuncs = require('./persistence');
 const d3 = require('d3');
 const _ = require('lodash');
 
