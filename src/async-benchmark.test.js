@@ -1,7 +1,9 @@
-var should = require('should');
-var _ = require('lodash');
+'use strict';
 
-var asyncBenchmark = require('../src/async-benchmark');
+const should = require('should');
+const _ = require('lodash-fp');
+
+const asyncBenchmark = require('../src/async-benchmark');
 
 describe('async-benchmark', function() {
 
