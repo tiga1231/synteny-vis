@@ -209,8 +209,3 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 	return ret;
 }
-
-// Expose in the browser
-if(typeof process !== 'object') {
-	window.makeSyntenyDotPlot = exports.makeSyntenyDotPlot;
-}
