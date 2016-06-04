@@ -60,7 +60,7 @@ function ksLineToSyntenyDot(line) {
 		x_chromosome_id: fields[3],
 		y_chromosome_id: fields[15],
 		x_feature_id: fields[9],
-		y_feature_id: fields[20],
+		y_feature_id: fields[21],
 		x_relative_offset: Math.round((Number(fields[4]) + Number(fields[5])) / 2),
 		y_relative_offset: Math.round((Number(fields[16]) + Number(fields[17])) / 2)
 	};

@@ -10,6 +10,7 @@ const {
 	CIRCLE_RADIUS,
 	UNSELECTED_DOT_FILL,
 	NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
+	GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS,
 	DOTPLOT_COLOR_TRANS_LEN,
 	MAXIMIZE_WIDTH,
 	MIN_TEXT_GAP,
@@ -66,6 +67,23 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 				out.push(next);
 			return out;
 		}, []);
+	};
+
+	const genGeVOLink = (aDbId, bDbId) =>
+		'http://geco.iplantcollaborative.org/asherkhb/coge/GEvo.pl?' +
+			`fid1=${aDbId};fid2=${bDbId};apply_all=${50000};num_seqs=${2}`;
+
+	const updateGeVOLink = function(x, y) {
+		const distance = d =>
+			Math.pow(d.x_relative_offset - x, 2) + Math.pow(d.y_relative_offset - y, 2);
+		const point = _.min(dataObj.currentData().raw, distance);
+
+		const ratio = Math.pow((xScale.range()[1] - xScale.range()[0]) /
+			(xScale.domain()[1] - xScale.domain()[0]), 2);
+		if(distance(point) * ratio < GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS) {
+			d3.select('#gevo-link')
+				.attr('href', genGeVOLink(point.x_feature_id, point.y_feature_id));
+		}
 	};
 
 	const makeLabels = function() {
@@ -154,6 +172,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.on('brushend', function() {
 			if (brush.empty()) {
 				dataObj.removeSpatialFilter('spatial-stop');
+				const mouse = d3.mouse(this);
+				updateGeVOLink(xScale.invert(mouse[0]), yScale.invert(mouse[1]));
 			} else {
 				dataObj.addSpatialFilter(brush.extent(), 'spatial-stop');
 				resizeBrushBoundary();
@@ -176,6 +196,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	const background = backCanvas.node().getContext('2d');
 
 	var svg = d3.select(id);
+
 
 	var TEXT_OFFSET = 35;
 	var TEXT_BOX_HEIGHT = 25;
@@ -248,7 +269,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var yAxisLineGroup = yAxisWrapper.append('g');
 
 	makeLabels();
-
 
 	svg = svg
 		.append('g')

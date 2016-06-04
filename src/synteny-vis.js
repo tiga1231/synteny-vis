@@ -75,6 +75,10 @@ function buildDiv(element_id) {
 		.attr('value', 40).attr('step', 1);
 
 	persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
+
+	const gevoLink = formWrapper
+		.append('div')
+		.append('a').attr('id', 'gevo-link').text('GeVO Link').attr('href', '#');
 }
 
 function controller(dataObj, element_id, meta) {
