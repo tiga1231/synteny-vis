@@ -90,10 +90,10 @@ function lengthsToCumulativeBPCounts(len_list) {
 		})
 		.value();
 
-	const geneCounts = _.object(
+	const geneCounts = _.fromPairs(_.zip(
 		_.map(len_list, x => x.name), 
 		_.map(len_list, x => x.gene_count)
-	);
+	));
 
 	return {
 		nt: ntLenList,
@@ -142,9 +142,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 	function filterMapForNames(map) {
 		return _.chain(map)
-			.pairs()
+			.toPairs()
 			.sortBy('1')
-			.pluck('0')
+			.map('0')
 			.reject(x => x === 'total')
 			.value();
 	}
@@ -162,11 +162,11 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 		return function() {
 			const groups = group.top(Infinity);
-			const result = _.object(groups.map(x => [x.key, x.value]));
-			const zeros = _.object(ticks.map(x => [x, 0]));
+			const result = _.fromPairs(groups.map(x => [x.key, x.value]));
+			const zeros = _.fromPairs(ticks.map(x => [x, 0]));
 
 			return _(zeros).merge(result)
-				.pairs().map(x => x.map(Number))
+				.toPairs().map(x => x.map(Number))
 				.map(([x, y]) => ({x, y, dx}))
 				.sortBy('x')
 				.value();

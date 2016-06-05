@@ -53,7 +53,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
 
 	const darknessOfTextGaps = function(values, scale) {
-		return _.zipWith(values, _.rest(values), function(a, b) {
+		return _.zipWith(values, _.tail(values), function(a, b) {
 			return b ? Math.abs(scale(b) - scale(a)) : 10000;
 		})
 		.map(v => v > MIN_TEXT_GAP ? 1 : v / MIN_TEXT_GAP)
@@ -229,13 +229,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.attr('fill', 'black');
 
 	const midpoints = function(points) {
-		return _.zipWith(_.initial(points), _.rest(points), (a, b) => (a + b) / 2);
+		return _.zipWith(_.initial(points), _.tail(points), (a, b) => (a + b) / 2);
 	};
 	
 	var xOffsets = dataObj.getXLineOffsets();
 	var xMidpoints = midpoints(xOffsets);
 
-	const xOffsetToName = _.object(xMidpoints, dataObj.getXLineNames());
+	const xOffsetToName = _.fromPairs(_.zip(xMidpoints, dataObj.getXLineNames()));
 	const xAxisBase = () => d3.svg.axis().scale(xScale).orient('bottom');
 
 	var xGridLines = xAxisBase()
@@ -253,7 +253,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	var yOffsets = dataObj.getYLineOffsets();
 	var yMidpoints = midpoints(yOffsets);
 
-	const yOffsetToName = _.object(yMidpoints, dataObj.getYLineNames());
+	const yOffsetToName = _.fromPairs(_.zip(yMidpoints, dataObj.getYLineNames()));
 	const yAxisBase = () => d3.svg.axis().scale(yScale).orient('left');
 
 	var yGridLines = yAxisBase()
@@ -321,7 +321,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		while (index < activeDots.length) {
 			var low = index;
 			var val = roundlogks(activeDots[index]);
-			index = _.sortedLastIndex(activeDots, {
+			index = _.sortedLastIndexBy(activeDots, {
 				logks: val
 			}, x => -roundlogks(x));
 			groups.push([low, index]);

@@ -14,7 +14,7 @@ const d3 = require('d3');
 const transform = require('svg-transform');
 
 function histogram(id, dataObj, field, colorScale) {
-	const dataExtent = d3.extent(_.pluck(dataObj.currentData().raw, field));
+	const dataExtent = d3.extent(_.map(dataObj.currentData().raw, field));
 
 	const plot = d3.select(id);
 	const plotWidth = utils.getComputedAttr(plot.node(), 'width');
@@ -53,7 +53,7 @@ function histogram(id, dataObj, field, colorScale) {
 
 	const bins = utils.samplePointsInRange(dataExtent, NUM_HISTOGRAM_TICKS);
 	const summaryF = dataObj.currentDataSummary(bins);
-	const getYExtent = (summary) => [0, 3 / 2 * _.max(_.pluck(summary, 'y'))];
+	const getYExtent = (summary) => [0, 3 / 2 * _.max(_.map(summary, 'y'))];
 
 	const yPlotScale = d3.scale.linear()
 		.domain(getYExtent(summaryF()))

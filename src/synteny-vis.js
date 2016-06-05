@@ -34,6 +34,13 @@ function buildDiv(element_id) {
 	histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
 
 	const formWrapper = div.append('div').attr('id', 'form-wrapper');
+	const buttonWrapper = formWrapper.append('div').classed('histogram-button-wrapper', true);
+	['log(ks)', 'log(ks/kn)', 'log(kn)'].forEach(form => {
+		buttonWrapper.append('button')
+			.classed('histogram-button', true)
+			.attr('id', `histogram-button-${form.replace(/[\(\)\/]/g, '')}`, true)
+			.text(form);
+	});
 
 	function makeForm(title, optionId, elements, checkIndex) {
 		const navOptions = formWrapper.append('div').classed('radio-button-box', true);
@@ -142,14 +149,40 @@ function controller(dataObj, element_id, meta) {
 	const initial = colorScale(activeField, 'rg');
 
 	const histograms = {
-		'logks': histogram.histogram('#plot', dataObj, 'logks', initial)
+		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
+		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', initial),
+		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', initial)
 	};
 	const activePlot = histograms[activeField];
 	const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(), getPersistence());
 	activePlot.setColorScale(initialAutoScale);
+	_(histograms)
+		.toPairs()
+		.filter(([name]) => name !== activeField)
+		.forEach(([name, plot]) => plot.setColorScale(colorScale(name,'unselected')));
 
 	const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initialAutoScale, meta);
 
+	//FIXME
+	const name_map = {
+		'logks': 'plot',
+		'logkn': 'plot2',
+		'logkskn': 'plot3'
+	};
+	_.keys(histograms).forEach(name => {
+		d3.select('#histogram-button-' + name)
+			.on('click', () => {
+				d3.selectAll('.histogram').classed('hidden', true);
+				d3.select('#' + name_map[name]).classed('hidden', false);
+				d3.selectAll('.histogram-button').classed('pressed', false);
+				d3.select('#histogram-button-' + name).classed('pressed', true);
+			});
+	});
+
+	d3.selectAll('.histogram').classed('hidden', true);
+	d3.select('#' + name_map[activeField]).classed('hidden', false);
+	d3.selectAll('.histogram-button').classed('pressed', false);
+	d3.select('#histogram-button-' + activeField).classed('pressed', true);
 
 	// Since the histograms aren't controlling their own color scale policy 
 	// now (a good thing), we need to manually fire of their update methods. 

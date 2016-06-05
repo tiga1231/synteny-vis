@@ -32,13 +32,34 @@
 
 /* Histograms */
 
+._synteny-dotplot-builder .histogram-button-wrapper {
+	width: 80%;
+	margin-left: 10%
+}
+
+._synteny-dotplot-builder .histogram-button {
+	position: relative;
+	width: 25%;
+	margin-left:8%;
+	color: grey;
+}
+
+._synteny-dotplot-builder .hidden {
+	display: none;
+}
+
+._synteny-dotplot-builder .pressed {
+	color: black;
+}
+
 ._synteny-dotplot-builder #histogram-wrapper {
   position: fixed;
   right: 0;
   width: 50%;
 }
 ._synteny-dotplot-builder .histogram {
-  width: 100%;
+	position: fixed;
+  width: 50%;
   height: 75%;
 }
 ._synteny-dotplot-builder .histogram .histogram-title {
