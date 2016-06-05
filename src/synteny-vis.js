@@ -176,6 +176,8 @@ function controller(dataObj, element_id, meta) {
 				d3.select('#' + name_map[name]).classed('hidden', false);
 				d3.selectAll('.histogram-button').classed('pressed', false);
 				d3.select('#histogram-button-' + name).classed('pressed', true);
+				activeField = name;
+				refreshAutoScale(getPersistence());
 			});
 	});
 
