@@ -61,7 +61,6 @@ function histogram(id, dataObj, field, colorScale) {
 
 	function updateMinMaxMarkers(persistence) {
 		const summary = summaryF();
-		console.log(persistence)
 		const extrema = persistenceFuncs.simplify(summary, persistence);
 
 		const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
