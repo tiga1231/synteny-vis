@@ -23,7 +23,7 @@ function histogram(id, dataObj, field, colorScale) {
 	const prettyNames = {
 		logks: 'log(ks)',
 		logkn: 'log(kn)',
-		logkskn: 'log(ks/kn)'
+		logknks: 'log(kn/ks)'
 	};
 	plot.append('text')
 		.attr('x', 2 * plotHeight / 3)
@@ -61,6 +61,7 @@ function histogram(id, dataObj, field, colorScale) {
 
 	function updateMinMaxMarkers(persistence) {
 		const summary = summaryF();
+		console.log(persistence)
 		const extrema = persistenceFuncs.simplify(summary, persistence);
 
 		const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);

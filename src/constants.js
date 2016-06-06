@@ -4,7 +4,7 @@ exports.ROUNDING_FACTOR = 10;
 
 exports.RUN_BENCHMARKS = false;
 
-exports.SHOW_MAXIMA_AND_MINIMA = true;
+exports.SHOW_MAXIMA_AND_MINIMA = false;
 
 exports.AUTO_SCALE_VALLEY_FILL = '#D0D0D0';
 

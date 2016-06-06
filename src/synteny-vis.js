@@ -56,7 +56,7 @@ function buildDiv(element_id, show_histograms) {
 
 	if(show_histograms) {
 		const buttonWrapper = formWrapper.append('div').classed('histogram-button-wrapper', true);
-		['log(ks)', 'log(ks/kn)', 'log(kn)'].forEach(form => {
+		['log(ks)', 'log(kn/ks)', 'log(kn)'].forEach(form => {
 			buttonWrapper.append('button')
 				.classed('histogram-button', true)
 				.attr('id', `histogram-button-${form.replace(/[\(\)\/]/g, '')}`, true)
@@ -156,7 +156,7 @@ function controller(dataObj, element_id, meta) {
 	const histograms = {
 		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
 		'logkn': histogram.histogram('#plot2', dataObj, 'logkn', initial),
-		'logkskn': histogram.histogram('#plot3', dataObj, 'logkskn', initial)
+		'logknks': histogram.histogram('#plot3', dataObj, 'logknks', initial)
 	};
 	const activePlot = histograms[activeField];
 	const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(), getPersistence());
@@ -172,7 +172,7 @@ function controller(dataObj, element_id, meta) {
 	const name_map = {
 		'logks': 'plot',
 		'logkn': 'plot2',
-		'logkskn': 'plot3'
+		'logknks': 'plot3'
 	};
 	_.keys(histograms).forEach(name => {
 		d3.select('#histogram-button-' + name)
@@ -195,7 +195,7 @@ function controller(dataObj, element_id, meta) {
 	// now (a good thing), we need to manually fire of their update methods. 
 	// Eventually, we should fix this up.
 	dataObj.addListener(function(typeHint) {
-		if(typeHint.indexOf('stop') > -1)
+		if(typeHint.indexOf('stop') > -1 && SHOW_MAXIMA_AND_MINIMA)
 			_.each(histograms, h => h.updateMinMaxMarkers(getPersistence()));
 	});
 	dataObj.notifyListeners('initial');

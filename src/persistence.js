@@ -32,5 +32,5 @@ function gapBetweenPoints(A, i) {
 }
 
 function indexOfSmallestPointDifference(A) {
-	return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
+	return _(A.length - 1).range().minBy(i => gapBetweenPoints(A, i));
 }

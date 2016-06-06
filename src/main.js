@@ -65,7 +65,7 @@ function ksLineToSyntenyDot(line) {
 		logks: log10(ks),
 		kn,
 		logkn: log10(kn),
-		logkskn: log10(ks) - log10(kn),
+		logknks: log10(kn) - log10(ks),
 		x_chromosome_id: fields[3],
 		y_chromosome_id: fields[15],
 		x_feature_id: fields[9],
@@ -131,7 +131,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	const cross_all = cross.dimension(x => x.logks);
 	const cross_x = cross.dimension(x => x.x_relative_offset);
 	const cross_y = cross.dimension(x => x.y_relative_offset);
-	const filters = _(['logks', 'logkn', 'logkskn'])
+	const filters = _(['logks', 'logkn', 'logknks'])
 		.map(field => [field, cross.dimension(x => x[field])])
 		.fromPairs().value();
 
