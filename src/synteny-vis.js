@@ -34,15 +34,6 @@ function buildDiv(element_id, show_histograms) {
 	histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
 
 	const formWrapper = div.append('div').attr('id', 'form-wrapper');
-	if(show_histograms) {
-	const buttonWrapper = formWrapper.append('div').classed('histogram-button-wrapper', true);
-	['log(ks)', 'log(ks/kn)', 'log(kn)'].forEach(form => {
-		buttonWrapper.append('button')
-			.classed('histogram-button', true)
-			.attr('id', `histogram-button-${form.replace(/[\(\)\/]/g, '')}`, true)
-			.text(form);
-	});
-
 	function makeForm(title, optionId, elements, checkIndex) {
 		const navOptions = formWrapper.append('div').classed('radio-button-box', true);
 		navOptions.append('strong').text(title + ': ');
@@ -60,30 +51,37 @@ function buildDiv(element_id, show_histograms) {
 				navForm.node().insertBefore(label, element);
 			});
 		});
-
 		options[0][checkIndex].checked = true;
 	}
 
-	const option = (value, text) => [value, text];
+	if(show_histograms) {
+		const buttonWrapper = formWrapper.append('div').classed('histogram-button-wrapper', true);
+		['log(ks)', 'log(ks/kn)', 'log(kn)'].forEach(form => {
+			buttonWrapper.append('button')
+				.classed('histogram-button', true)
+				.attr('id', `histogram-button-${form.replace(/[\(\)\/]/g, '')}`, true)
+				.text(form);
+		});
 
-	makeForm('Navigation Mode', 'mouse-options', [
-		option('brush', 'Brushing'),
-		option('pan', 'Panning')
-	], 0);
+		const option = (value, text) => [value, text];
 
-	makeForm('Color Scale', 'color-options', [
-		option('auto', 'auto'),
-		option('rainbow_quantized', 'rainbow_quantized')
-	], 0);
+		makeForm('Navigation Mode', 'mouse-options', [
+			option('brush', 'Brushing'),
+			option('pan', 'Panning')
+		], 0);
 
-	const persistenceOptions = formWrapper.append('div').classed('radio-button-box', true);
-	persistenceOptions.append('strong').text('Auto-scale sensitivity: ');
+		makeForm('Color Scale', 'color-options', [
+			option('auto', 'auto'),
+			option('rainbow_quantized', 'rainbow_quantized')
+		], 0);
 
-	persistenceOptions.append('input').attr('id', 'persistence').attr('type', 'range').attr('min', 0).attr('max', 100)
-		.attr('value', 40).attr('step', 1);
+		const persistenceOptions = formWrapper.append('div').classed('radio-button-box', true);
+		persistenceOptions.append('strong').text('Auto-scale sensitivity: ');
 
-	persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
+		persistenceOptions.append('input').attr('id', 'persistence').attr('type', 'range').attr('min', 0).attr('max', 100)
+			.attr('value', 40).attr('step', 1);
 
+		persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
 	}
 	const gevoLink = formWrapper
 		.append('div')
