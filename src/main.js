@@ -131,7 +131,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	const cross_all = cross.dimension(x => x.logks);
 	const cross_x = cross.dimension(x => x.x_relative_offset);
 	const cross_y = cross.dimension(x => x.y_relative_offset);
-	const cross_logks = cross.dimension(x => x.logks);
+	const filters = _(['logks', 'logkn', 'logkskn'])
+		.map(field => [field, cross.dimension(x => x[field])])
+		.fromPairs().value();
 
 	ret.getXLineOffsets = function() {
 		return _.chain(xmap).values().sortBy().value();
@@ -165,8 +167,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 		};
 	};
 
-	ret.currentDataSummary = function currentDataSummary(ticks) {
-		const group = cross_logks.group(x => ticks[_.sortedIndex(ticks, x)]);
+	ret.currentDataSummary = function currentDataSummary(ticks, field) {
+		const group = filters[field].group(x => ticks[_.sortedIndex(ticks, x)]);
 		const dx = ticks[1] - ticks[0];
 
 		return function() {
@@ -195,13 +197,12 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 	};
 
 	ret.addDataFilter = function(extent, field, typeHint) {
-		field = field + ' Just satisfying the linter :) Will fix it eventually... ';
-		cross_logks.filter(extent);
+		filters[field].filter(extent);
 		ret.notifyListeners(typeHint || 'data');
 	};
 
-	ret.removeDataFilter = function() {
-		cross_logks.filterAll();
+	ret.removeDataFilter = function(field) {
+		filters[field].filterAll();
 		ret.notifyListeners('data-stop');
 	};
 

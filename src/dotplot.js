@@ -18,7 +18,6 @@ const {
 } = require('constants');
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
-
 	var xExtent = d3.extent(dataObj.getXLineOffsets());
 	var yExtent = d3.extent(dataObj.getYLineOffsets());
 	var dataAspectRatio = yExtent[1] / xExtent[1];
@@ -73,10 +72,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		'http://geco.iplantcollaborative.org/asherkhb/coge/GEvo.pl?' +
 			`fid1=${aDbId};fid2=${bDbId};apply_all=${50000};num_seqs=${2}`;
 
+	let highlighted;
 	const updateGeVOLink = function(x, y) {
 		const distance = d =>
 			Math.sqrt(Math.pow(d.x_relative_offset - x, 2) + Math.pow(d.y_relative_offset - y, 2));
 		const point = _.minBy(dataObj.currentData().raw, distance);
+		highlighted = point;
 
 		const ratio = (xScale.range()[1] - xScale.range()[0]) /
 			(xScale.domain()[1] - xScale.domain()[0]);
@@ -84,6 +85,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			d3.select('#gevo-link')
 				.attr('href', genGeVOLink(point.x_feature_id, point.y_feature_id));
 		}
+
+		setSyntenyData();
 	};
 
 	const makeLabels = function() {
@@ -317,18 +320,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		var groups = [];
 		var index = 0;
 
-		const roundlogks = x => Math.floor(x.logks * ROUNDING_FACTOR) / ROUNDING_FACTOR; 
+		const rounded = x => Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR; 
 		while (index < activeDots.length) {
 			var low = index;
-			var val = roundlogks(activeDots[index]);
+			var val = rounded(activeDots[index]);
 			index = _.sortedLastIndexBy(activeDots, {
-				logks: val
-			}, x => -roundlogks(x));
+				[field]: val
+			}, x => -rounded(x));
 			groups.push([low, index]);
 		}
 
 		_.each(groups, function([loIndex, hiIndex]) {
-			context.fillStyle = intermediateColorScale(roundlogks(activeDots[loIndex]));
+			context.fillStyle = intermediateColorScale(rounded(activeDots[loIndex]));
 			for (var i = loIndex; i < hiIndex; i++) {
 				const d = activeDots[i];
 				const cx = xScale(d.x_relative_offset);
@@ -336,9 +339,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 				if (cx < 0 || cx > width || cy < 0 || cy > height)
 					continue;
+
 				context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
 			}
 		});
+
+		if(highlighted) {
+			context.beginPath();
+			context.strokeStyle = 'red';
+			context.arc(xScale(highlighted.x_relative_offset),
+				yScale(highlighted.y_relative_offset), 10, 0, 2 * Math.PI);
+			context.stroke();
+		}
 
 		const diff = Date.now() - start;
 		//console.log('Start of call to end of draw call:', diff);
