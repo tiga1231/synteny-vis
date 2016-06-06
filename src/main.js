@@ -15,6 +15,15 @@ exports.makeSyntenyDotPlot = function({data_url, element_id, genome_x, genome_y}
 				return;
 			}
 
+			// Dirty hacks to make files with no ks work:
+			const have_ks = data_url.endsWith('.ks');
+			if(!have_ks) {
+				const random = () => Math.random() * 3 + 2;
+				ks = ks.split('\n')
+					.map(x => x[0] === '#' ? x : `${random()},${random()},` + x)
+					.join('\n');
+			}
+
 			const x_name = genome_x.name;
 			const y_name = genome_y.name;
 
@@ -25,7 +34,7 @@ exports.makeSyntenyDotPlot = function({data_url, element_id, genome_x, genome_y}
 
 			const ksDataObject = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
 			console.log('Total synteny dots:', ksDataObject.currentData().raw.length);
-			sv.controller(ksDataObject, element_id, {x_name, y_name});
+			sv.controller(ksDataObject, element_id, {x_name, y_name, have_ks});
 		});
 };
 

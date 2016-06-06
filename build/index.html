@@ -27,6 +27,10 @@
 		<span id='a-link' class="underline hover-black" onClick="load('a')">Aribidopsis</span>,
 		<span id='e-link' class="underline hover-black" onClick="load('e')">Ecoli</span>,
 		<span id='h-link' class="underline hover-black" onClick="load('h')">Homo Sapiens - Pan Troglodytes</span>
+		<span id='2m-link' class="underline hover-black" onClick="load('2m')">Maize-Sorghum2</span>,
+		<span id='2a-link' class="underline hover-black" onClick="load('2a')">Aribidopsis2</span>,
+		<span id='2e-link' class="underline hover-black" onClick="load('2e')">Ecoli2</span>,
+		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>
 	</div>
 
 	<div id="main"></div>
@@ -34,26 +38,47 @@
   <script src="synteny-dotplot-builder.js"></script>
 	<script>
 		/* List of all possible data files */
+
 		var files = [{
 				identifier: 'm',
 				id_1: '6807',
 				id_2: '8082',
-				data_url: './data/6807_8082.json'
+				data_url: './data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords.ks'
 			}, {
 				identifier: 'e',
 				id_1: '4241',
 				id_2: '4242',
-				data_url: './data/4241_4242.json'
+				data_url: './data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
 			}, {
 				identifier: 'a',
 				id_1: '16911',
 				id_2: '3068',
-				data_url: './data/16911_3068.json'
+				data_url: './data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
 			}, {
 				identifier: 'h',
 				id_1: '11691',
 				id_2: '25577',
-				data_url: './data/11691_25577.json'
+				data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
+			}, {
+				identifier: '2m',
+				id_1: '6807',
+				id_2: '8082',
+				data_url: './data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords'
+			}, {
+				identifier: '2e',
+				id_1: '4241',
+				id_2: '4242',
+				data_url: './data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			}, {
+				identifier: '2a',
+				id_1: '16911',
+				id_2: '3068',
+				data_url: './data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			}, {
+				identifier: '2h',
+				id_1: '11691',
+				id_2: '25577',
+				data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
 			}];
 		
 		var load = function(dataset) {
@@ -77,7 +102,7 @@
 			/* Pick the file that matches window.location.hash */
 			var selected = files
 				.filter(function(info) {
-				 	return dataset.indexOf(info.identifier) > -1; 
+				 	return dataset.indexOf(info.identifier) === 0; 
 				})[0];
 
 			/* Load the auxillary data */

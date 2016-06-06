@@ -13,7 +13,7 @@ const {
 	SHOW_MAXIMA_AND_MINIMA 
 } = require('constants');
 
-function buildDiv(element_id) {
+function buildDiv(element_id, show_histograms) {
 	const div = d3.select(element_id).append('div').classed('_synteny-dotplot-builder', true);
 
 	div.append('svg').attr('id', 'dotplot').classed('dotplot', true);
@@ -34,6 +34,7 @@ function buildDiv(element_id) {
 	histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
 
 	const formWrapper = div.append('div').attr('id', 'form-wrapper');
+	if(show_histograms) {
 	const buttonWrapper = formWrapper.append('div').classed('histogram-button-wrapper', true);
 	['log(ks)', 'log(ks/kn)', 'log(kn)'].forEach(form => {
 		buttonWrapper.append('button')
@@ -83,6 +84,7 @@ function buildDiv(element_id) {
 
 	persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
 
+	}
 	const gevoLink = formWrapper
 		.append('div')
 		.append('a').attr('id', 'gevo-link').text('GeVO Link').attr('href', '#');
@@ -90,7 +92,7 @@ function buildDiv(element_id) {
 
 function controller(dataObj, element_id, meta) {
 
-	buildDiv('#' + element_id);
+	buildDiv('#' + element_id, meta.have_ks);
 	
 	const refreshPlot = _.debounce(function(colorScale) {
 		syntenyPlot.setColorScale(colorScale);
@@ -147,6 +149,11 @@ function controller(dataObj, element_id, meta) {
 	const colorScale = require('colorscales').onData(dataObj.currentData().raw);
 
 	const initial = colorScale(activeField, 'rg');
+
+	if(!meta.have_ks) {
+		const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', colorScale(activeField, 'unselected'), meta);
+		return;
+	}
 
 	const histograms = {
 		'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
