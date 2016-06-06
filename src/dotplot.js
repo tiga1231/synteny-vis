@@ -74,12 +74,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			`fid1=${aDbId};fid2=${bDbId};apply_all=${50000};num_seqs=${2}`;
 
 	const updateGeVOLink = function(x, y) {
+		console.log('call')
 		const distance = d =>
-			Math.pow(d.x_relative_offset - x, 2) + Math.pow(d.y_relative_offset - y, 2);
-		const point = _.min(dataObj.currentData().raw, distance);
+			Math.sqrt(Math.pow(d.x_relative_offset - x, 2) + Math.pow(d.y_relative_offset - y, 2));
+		const point = _.minBy(dataObj.currentData().raw, distance);
 
-		const ratio = Math.pow((xScale.range()[1] - xScale.range()[0]) /
-			(xScale.domain()[1] - xScale.domain()[0]), 2);
+		const ratio = (xScale.range()[1] - xScale.range()[0]) /
+			(xScale.domain()[1] - xScale.domain()[0]);
+		console.log(distance(point) * ratio, GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS)
 		if(distance(point) * ratio < GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS) {
 			d3.select('#gevo-link')
 				.attr('href', genGeVOLink(point.x_feature_id, point.y_feature_id));
@@ -170,6 +172,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			}
 		})
 		.on('brushend', function() {
+			console.log('brushend')
 			if (brush.empty()) {
 				dataObj.removeSpatialFilter('spatial-stop');
 				const mouse = d3.mouse(this);
