@@ -83,9 +83,10 @@ function buildDiv(element_id, show_histograms) {
 
 		persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
 	}
-	const gevoLink = formWrapper
-		.append('div')
-		.append('a').attr('id', 'gevo-link').text('GeVO Link').attr('href', '#');
+	const gevoLink = formWrapper.append('div');
+	gevoLink.append('a').attr('id', 'gevo-link').text('GeVO Link').attr('href', '#');
+	gevoLink.append('div').attr('id', 'gevo-link-xname');
+	gevoLink.append('div').attr('id', 'gevo-link-yname');
 }
 
 function controller(dataObj, element_id, meta) {

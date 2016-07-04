@@ -52,6 +52,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		'http://geco.iplantcollaborative.org/asherkhb/coge/GEvo.pl?' +
 			`fid1=${aDbId};fid2=${bDbId};apply_all=${50000};num_seqs=${2}`;
 
+	const getSingleGeVoDescription = id =>
+			fetch(`https://genomevolution.org/coge/api/v1/features/${id}`)
+			.then(r => r.json());
+
+	const getGeVODescription = (aDbId, bDbId) => Promise.all([
+		getSingleGeVoDescription(aDbId),
+		getSingleGeVoDescription(bDbId)
+	])
+	.then(([x, y]) => {
+		return { x_name: x.names.join(', '), y_name: y.names.join(', ') };
+	});
+
 	let highlighted;
 	const updateGeVOLink = function(x, y) {
 		const distance = d =>
@@ -64,6 +76,11 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		if(distance(point) * ratio < GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS) {
 			d3.select('#gevo-link')
 				.attr('href', genGeVOLink(point.x_feature_id, point.y_feature_id));
+			getGeVODescription(point.x_feature_id, point.y_feature_id)
+			.then(({x_name, y_name}) => {
+				d3.select('#gevo-link-xname').text(`Name (${meta.x_name}): ${x_name}`);
+				d3.select('#gevo-link-yname').text(`Name (${meta.y_name}): ${y_name}`);
+			});
 		}
 
 		setSyntenyData();
