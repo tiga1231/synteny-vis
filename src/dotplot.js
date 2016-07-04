@@ -121,7 +121,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var zoom = d3.behavior.zoom()
 		.x(xScale).y(yScale)
-		.scaleExtent([1, 100]).on('zoom', function() {
+		.scaleExtent([1, 100])
+		.on('zoom', function() {
 			var t = d3.event.translate;
 			var s = d3.event.scale;
 			t[0] = Math.min(0, Math.max(-getWidth() * s + getWidth(), t[0]));
@@ -381,6 +382,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			d3.select(id).select('#zoom-group').call(zoom);
 			d3.select(id).select('#brush-group').style('pointer-events', null);
 			d3.select(id).select('#zoom-group').style('pointer-events', 'all');
+			d3.select(id).select('#brush-group').on('click', function() {
+				const mouse = d3.mouse(this);
+				updateGeVOLink(xScale.invert(mouse[0]), yScale.invert(mouse[1]))
+			});
 		} else if (mode === 'brush') {
 			d3.select(id).select('#brush-group').call(brush);
 			d3.select(id).select('#brush-group').style('pointer-events', 'all');
