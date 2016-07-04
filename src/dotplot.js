@@ -161,6 +161,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 	/* We are copying the scale here because brushes do not play nice with zooming.
 	 * All sorts of nasty things happen when the scales get changed underneath a
 	 * brush. */
+	const originalXScale = xScale.copy();
+	const originalYScale = yScale.copy();
 	var brush = d3.svg.brush()
 		.x(xScale.copy())
 		.y(yScale.copy())
@@ -174,7 +176,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			if (brush.empty()) {
 				dataObj.removeSpatialFilter('spatial-stop');
 				const mouse = d3.mouse(this);
-				updateGeVOLink(xScale.invert(mouse[0]), yScale.invert(mouse[1]));
+				const x = originalXScale.invert(mouse[0]);
+				const y = originalYScale.invert(mouse[1]);
+				updateGeVOLink(x, y);
 			} else {
 				dataObj.addSpatialFilter(brush.extent(), 'spatial-stop');
 				resizeBrushBoundary();
@@ -384,7 +388,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 			d3.select(id).select('#zoom-group').style('pointer-events', 'all');
 			d3.select(id).select('#brush-group').on('click', function() {
 				const mouse = d3.mouse(this);
-				updateGeVOLink(xScale.invert(mouse[0]), yScale.invert(mouse[1]))
+				const x = originalXScale.invert(mouse[0]);
+				const y = originalYScale.invert(mouse[1]);
+				updateGeVOLink(x, y);
 			});
 		} else if (mode === 'brush') {
 			d3.select(id).select('#brush-group').call(brush);
