@@ -24,32 +24,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	const baseID = id.substring(1);
 	const svgElement = document.getElementById(baseID);
-	var computedWidth = utils.getComputedAttr(svgElement, 'width');
-	var computedHeight = utils.getComputedAttr(svgElement, 'height');
-	var windowAspectRatio = computedHeight / computedWidth;
 
-	var width;
-	var height;
+	const getWidth = () => utils.getComputedAttr(svgElement, 'width') - 2*SYNTENY_MARGIN;
+	const getHeight = () => utils.getComputedAttr(svgElement, 'height') - 2*SYNTENY_MARGIN;
 
-	if (MAXIMIZE_WIDTH || windowAspectRatio / dataAspectRatio > 1) {
-		width = computedWidth;
-		height = dataAspectRatio * width;
-	} else {
-		height = computedHeight;
-		width = 1 / dataAspectRatio * height;
-	}
-
-	d3.select(id).style('width', width + 2*SYNTENY_MARGIN);
-	d3.select(id).style('height', height + 2*SYNTENY_MARGIN);
-
-	/* This fixes the alignment of the svg element and the canvas elements. 
-	 * Not really sure what is going on here -- we are close to a consistent
-	 * transformation/offset scheme, but needs a bit more work. */
-	width -= 2*SYNTENY_MARGIN;
-	height -= 2*SYNTENY_MARGIN;
-
-	var xScale = d3.scale.linear().domain(xExtent).range([0, width]);
-	var yScale = d3.scale.linear().domain(yExtent).range([height, 0]);
+	var xScale = d3.scale.linear().domain(xExtent).range([0, getWidth()]);
+	var yScale = d3.scale.linear().domain(yExtent).range([getHeight(), 0]);
 
 	const darknessOfTextGaps = function(values, scale) {
 		return _.zipWith(values, _.tail(values), function(a, b) {
@@ -91,8 +71,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	const makeLabels = function() {
 
-		const xFilter = x => (0 <= xScale(x) && xScale(x) <= width);
-		const yFilter = y => (0 <= yScale(y) && yScale(y) <= height);
+		const xFilter = x => (0 <= xScale(x) && xScale(x) <= getWidth());
+		const yFilter = y => (0 <= yScale(y) && yScale(y) <= getHeight());
 
 		const tempXOffsets = _.filter(xOffsets, xFilter);
 		const tempYOffsets = _.filter(yOffsets, yFilter);
@@ -127,8 +107,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.scaleExtent([1, 100]).on('zoom', function() {
 			var t = d3.event.translate;
 			var s = d3.event.scale;
-			t[0] = Math.min(0, Math.max(-width * s + width, t[0]));
-			t[1] = Math.min(0, Math.max(-height * s + height, t[1]));
+			t[0] = Math.min(0, Math.max(-getWidth() * s + getWidth(), t[0]));
+			t[1] = Math.min(0, Math.max(-getHeight() * s + getHeight(), t[1]));
 			// prevents the translate from growing large. This way, you don't 
 			// have to "scroll back" onto the canvas if you pan past the edge.
 			zoom.translate(t);
@@ -184,14 +164,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		});
 
 	const canvas = d3.select(id + '-canvas')
-		.attr('width', width)
-		.attr('height', height)
+		.attr('width', getWidth())
+		.attr('height', getHeight())
 		.style('left', SYNTENY_MARGIN)
 		.style('top', SYNTENY_MARGIN);
 
 	const backCanvas = d3.select(id + '-canvas-background')
-		.attr('width', width)
-		.attr('height', height)
+		.attr('width', getWidth())
+		.attr('height', getHeight())
 		.style('left', SYNTENY_MARGIN)
 		.style('top', SYNTENY_MARGIN);
 
@@ -200,21 +180,20 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var svg = d3.select(id);
 
-
 	var TEXT_OFFSET = 35;
 	var TEXT_BOX_HEIGHT = 25;
 	svg.append('text')
-		.attr('x', (width + 2 * SYNTENY_MARGIN) / 3)
-		.attr('width', (width + 2 * SYNTENY_MARGIN) / 3)
-		.attr('y', SYNTENY_MARGIN + height + TEXT_OFFSET)
+		.attr('x', (getWidth() + 2 * SYNTENY_MARGIN) / 3)
+		.attr('width', (getWidth() + 2 * SYNTENY_MARGIN) / 3)
+		.attr('y', SYNTENY_MARGIN + getHeight() + TEXT_OFFSET)
 		.attr('height', TEXT_BOX_HEIGHT)
 		.classed('plot-title', true)
 		.text(meta.x_name);
 
 	svg.append('text')
 		.attr('transform', 'rotate(-90)')
-		.attr('x', -2 * (height + 2 * SYNTENY_MARGIN) / 3)
-		.attr('width', (height + 2 * SYNTENY_MARGIN) / 3)
+		.attr('x', -2 * (getHeight() + 2 * SYNTENY_MARGIN) / 3)
+		.attr('width', (getHeight() + 2 * SYNTENY_MARGIN) / 3)
 		.attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
 		.attr('height', TEXT_BOX_HEIGHT)
 		.classed('plot-title', true)
@@ -226,9 +205,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		.attr('id', 'plot-clip-box')
 		.append('rect')
 		.attr('x', 0)
-		.attr('width', width)
+		.attr('width', getWidth())
 		.attr('y', 0)
-		.attr('height', height)
+		.attr('height', getHeight())
 		.attr('fill', 'black');
 
 	const midpoints = function(points) {
@@ -243,13 +222,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var xGridLines = xAxisBase()
 		.tickFormat('')
-		.tickSize(-height);
+		.tickSize(-getHeight());
 
 	var xLabels = xAxisBase()
 		.tickFormat(x => xOffsetToName[x])
 		.tickSize(0);
 
-	var xAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, height + SYNTENY_MARGIN]}]));
+	var xAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, getHeight() + SYNTENY_MARGIN]}]));
 	var xAxisGapsGroup = xAxisWrapper.append('g');
 	var xAxisLineGroup = xAxisWrapper.append('g');
 
@@ -261,7 +240,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	var yGridLines = yAxisBase()
 		.tickFormat('')
-		.tickSize(-width);
+		.tickSize(-getWidth());
 
 	var yLabels = yAxisBase()
 		.tickFormat(x => yOffsetToName[x])
@@ -288,13 +267,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
 	function drawBG() {
 		var allDots = dataObj.currentData().raw;
-		background.clearRect(0, 0, width, height);
+		background.clearRect(0, 0, getWidth(), getHeight());
 		background.fillStyle = UNSELECTED_DOT_FILL;
 		_.each(allDots, function(d) {
 			const cx = xScale(d.x_relative_offset);
 			const cy = yScale(d.y_relative_offset);
 
-			if (cx < 0 || cx > width || cy < 0 || cy > height)
+			if (cx < 0 || cx > getWidth() || cy < 0 || cy > getHeight())
 				return;
 
 			background.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
@@ -314,7 +293,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 		//console.log('Time after collecting data', Date.now() - start);
 		start = Date.now();
 
-		context.clearRect(0, 0, width, height);
+		context.clearRect(0, 0, getWidth(), getHeight());
 
 		/* On top, active dots */
 		var groups = [];
@@ -337,7 +316,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 				const cx = xScale(d.x_relative_offset);
 				const cy = yScale(d.y_relative_offset);
 
-				if (cx < 0 || cx > width || cy < 0 || cy > height)
+				if (cx < 0 || cx > getWidth() || cy < 0 || cy > getHeight())
 					continue;
 
 				context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
