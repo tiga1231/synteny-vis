@@ -64,7 +64,8 @@ function histogram(id, dataObj, field, colorScale) {
     const extrema = persistenceFuncs.simplify(summary, persistence);
 
     const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
-    const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
+    const shouldBeMarked = (x, i, A) =>
+      i > 0 && i < A.length - 1 && isMaxima(A, i);
     const markers = _.map(extrema, function(d, i, A) {
       return {
         color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
@@ -105,7 +106,8 @@ function histogram(id, dataObj, field, colorScale) {
   const yAxis = d3.svg.axis().scale(yPlotScale).orient('left').ticks(5);
 
   plot.append('g')
-    .attr('transform', transform([{translate: [0, plotHeight() - HISTOGRAM_MARGIN]}]))
+    .attr('transform',
+      transform([{translate: [0, plotHeight() - HISTOGRAM_MARGIN]}]))
     .classed('xAxis', true).call(xAxis);
   const yAxisSel = plot.append('g')
     .attr('transform', transform([{translate: [HISTOGRAM_MARGIN, 0]}]))
@@ -117,13 +119,18 @@ function histogram(id, dataObj, field, colorScale) {
   };
   const updateColors = function(selection) {
     selection.transition(); // cancel transition
-    const extent = plotBrush.empty() ? [-Infinity, Infinity] : plotBrush.extent();
+    const extent =
+    plotBrush.empty() ? [-Infinity, Infinity] : plotBrush.extent();
     const active = bin => bin.x + bin.dx > extent[0] && bin.x < extent[1];
 
     const orZero = x => Math.max(x, 0);
     selection
-      .attr('height', d => orZero(plotHeight() - HISTOGRAM_MARGIN - yPlotScale(d.y)))
-      .attr('fill', d => active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL);
+      .attr('height', d => {
+        return orZero(plotHeight() - HISTOGRAM_MARGIN - yPlotScale(d.y));
+      })
+      .attr('fill', d => {
+        return active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL;
+      });
   };
 
   const updatePlotAttrs = function(selection) {

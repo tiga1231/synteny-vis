@@ -2,7 +2,7 @@
 	"rules": {
 		"indent": [
 			2,
-			"tab",
+			2,
 			{ "SwitchCase": 1 }
 		],
 		"quotes": [
@@ -16,6 +16,10 @@
 		"semi": [
 			2,
 			"always"
+		],
+		"max-len": [
+			2,
+			80
 		],
 		"no-console": 0
 	},

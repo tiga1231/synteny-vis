@@ -6,7 +6,12 @@ const queue = require('d3-queue');
 const sv = require('./synteny-vis');
 const crossfilter = require('crossfilter');
 
-exports.makeSyntenyDotPlot = function({data_url, element_id, genome_x, genome_y}) {
+exports.makeSyntenyDotPlot = function({
+    data_url,
+    element_id,
+    genome_x,
+    genome_y
+  }) {
   queue.queue()
     .defer(d3.text, data_url)
     .await(function(err, ks) {

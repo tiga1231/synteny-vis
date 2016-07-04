@@ -27,9 +27,9 @@ exports.COLOR_RANGES = {
     range: ['red', 'green'],
     quantized: false
   },
-  rg_quantized: {
+  rg_quantized: { /* From colorbrewer */
     range: ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf',
-      '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'], /* From colorbrewer */
+      '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'],
     quantized: true
   },
   rainbow: {

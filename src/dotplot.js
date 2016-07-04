@@ -25,8 +25,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   const baseID = id.substring(1);
   const svgElement = document.getElementById(baseID);
 
-  const getWidth = () => utils.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
-  const getHeight = () => utils.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
+  const getWidth = () => {
+    return utils.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
+  };
+  const getHeight = () => {
+    return utils.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
+  };
 
   var xScale = d3.scale.linear().domain(xExtent).range([0, getWidth()]);
   var yScale = d3.scale.linear().domain(yExtent).range([getHeight(), 0]);
@@ -42,7 +46,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   const filterTextGaps = function(values, scale) {
     return values.reduce(function(out, next) {
-      if (out.length === 0 || Math.abs(scale(next) - scale(_.last(out))) > MIN_TEXT_GAP)
+      const first = out.length === 0;
+      const gap = Math.abs(scale(next) - scale(_.last(out)));
+      const gap_has_elapsed = gap > MIN_TEXT_GAP;
+      if (first || gap_has_elapsed)
         out.push(next);
       return out;
     }, []);
@@ -66,8 +73,11 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   let highlighted;
   const updateGeVOLink = function(x, y) {
-    const distance = d =>
-    Math.sqrt(Math.pow(d.x_relative_offset - x, 2) + Math.pow(d.y_relative_offset - y, 2));
+    const distance = d => {
+      const x_component = Math.pow(d.x_relative_offset - x, 2);
+      const y_component = Math.pow(d.y_relative_offset - y, 2);
+      return Math.sqrt(x_component + y_component);
+    };
     const point = _.minBy(dataObj.currentData().raw, distance);
     highlighted = point;
 
@@ -78,8 +88,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
         .attr('href', genGeVOLink(point.x_feature_id, point.y_feature_id));
       getGeVODescription(point.x_feature_id, point.y_feature_id)
         .then(({x_name, y_name}) => {
-          d3.select('#gevo-link-xname').text(`Name (${meta.x_name}): ${x_name}`);
-          d3.select('#gevo-link-yname').text(`Name (${meta.y_name}): ${y_name}`);
+          d3.select('#gevo-link-xname')
+            .text(`Name (${meta.x_name}): ${x_name}`);
+          d3.select('#gevo-link-yname')
+            .text(`Name (${meta.y_name}): ${y_name}`);
         });
     }
 
@@ -158,9 +170,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     });
   }
 
-  /* We are copying the scale here because brushes do not play nice with zooming.
-   * All sorts of nasty things happen when the scales get changed underneath a
-   * brush. */
+  /* We are copying the scale here because brushes do not play nice with
+   * zooming. All sorts of nasty things happen when the scales get changed
+   * underneath a brush. */
   const originalXScale = xScale.copy();
   const originalYScale = yScale.copy();
   var brush = d3.svg.brush()
@@ -250,7 +262,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .tickFormat(x => xOffsetToName[x])
     .tickSize(0);
 
-  var xAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, getHeight() + SYNTENY_MARGIN]}]));
+  const transformer = transform([
+    {translate: [SYNTENY_MARGIN, getHeight() + SYNTENY_MARGIN]}
+  ]);
+  var xAxisWrapper = svg.append('g').attr('transform', transformer);
   var xAxisGapsGroup = xAxisWrapper.append('g');
   var xAxisLineGroup = xAxisWrapper.append('g');
 
@@ -268,7 +283,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .tickFormat(x => yOffsetToName[x])
     .tickSize(0);
 
-  var yAxisWrapper = svg.append('g').attr('transform', transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]));
+  var yAxisWrapper = svg.append('g')
+    .attr('transform',
+      transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]));
   var yAxisGapsGroup = yAxisWrapper.append('g');
   var yAxisLineGroup = yAxisWrapper.append('g');
 
@@ -276,7 +293,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   svg = svg
     .append('g')
-    .attr('transform', transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]))
+    .attr('transform',
+      transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]))
     .append('g').attr('id', 'zoom-group')
     .call(zoom).on('mousedown.zoom', null); //disable panning
 
@@ -298,7 +316,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       if (cx < 0 || cx > getWidth() || cy < 0 || cy > getHeight())
         return;
 
-      background.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+      background.fillRect(cx - CIRCLE_RADIUS,
+        cy - CIRCLE_RADIUS,
+        CIRCLE_RADIUS,
+        CIRCLE_RADIUS);
     });
   }
 
@@ -306,8 +327,11 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     var start = Date.now();
 
     var intermediateColorScale;
-    var t = Math.min((DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
-    intermediateColorScale = interpolateScales(initialColorScale, finalColorScale, t);
+    var t = Math.min(
+      (DOTPLOT_COLOR_TRANS_LEN - elapsedMS) / DOTPLOT_COLOR_TRANS_LEN, 1);
+    intermediateColorScale = interpolateScales(initialColorScale,
+      finalColorScale,
+      t);
 
     var allData = dataObj.currentData();
     var activeDots = allData.active;
@@ -321,7 +345,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     var groups = [];
     var index = 0;
 
-    const rounded = x => Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
+    const rounded = x => {
+      return Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
+    };
     while (index < activeDots.length) {
       var low = index;
       var val = rounded(activeDots[index]);
@@ -341,7 +367,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
         if (cx < 0 || cx > getWidth() || cy < 0 || cy > getHeight())
           continue;
 
-        context.fillRect(cx - CIRCLE_RADIUS, cy - CIRCLE_RADIUS, CIRCLE_RADIUS, CIRCLE_RADIUS);
+        context.fillRect(cx - CIRCLE_RADIUS,
+          cy - CIRCLE_RADIUS,
+          CIRCLE_RADIUS,
+          CIRCLE_RADIUS);
       }
     });
 
@@ -364,7 +393,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     const aDomain = a.domain();
     const bDomain = b.domain();
     const min = Math.min(aDomain[0], bDomain[0]);
-    const max = Math.max(aDomain[aDomain.length - 1], bDomain[bDomain.length - 1]);
+    const max = Math.max(aDomain[aDomain.length - 1],
+      bDomain[bDomain.length - 1]);
     const step = (max - min) / NUM_COLOR_SCALE_INTERPOLATION_SAMPLES;
     const domain = _.range(min, max + 1, step);
     const range = _.map(domain, function(input) {

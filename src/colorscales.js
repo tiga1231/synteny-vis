@@ -14,9 +14,11 @@ exports.onData = function(data) {
     const range = colorScale.range;
     const domain = utils.samplePointsInRange(extent, range.length);
 
-    const scale = colorScale.quantized ? d3.scale.quantize() : d3.scale.linear();
-
-    return scale.domain(domain).range(range);
+    if (colorScale.quantized) {
+      return d3.scale.quantize().domain(domain).range(range);
+    } else {
+      return d3.scale.linear().domain(domain).range(range);
+    }
   };
 
   /* _.memoize acts only on the first arg unless we tell it otherwise */

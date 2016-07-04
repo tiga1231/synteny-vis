@@ -14,7 +14,9 @@ const {
 } = require('constants');
 
 function buildDiv(element_id, show_histograms) {
-  const div = d3.select(element_id).append('div').classed('_synteny-dotplot-builder', true);
+  const div = d3.select(element_id)
+    .append('div')
+    .classed('_synteny-dotplot-builder', true);
 
   div.append('svg').attr('id', 'dotplot').classed('dotplot', true);
 
@@ -35,7 +37,9 @@ function buildDiv(element_id, show_histograms) {
 
   const formWrapper = div.append('div').attr('id', 'form-wrapper');
   function makeForm(title, optionId, elements, checkIndex) {
-    const navOptions = formWrapper.append('div').classed('radio-button-box', true);
+    const navOptions = formWrapper
+      .append('div')
+      .classed('radio-button-box', true);
     navOptions.append('strong').text(title + ': ');
 
     const navForm = navOptions.append('form').attr('id', optionId);
@@ -55,7 +59,9 @@ function buildDiv(element_id, show_histograms) {
   }
 
   if (show_histograms) {
-    const buttonWrapper = formWrapper.append('div').classed('histogram-button-wrapper', true);
+    const buttonWrapper = formWrapper
+      .append('div')
+      .classed('histogram-button-wrapper', true);
     ['log(ks)', 'log(kn/ks)', 'log(kn)'].forEach(form => {
       buttonWrapper.append('button')
         .classed('histogram-button', true)
@@ -75,16 +81,31 @@ function buildDiv(element_id, show_histograms) {
       option('rainbow_quantized', 'rainbow_quantized')
     ], 0);
 
-    const persistenceOptions = formWrapper.append('div').classed('radio-button-box', true);
+    const persistenceOptions = formWrapper
+      .append('div')
+      .classed('radio-button-box', true);
     persistenceOptions.append('strong').text('Auto-scale sensitivity: ');
 
-    persistenceOptions.append('input').attr('id', 'persistence').attr('type', 'range').attr('min', 0).attr('max', 100)
-      .attr('value', 40).attr('step', 1);
+    persistenceOptions
+      .append('input')
+      .attr('id', 'persistence')
+      .attr('type', 'range')
+      .attr('min', 0)
+      .attr('max', 100)
+      .attr('value', 40)
+      .attr('step', 1);
 
-    persistenceOptions.append('label').attr('id', 'persistence-text').text('40');
+    persistenceOptions
+      .append('label')
+      .attr('id', 'persistence-text')
+      .text('40');
   }
   const gevoLink = formWrapper.append('div');
-  gevoLink.append('a').attr('id', 'gevo-link').text('GeVO Link').attr('href', '#');
+  gevoLink
+    .append('a')
+    .attr('id', 'gevo-link')
+    .text('GeVO Link')
+    .attr('href', '#');
   gevoLink.append('div').attr('id', 'gevo-link-xname');
   gevoLink.append('div').attr('id', 'gevo-link-yname');
 }
@@ -137,7 +158,8 @@ function controller(dataObj, element_id, meta) {
     .on('change', function() {
       var newCS;
       if (this.value === 'auto') {
-        newCS = autoscale.generateAutoScale(histograms[activeField].bins(), getPersistence());
+        newCS = autoscale.generateAutoScale(
+          histograms[activeField].bins(), getPersistence());
       } else {
         newCS = colorScale(activeField, this.value);
       }
@@ -150,7 +172,9 @@ function controller(dataObj, element_id, meta) {
   const initial = colorScale(activeField, 'rg');
 
   if (!meta.have_ks) {
-    const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', colorScale(activeField, 'unselected'), meta);
+    const scale = colorScale(activeField, 'unselected');
+    const synteny = dotplot.synteny;
+    const syntenyPlot = synteny('#dotplot', dataObj, 'logks', scale, meta);
     return;
   }
 
@@ -160,14 +184,17 @@ function controller(dataObj, element_id, meta) {
     'logknks': histogram.histogram('#plot3', dataObj, 'logknks', initial)
   };
   const activePlot = histograms[activeField];
-  const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(), getPersistence());
+  const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(),
+    getPersistence());
   activePlot.setColorScale(initialAutoScale);
   _(histograms)
     .toPairs()
     .filter(([name]) => name !== activeField)
-    .forEach(([name, plot]) => plot.setColorScale(colorScale(name, 'unselected')));
+    .forEach(([name, plot]) => plot.setColorScale(
+      colorScale(name, 'unselected')));
 
-  const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks', initialAutoScale, meta);
+  const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks',
+    initialAutoScale, meta);
 
   //FIXME
   const name_map = {
@@ -203,7 +230,8 @@ function controller(dataObj, element_id, meta) {
 
   /* Benchmark */
   if (RUN_BENCHMARKS) {
-    const [minLogKs, maxLogKs] = d3.extent(dataObj.currentData().raw, x => x.logks);
+    const [minLogKs, maxLogKs] = d3.extent(
+      dataObj.currentData().raw, x => x.logks);
     const points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
 
     const rangeList = _.chain(points)
