@@ -306,14 +306,16 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var colorScale = initialColorScale;
 
   function drawBG() {
-    var allDots = dataObj.currentData().raw;
-    background.clearRect(0, 0, getWidth(), getHeight());
+    const allDots = dataObj.currentData().raw;
+    const width = getWidth();
+    const height = getHeight();
+    background.clearRect(0, 0, width, height);
     background.fillStyle = UNSELECTED_DOT_FILL;
     _.each(allDots, function(d) {
       const cx = xScale(d.x_relative_offset);
       const cy = yScale(d.y_relative_offset);
 
-      if (cx < 0 || cx > getWidth() || cy < 0 || cy > getHeight())
+      if (cx < 0 || cx > width || cy < 0 || cy > height)
         return;
 
       background.fillRect(cx - CIRCLE_RADIUS,
@@ -339,7 +341,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     //console.log('Time after collecting data', Date.now() - start);
     start = Date.now();
 
-    context.clearRect(0, 0, getWidth(), getHeight());
+    const width = getWidth();
+    const height = getHeight();
+
+    context.clearRect(0, 0, width, height);
 
     /* On top, active dots */
     var groups = [];
@@ -364,7 +369,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
         const cx = xScale(d.x_relative_offset);
         const cy = yScale(d.y_relative_offset);
 
-        if (cx < 0 || cx > getWidth() || cy < 0 || cy > getHeight())
+        if (cx < 0 || cx > width || cy < 0 || cy > height)
           continue;
 
         context.fillRect(cx - CIRCLE_RADIUS,

@@ -124,10 +124,9 @@ function histogram(id, dataObj, field, colorScale) {
     const active = bin => bin.x + bin.dx > extent[0] && bin.x < extent[1];
 
     const orZero = x => Math.max(x, 0);
+    const height = plotHeight();
     selection
-      .attr('height', d => {
-        return orZero(plotHeight() - HISTOGRAM_MARGIN - yPlotScale(d.y));
-      })
+      .attr('height', d => orZero(height - HISTOGRAM_MARGIN - yPlotScale(d.y)))
       .attr('fill', d => {
         return active(d) ? colorScale(d.x + d.dx / 2) : UNSELECTED_BAR_FILL;
       });
