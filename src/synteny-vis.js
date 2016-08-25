@@ -113,7 +113,7 @@ function buildDiv(element_id, show_histograms) {
   gevoLink
     .append('a')
     .attr('id', 'gevo-link')
-    .text('GeVO Link')
+    .text('GEvo Link')
     .attr('href', '#');
   gevoLink.append('div').attr('id', 'gevo-link-xname');
   gevoLink.append('div').attr('id', 'gevo-link-yname');
