@@ -30,6 +30,25 @@ function buildDiv(element_id, show_histograms) {
     .attr('id', 'dotplot-canvas').classed('dotplot', true)
     .style('pointer-events', 'none');
 
+  const formWrapperTop = div.append('div').attr('id', 'form-wrapper-top');
+  if (show_histograms) {
+    const buttonWrapper = formWrapperTop
+      .append('div')
+      .classed('histogram-button-wrapper', true);
+    buttonWrapper.append('button')
+      .classed('histogram-button', true)
+      .attr('id', 'histogram-button-left')
+      .text('<');
+    buttonWrapper.append('div')
+      .attr('id', 'histogram-button-title')
+      .append('text')
+      .attr('id', 'histogram-button-title-text');
+    buttonWrapper.append('button')
+      .classed('histogram-button', true)
+      .attr('id', 'histogram-button-right')
+      .text('>');
+  }
+
   const histogramWrapper = div.append('div').attr('id', 'histogram-wrapper');
   histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);
   histogramWrapper.append('svg').attr('id', 'plot2').classed('histogram', true);
@@ -59,16 +78,6 @@ function buildDiv(element_id, show_histograms) {
   }
 
   if (show_histograms) {
-    const buttonWrapper = formWrapper
-      .append('div')
-      .classed('histogram-button-wrapper', true);
-    ['log(ks)', 'log(kn/ks)', 'log(kn)'].forEach(form => {
-      buttonWrapper.append('button')
-        .classed('histogram-button', true)
-        .attr('id', `histogram-button-${form.replace(/[\(\)\/]/g, '')}`, true)
-        .text(form);
-    });
-
     const option = (value, text) => [value, text];
 
     makeForm('Navigation Mode', 'mouse-options', [
@@ -115,6 +124,7 @@ function controller(dataObj, element_id, meta) {
   buildDiv('#' + element_id, meta.have_ks);
 
   const refreshPlot = _.debounce(function(colorScale) {
+    syntenyPlot.setField(activeField);
     syntenyPlot.setColorScale(colorScale);
   }, 100);
 
@@ -178,55 +188,95 @@ function controller(dataObj, element_id, meta) {
     return;
   }
 
-  const histograms = {
-    'logks': histogram.histogram('#plot', dataObj, 'logks', initial),
-    'logkn': histogram.histogram('#plot2', dataObj, 'logkn', initial),
-    'logknks': histogram.histogram('#plot3', dataObj, 'logknks', initial)
-  };
-  const activePlot = histograms[activeField];
-  const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(),
-    getPersistence());
-  activePlot.setColorScale(initialAutoScale);
-  _(histograms)
-    .toPairs()
-    .filter(([name]) => name !== activeField)
-    .forEach(([name, plot]) => plot.setColorScale(
-      colorScale(name, 'unselected')));
+  function getInitialColorScale(histograms) {
+    const activePlot = histograms[activeField];
+    return autoscale.generateAutoScale(activePlot.bins(), getPersistence());
+  }
 
-  const syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks',
-    initialAutoScale, meta);
+  function setUpHistograms(initialCS) {
+    d3.selectAll('.histogram').classed('hidden', false);
+    const histograms = {
+      'logks': histogram.histogram('#plot', dataObj, 'logks', initialCS),
+      'logkn': histogram.histogram('#plot2', dataObj, 'logkn', initialCS),
+      'logknks': histogram.histogram('#plot3', dataObj, 'logknks', initialCS)
+    };
+    const activePlot = histograms[activeField];
 
-  //FIXME
-  const name_map = {
-    'logks': 'plot',
-    'logkn': 'plot2',
-    'logknks': 'plot3'
-  };
-  _.keys(histograms).forEach(name => {
-    d3.select('#histogram-button-' + name)
+    const initialAutoScale = autoscale.generateAutoScale(activePlot.bins(),
+      getPersistence());
+    activePlot.setColorScale(initialAutoScale);
+
+    _(histograms)
+      .toPairs()
+      .filter(([name]) => name !== activeField)
+      .forEach(([name, plot]) => plot.setColorScale(
+        colorScale(name, 'unselected')));
+  
+    //FIXME
+    const name_map = {
+      'logks': 'plot',
+      'logkn': 'plot2',
+      'logknks': 'plot3'
+    };
+
+    var which = 0;
+    const other_smh = ['logks', 'logkn', 'logknks'];
+    const names_smh = ['plot', 'plot2', 'plot3'];
+    const scientific_names = [
+      'Synonomous - ks',
+      'Non-Synonomous - kn',
+      'Non-Synonomous / Synonomous ratio - kn/ks'
+    ];
+
+    const common = () => {
+      d3.selectAll('.histogram').classed('hidden', true);
+      d3.select('#' + names_smh[which]).classed('hidden', false);
+      activeField = other_smh[which];
+      d3.select('#histogram-button-title-text').text(scientific_names[which]);
+      refreshAutoScale(getPersistence());
+    };
+    d3.select('#histogram-button-left')
       .on('click', () => {
-        d3.selectAll('.histogram').classed('hidden', true);
-        d3.select('#' + name_map[name]).classed('hidden', false);
-        d3.selectAll('.histogram-button').classed('pressed', false);
-        d3.select('#histogram-button-' + name).classed('pressed', true);
-        activeField = name;
-        refreshAutoScale(getPersistence());
+        which = (which + 2) % 3;
+        common();
       });
-  });
+    d3.select('#histogram-button-right')
+      .on('click', () => {
+        which = (which + 1) % 3;
+        common();
+      });
+  
+    d3.selectAll('.histogram').classed('hidden', true);
+    d3.select('#' + name_map[activeField]).classed('hidden', false);
+    d3.select('#histogram-button-title-text').text(scientific_names[which]);
+  
+    // Since the histograms aren't controlling their own color scale policy 
+    // now (a good thing), we need to manually fire of their update methods. 
+    // Eventually, we should fix this up.
+    dataObj.addListener(function(typeHint) {
+      if (typeHint.indexOf('stop') > -1 && SHOW_MAXIMA_AND_MINIMA)
+        _.each(histograms, h => h.updateMinMaxMarkers(getPersistence()));
+    });
+    return histograms;
+  }
 
-  d3.selectAll('.histogram').classed('hidden', true);
-  d3.select('#' + name_map[activeField]).classed('hidden', false);
-  d3.selectAll('.histogram-button').classed('pressed', false);
-  d3.select('#histogram-button-' + activeField).classed('pressed', true);
-
-  // Since the histograms aren't controlling their own color scale policy 
-  // now (a good thing), we need to manually fire of their update methods. 
-  // Eventually, we should fix this up.
-  dataObj.addListener(function(typeHint) {
-    if (typeHint.indexOf('stop') > -1 && SHOW_MAXIMA_AND_MINIMA)
-      _.each(histograms, h => h.updateMinMaxMarkers(getPersistence()));
-  });
+  var histograms = setUpHistograms(initial);
+  var syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks',
+    getInitialColorScale(histograms), meta);
+  
   dataObj.notifyListeners('initial');
+
+  // Resize the window? Tear everything out and rebuild it.
+  window.onresize = () => {
+    ['dotplot', 'plot', 'plot2', 'plot3'].forEach(id => {
+      const el = document.getElementById(id);
+      while(el.firstChild) el.removeChild(el.firstChild);
+    });
+    dataObj.clearListeners();
+    const cs = histograms[activeField].getColorScale();
+    histograms = setUpHistograms(cs);
+    syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
+  };
 
   /* Benchmark */
   if (RUN_BENCHMARKS) {

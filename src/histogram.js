@@ -17,8 +17,10 @@ function histogram(id, dataObj, field, colorScale) {
   const dataExtent = d3.extent(_.map(dataObj.currentData().raw, field));
 
   const plot = d3.select(id);
-  const plotWidth = () => utils.getComputedAttr(plot.node(), 'width');
-  const plotHeight = () => utils.getComputedAttr(plot.node(), 'height');
+  const plotWidth = () => 
+    utils.getComputedAttr(document.getElementById(id.substring(1)), 'width');
+  const plotHeight = () => 
+    utils.getComputedAttr(document.getElementById(id.substring(1)), 'height');
 
   const prettyNames = {
     logks: 'log(ks)',
@@ -161,8 +163,13 @@ function histogram(id, dataObj, field, colorScale) {
     updatePlot('stop'); /* trigger animation -- FIXME */
   }
 
+  function getColorScale() {
+    return colorScale;
+  }
+
   return {
     setColorScale: setColorScale,
+    getColorScale: getColorScale,
     brush: plotBrush,
     sendBrushEvent: plotBrushBrush,
     selection: brushSelectForBM,

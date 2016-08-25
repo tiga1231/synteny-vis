@@ -215,6 +215,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.addListener = function(x) {
     listeners.push(x);
   };
+  ret.clearListeners = function() {
+    while(listeners.length > 0) listeners.pop();
+  };
 
   ret.notifyListeners = function(typeOfChange) {
     _.each(listeners, function(x) {

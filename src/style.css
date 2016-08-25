@@ -47,13 +47,19 @@
 
 ._synteny-dotplot-builder .histogram-button {
 	position: relative;
-	width: 25%;
-	margin-left:8%;
+  float: left;
+	width: 10%;
 	color: grey;
+}
+._synteny-dotplot-builder #histogram-button-title {
+	position: relative;
+  float: left;
+	width: 80%;
+  text-align: center;
 }
 
 ._synteny-dotplot-builder .hidden {
-	display: none;
+    display: none;
 }
 
 ._synteny-dotplot-builder .pressed {
@@ -84,7 +90,13 @@
 ._synteny-dotplot-builder #form-wrapper {
   float: right;
   width: 50%;
-  height: 20%;
+  height: 13%;
+  font-size: 14pt;
+}
+._synteny-dotplot-builder #form-wrapper-top {
+  float: right;
+  width: 50%;
+  height: 7%;
   font-size: 14pt;
 }
 ._synteny-dotplot-builder form {

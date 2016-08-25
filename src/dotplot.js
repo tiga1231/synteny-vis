@@ -25,11 +25,33 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   const baseID = id.substring(1);
   const svgElement = document.getElementById(baseID);
 
-  const getWidth = () => {
+  const getComputedWidth = () => {
     return utils.getComputedAttr(svgElement, 'width') - 2 * SYNTENY_MARGIN;
   };
-  const getHeight = () => {
+  const getComputedHeight = () => {
     return utils.getComputedAttr(svgElement, 'height') - 2 * SYNTENY_MARGIN;
+  };
+
+  const getWidth = () => {
+    const screenRatio = getComputedHeight() / getComputedWidth();
+    if(screenRatio > dataAspectRatio) {
+      // We are too tall. Use the entire width.
+      return getComputedWidth();
+    } else {
+      // We are too wide. Only use as much width as we have height for.
+      return getComputedHeight() / dataAspectRatio;
+    }
+  };
+
+  const getHeight = () => {
+    const screenRatio = getComputedHeight() / getComputedWidth();
+    if(screenRatio > dataAspectRatio) {
+      // We are too tall. Only use as much height as we have width for.
+      return getComputedWidth() * dataAspectRatio;
+    } else {
+      // We are too wide. Use the entire height.
+      return getComputedHeight();
+    }
   };
 
   var xScale = d3.scale.linear().domain(xExtent).range([0, getWidth()]);
