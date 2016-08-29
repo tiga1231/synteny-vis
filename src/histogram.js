@@ -22,19 +22,6 @@ function histogram(id, dataObj, field, colorScale) {
   const plotHeight = () => 
     utils.getComputedAttr(document.getElementById(id.substring(1)), 'height');
 
-  const prettyNames = {
-    logks: 'log(ks)',
-    logkn: 'log(kn)',
-    logknks: 'log(kn/ks)'
-  };
-  plot.append('text')
-    .attr('x', 2 * plotHeight() / 3)
-    .attr('width', plotHeight() / 3)
-    .attr('y', 50)
-    .attr('height', 50)
-    .classed('histogram-title', true)
-    .text(prettyNames[field]);
-
   function plotBrushBrush() {
     if (!plotBrush.empty()) {
       dataObj.addDataFilter(plotBrush.extent(), field);
