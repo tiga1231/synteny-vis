@@ -15,6 +15,16 @@
   stroke: black;
 }
 
+/* Borders and background */
+._synteny-dotplot-builder .dotplot, 
+._synteny-dotplot-builder #histogram-and-top-form,
+._synteny-dotplot-builder #form-wrapper
+{
+  /* background-color: #F5F5F5;*/
+  border: 1px solid #119911;
+  border-radius: 0px;
+  box-sizing: border-box;
+}
 
 /* Dot plot */
 
@@ -29,7 +39,7 @@
   position: absolute;
 }
 ._synteny-dotplot-builder #dotplot {
-  width: 50%;
+  width: 70%;
   height: 100%;
 }
 /* chromosome boundary lines in dotplot */
@@ -66,10 +76,15 @@
 	color: black;
 }
 
+._synteny-dotplot-builder #histogram-and-top-form {
+  float: right;
+  width: 28.5%;
+  height: 80%;
+}
 ._synteny-dotplot-builder #histogram-wrapper {
   float: right;
-  width: 50%;
-  height: 80%;
+  width: 100%;
+  height: 90%;
 }
 ._synteny-dotplot-builder .histogram {
   position: relative;
@@ -88,15 +103,16 @@
 /* Forms */
 
 ._synteny-dotplot-builder #form-wrapper {
+  margin-top: 1.5%;
   float: right;
-  width: 50%;
-  height: 13%;
+  width: 28.5%;
+  height: auto;
   font-size: 14pt;
 }
 ._synteny-dotplot-builder #form-wrapper-top {
   float: right;
-  width: 50%;
-  height: 7%;
+  width: 100%;
+  height: 10%;
   font-size: 14pt;
 }
 ._synteny-dotplot-builder form {

@@ -30,7 +30,11 @@ function buildDiv(element_id, show_histograms) {
     .attr('id', 'dotplot-canvas').classed('dotplot', true)
     .style('pointer-events', 'none');
 
-  const formWrapperTop = div.append('div').attr('id', 'form-wrapper-top');
+  const histogramAndTopForm = div.append('div')
+      .attr('id', 'histogram-and-top-form', true);
+
+  const formWrapperTop = histogramAndTopForm
+      .append('div').attr('id', 'form-wrapper-top');
   if (show_histograms) {
     const buttonWrapper = formWrapperTop
       .append('div')
@@ -49,7 +53,7 @@ function buildDiv(element_id, show_histograms) {
       .text('>');
   }
 
-  const histogramWrapper = div.append('div').attr('id', 'histogram-wrapper');
+  const histogramWrapper = histogramAndTopForm.append('div').attr('id', 'histogram-wrapper');
   histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);
   histogramWrapper.append('svg').attr('id', 'plot2').classed('histogram', true);
   histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
