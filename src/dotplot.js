@@ -107,13 +107,17 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       (xScale.domain()[1] - xScale.domain()[0]);
     if (distance(point) * ratio < GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS) {
       d3.select('#gevo-link')
-        .attr('href', genGeVOLink(point.x_feature_id, point.y_feature_id));
+        .text('Compare in GEvo >>>')
+        .attr('onclick', () => {
+          const link = genGeVOLink(point.x_feature_id, point.y_feature_id);
+          return `window.open('${link}')`;
+        });
       getGeVODescription(point.x_feature_id, point.y_feature_id)
         .then(({x_name, y_name}) => {
           d3.select('#gevo-link-xname')
-            .text(`Name (${meta.x_name}): ${x_name}`);
+            .text(`${meta.x_name}: ${x_name}`);
           d3.select('#gevo-link-yname')
-            .text(`Name (${meta.y_name}): ${y_name}`);
+            .text(`${meta.y_name}: ${y_name}`);
         });
     }
 

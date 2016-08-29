@@ -53,7 +53,8 @@ function buildDiv(element_id, show_histograms) {
       .text('>');
   }
 
-  const histogramWrapper = histogramAndTopForm.append('div').attr('id', 'histogram-wrapper');
+  const histogramWrapper = histogramAndTopForm
+      .append('div').attr('id', 'histogram-wrapper');
   histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);
   histogramWrapper.append('svg').attr('id', 'plot2').classed('histogram', true);
   histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
@@ -63,7 +64,9 @@ function buildDiv(element_id, show_histograms) {
     const navOptions = formWrapper
       .append('div')
       .classed('radio-button-box', true);
-    navOptions.append('strong').text(title + ': ');
+    if(title) {
+      navOptions.append('text').text(title + ': ');
+    }
 
     const navForm = navOptions.append('form').attr('id', optionId);
     const options = navForm.selectAll('input')
@@ -84,11 +87,14 @@ function buildDiv(element_id, show_histograms) {
   if (show_histograms) {
     const option = (value, text) => [value, text];
 
-    makeForm('Navigation Mode', 'mouse-options', [
+    formWrapper.append('strong').text('Controls');
+    makeForm('Navigation', 'mouse-options', [
       option('brush', 'Brushing'),
       option('pan', 'Panning')
     ], 0);
+    formWrapper.append('div').style('height', '10');
 
+    formWrapper.append('strong').text('Color Options');
     makeForm('Color Scale', 'color-options', [
       option('auto', 'auto'),
       option('rainbow_quantized', 'rainbow_quantized')
@@ -97,7 +103,7 @@ function buildDiv(element_id, show_histograms) {
     const persistenceOptions = formWrapper
       .append('div')
       .classed('radio-button-box', true);
-    persistenceOptions.append('strong').text('Auto-scale sensitivity: ');
+    persistenceOptions.append('text').text('Auto-scale sensitivity: ');
 
     persistenceOptions
       .append('input')
@@ -113,14 +119,16 @@ function buildDiv(element_id, show_histograms) {
       .attr('id', 'persistence-text')
       .text('40');
   }
+
+  formWrapper.append('div').style('height', '10');
+  formWrapper.append('strong').text('Point Selection');
   const gevoLink = formWrapper.append('div');
-  gevoLink
-    .append('a')
-    .attr('id', 'gevo-link')
-    .text('GEvo Link')
-    .attr('href', '#');
   gevoLink.append('div').attr('id', 'gevo-link-xname');
   gevoLink.append('div').attr('id', 'gevo-link-yname');
+  gevoLink
+    .append('button')
+    .attr('id', 'gevo-link')
+    .text('No Point Selected');
 }
 
 function controller(dataObj, element_id, meta) {
