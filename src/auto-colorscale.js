@@ -14,7 +14,14 @@ exports.generateAutoScale = function(points, persistence) {
 };
 
 const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
-const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
+const shouldBeMarked = (x, i, A) => {
+  // This is bad, but we are special casing the first maximum if it is "big."
+  // This gives the ks == 0 spike color. The
+  if(i == 0 && A[i].y >= _.max(_.map(A, x => x.y)))
+    return true;
+  // common case: normal maxima
+  return i > 0 && i < A.length - 1 && isMaxima(A, i);
+}
 
 const generateColorScaleFromExtrema = function(extrema) {
   const colors = d3.scale.category10();

@@ -51,15 +51,39 @@ function ksTextToObjects(text) {
     .replace(' ', '')
     .split('\n');
 
-  return _.chain(csvLines)
+  const dots = _.chain(csvLines)
     .filter(line => line && line[0] !== '#')
     .map(ksLineToSyntenyDot)
-    .filter(line => isFinite(line.logks) && isFinite(line.logkn))
+    .filter(x => x)
     .value();
+
+  console.log(dots.length);
+
+  const min_logks = _(dots)
+    .filter(line => isFinite(line.logks))
+    .tap(x => console.log(x.length) && x)
+    .map(line => line.logks)
+    .min();
+  const min_logkn = _(dots)
+    .filter(line => isFinite(line.logkn))
+    .tap(x => console.log(x.length) && x)
+    .map(line => line.logkn)
+    .min();
+
+  return _.map(dots, x => {
+    x.logks = isFinite(x.logks) ? x.logks : min_logks;
+    x.logkn = isFinite(x.logkn) ? x.logkn : min_logkn;
+    x.logknks = x.logkn - x.logks;
+    return x;
+  });
 }
 
 function ksLineToSyntenyDot(line) {
   const fields = line.split(',');
+
+  if(fields[0] === 'NA' || fields[1] === 'NA') {
+    return undefined;
+  }
 
   const ks = Number(fields[0]);
   const kn = Number(fields[1]);
