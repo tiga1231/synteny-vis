@@ -87,7 +87,9 @@ function buildDiv(element_id, show_histograms) {
   if (show_histograms) {
     const option = (value, text) => [value, text];
 
-    formWrapper.append('strong').text('Controls');
+    formWrapper.append('div')
+    .attr('id', 'form-top-label')
+    .append('strong').text('Controls');
     makeForm('Navigation', 'mouse-options', [
       option('brush', 'Brushing'),
       option('pan', 'Panning')
@@ -103,21 +105,22 @@ function buildDiv(element_id, show_histograms) {
     const persistenceOptions = formWrapper
       .append('div')
       .classed('radio-button-box', true);
-    persistenceOptions.append('text').text('Auto-scale sensitivity: ');
+    persistenceOptions.append('text').text('Auto-scale peak threshold: ');
 
+    const initialPersistence = 50;
     persistenceOptions
       .append('input')
       .attr('id', 'persistence')
       .attr('type', 'range')
       .attr('min', 0)
       .attr('max', 100)
-      .attr('value', 40)
+      .attr('value', initialPersistence)
       .attr('step', 1);
 
     persistenceOptions
       .append('label')
       .attr('id', 'persistence-text')
-      .text('40');
+      .text(initialPersistence);
   }
 
   formWrapper.append('div').style('height', '10');

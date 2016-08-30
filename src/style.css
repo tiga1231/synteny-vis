@@ -79,7 +79,7 @@
 ._synteny-dotplot-builder #histogram-and-top-form {
   float: right;
   width: 28.5%;
-  height: 80%;
+  height: 65%;
 }
 ._synteny-dotplot-builder #histogram-wrapper {
   float: right;
@@ -117,4 +117,26 @@
 }
 ._synteny-dotplot-builder form {
   display: inline;
+}
+
+#histogram-button-left, 
+#histogram-button-right, 
+#histogram-button-title {
+    margin-top: 2%;
+}
+
+#form-wrapper strong,
+#form-wrapper text,
+#gevo-link,
+#gevo-link-xname,
+#gevo-link-yname
+{
+    margin-left: 2%;
+}
+
+#gevo-link {
+    margin-bottom: 2%;
+}
+#form-top-label {
+    margin-top: 2%;
 }
