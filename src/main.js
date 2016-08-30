@@ -57,16 +57,12 @@ function ksTextToObjects(text) {
     .filter(x => x)
     .value();
 
-  console.log(dots.length);
-
   const min_logks = _(dots)
     .filter(line => isFinite(line.logks))
-    .tap(x => console.log(x.length) && x)
     .map(line => line.logks)
     .min();
   const min_logkn = _(dots)
     .filter(line => isFinite(line.logkn))
-    .tap(x => console.log(x.length) && x)
     .map(line => line.logkn)
     .min();
 
