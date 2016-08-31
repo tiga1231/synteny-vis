@@ -30,12 +30,12 @@ function buildDiv(element_id, show_histograms) {
     .attr('id', 'dotplot-canvas').classed('dotplot', true)
     .style('pointer-events', 'none');
 
-  const histogramAndTopForm = div.append('div')
-      .attr('id', 'histogram-and-top-form', true);
-
-  const formWrapperTop = histogramAndTopForm
-      .append('div').attr('id', 'form-wrapper-top');
   if (show_histograms) {
+    const histogramAndTopForm = div.append('div')
+        .attr('id', 'histogram-and-top-form', true);
+
+    const formWrapperTop = histogramAndTopForm
+        .append('div').attr('id', 'form-wrapper-top');
     const buttonWrapper = formWrapperTop
       .append('div')
       .classed('histogram-button-wrapper', true);
@@ -51,13 +51,16 @@ function buildDiv(element_id, show_histograms) {
       .classed('histogram-button', true)
       .attr('id', 'histogram-button-right')
       .text('>');
-  }
 
-  const histogramWrapper = histogramAndTopForm
-      .append('div').attr('id', 'histogram-wrapper');
-  histogramWrapper.append('svg').attr('id', 'plot').classed('histogram', true);
-  histogramWrapper.append('svg').attr('id', 'plot2').classed('histogram', true);
-  histogramWrapper.append('svg').attr('id', 'plot3').classed('histogram', true);
+    const histogramWrapper = histogramAndTopForm
+        .append('div').attr('id', 'histogram-wrapper');
+    histogramWrapper.append('svg')
+      .attr('id', 'plot').classed('histogram', true);
+    histogramWrapper.append('svg')
+      .attr('id', 'plot2').classed('histogram', true);
+    histogramWrapper.append('svg')
+      .attr('id', 'plot3').classed('histogram', true);
+  }
 
   const formWrapper = div.append('div').attr('id', 'form-wrapper');
   function makeForm(title, optionId, elements, checkIndex) {
@@ -84,16 +87,17 @@ function buildDiv(element_id, show_histograms) {
     options[0][checkIndex].checked = true;
   }
 
+
   if (show_histograms) {
     const option = (value, text) => [value, text];
-
     formWrapper.append('div')
-    .attr('id', 'form-top-label')
-    .append('strong').text('Controls');
+      .attr('id', 'form-top-label')
+      .append('strong').text('Controls');
     makeForm('Navigation', 'mouse-options', [
       option('brush', 'Brushing'),
       option('pan', 'Panning')
     ], 0);
+  
     formWrapper.append('div').style('height', '10');
 
     formWrapper.append('strong').text('Color Options');
@@ -167,6 +171,7 @@ function controller(dataObj, element_id, meta) {
       d3.select('#persistence-text').node().innerText = p;
     });
 
+  var syntenyPlot;
   /* zoom/pan switching */
   d3.selectAll('#mouse-options input[name=mouse-options]')
     .on('change', function() {
@@ -199,7 +204,8 @@ function controller(dataObj, element_id, meta) {
   if (!meta.have_ks) {
     const scale = colorScale(activeField, 'unselected');
     const synteny = dotplot.synteny;
-    const syntenyPlot = synteny('#dotplot', dataObj, 'logks', scale, meta);
+    syntenyPlot = synteny('#dotplot', dataObj, 'logks', scale, meta);
+    syntenyPlot.setNavMode('pan');
     return;
   }
 
@@ -276,7 +282,7 @@ function controller(dataObj, element_id, meta) {
   }
 
   var histograms = setUpHistograms(initial);
-  var syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks',
+  syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks',
     getInitialColorScale(histograms), meta);
   
   dataObj.notifyListeners('initial');
