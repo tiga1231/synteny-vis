@@ -376,6 +376,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     var groups = [];
     var index = 0;
 
+    activeDots.sort((a, b) => b[field] - a[field]);
     const rounded = x => {
       return Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
     };
