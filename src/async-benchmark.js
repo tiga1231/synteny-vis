@@ -1,4 +1,4 @@
-const _ = require('lodash');
+const _ = require('lodash/fp');
 
 /*
  * I want to run a benchmark, but I don't want to block UI updates 
@@ -8,15 +8,15 @@ const _ = require('lodash');
  */
 exports.benchmark = function(testArgs, f, done) {
 
-  const results = [];
-  const runOne = function(tests) {
-    if (!tests.length)
+  const runOne = ([test, ...rest], results) => {
+    if (!test) {
       return done(stats(results));
+    }
 
-    results.push(timeIt(f, tests[0]));
-    setTimeout(runOne, 0, tests.slice(1));
+    const result = timeIt(f, test);
+    setTimeout(runOne, 0, rest, [...results, result]);
   };
-  setTimeout(runOne, 0, testArgs);
+  setTimeout(runOne, 0, testArgs, []);
 
   const timeIt = function(f, arg) {
     const start = Date.now();

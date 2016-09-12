@@ -1,10 +1,10 @@
 'use strict';
 
-const _ = require('lodash');
+const _ = require('lodash/fp');
 
-exports.simplify = function simplify(dirtyPoints, persistence) {
+const simplify = (dirtyPoints, persistence) => {
   const points = removeNonExtrema(dirtyPoints);
-  const index = indexOfSmallestPointDifference(points);
+  const index = indexOfSmallestDifference(points);
 
   if (points.length < 3 || gapBetweenPoints(points, index) > persistence)
     return points;
@@ -14,9 +14,10 @@ exports.simplify = function simplify(dirtyPoints, persistence) {
 
   return simplify(points, persistence);
 };
+exports.simplify = simplify;
 
-function removeNonExtrema(A) {
-  return _.filter(A, function(element, index) {
+const removeNonExtrema = A => {
+  return A.filter((element, index) => {
     if (index === 0 || index === A.length - 1)
       return true;
 
@@ -25,12 +26,10 @@ function removeNonExtrema(A) {
     const after = A[index + 1].y;
     return here > Math.max(before, after) || here < Math.min(before, after);
   });
-}
+};
 
-function gapBetweenPoints(A, i) {
-  return Math.abs(A[i].y - A[i + 1].y);
-}
+const gapBetweenPoints = (A, i) => Math.abs(A[i].y - A[i + 1].y);
 
-function indexOfSmallestPointDifference(A) {
-  return _(A.length - 1).range().minBy(i => gapBetweenPoints(A, i));
-}
+const indexOfSmallestDifference = A => {
+  return _.minBy(_.partial(gapBetweenPoints, [A]), _.range(0, A.length - 1));
+};

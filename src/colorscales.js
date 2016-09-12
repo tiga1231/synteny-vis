@@ -1,5 +1,5 @@
 const d3 = require('d3');
-const _ = require('lodash');
+const _ = require('lodash/fp');
 const utils = require('./utils');
 
 const {
@@ -7,7 +7,7 @@ const {
 } = require('constants');
 
 exports.onData = function(data) {
-  const generateScale = function(field, name) {
+  const generateScale = function({field, name}) {
     const extent = d3.extent(data, point => point[field]);
 
     const colorScale = COLOR_RANGES[name];
@@ -21,6 +21,7 @@ exports.onData = function(data) {
     }
   };
 
-  /* _.memoize acts only on the first arg unless we tell it otherwise */
-  return _.memoize(generateScale, (field, name) => field + '.' + name);
+  /* _.memoize acts only on the first arg */
+  const m = _.memoize(generateScale);
+  return (field, name) => m({field, name});
 };

@@ -1,6 +1,6 @@
 'use strict';
 
-const _ = require('lodash');
+const _ = require('lodash/fp');
 const d3 = require('d3');
 const queue = require('d3-queue');
 const sv = require('./synteny-vis');
@@ -51,7 +51,7 @@ function ksTextToObjects(text) {
     .replace(' ', '')
     .split('\n');
 
-  const dots = _.chain(csvLines)
+  const dots = _(csvLines)
     .filter(line => line && line[0] !== '#')
     .map(ksLineToSyntenyDot)
     .filter(x => x)
@@ -66,12 +66,12 @@ function ksTextToObjects(text) {
     .map(line => line.logkn)
     .min();
 
-  return _.map(dots, x => {
+  return _.map(x => {
     x.logks = isFinite(x.logks) ? x.logks : min_logks;
     x.logkn = isFinite(x.logkn) ? x.logkn : min_logkn;
     x.logknks = x.logkn - x.logks;
     return x;
-  });
+  }, dots);
 }
 
 function ksLineToSyntenyDot(line) {
@@ -101,7 +101,7 @@ function ksLineToSyntenyDot(line) {
 }
 
 function lengthsToCumulativeBPCounts(len_list) {
-  const ntLenList = _.chain(len_list)
+  const ntLenList = _(len_list)
     .sortBy('length')
     .reverse()
     .reduce(function(map, kv) {
@@ -110,10 +110,9 @@ function lengthsToCumulativeBPCounts(len_list) {
       return map;
     }, {
       total: 0
-    })
-    .value();
+    });
 
-  const nameLenList = _.chain(len_list)
+  const nameLenList = _(len_list)
     .sortBy('name')
     .reduce(function(map, kv) {
       map[kv.name] = map.total;
@@ -121,13 +120,12 @@ function lengthsToCumulativeBPCounts(len_list) {
       return map;
     }, {
       total: 0
-    })
-    .value();
+    });
 
-  const geneCounts = _.fromPairs(_.zip(
-    _.map(len_list, x => x.name),
-    _.map(len_list, x => x.gene_count)
-  ));
+  const geneCounts = _.zipObject(
+    _.map(_.get('name'), len_list),
+    _.map(_.get('gene_count'), len_list)
+  );
 
   return {
     nt: ntLenList,
@@ -138,13 +136,15 @@ function lengthsToCumulativeBPCounts(len_list) {
 
 // Compute absolute BP offset from chromosome and relative offset
 function inlineKSData(ks, xmap, ymap) {
-  _.each(ks, function(ksObj) {
-    var xShift = xmap.nt[ksObj.x_chromosome_id];
-    var yShift = ymap.nt[ksObj.y_chromosome_id];
-    ksObj.x_relative_offset += xShift;
-    ksObj.y_relative_offset += yShift;
-  });
-  return ks;
+  return _.map(o => {
+    const xShift = xmap.nt[o.x_chromosome_id];
+    const yShift = ymap.nt[o.y_chromosome_id];
+    return { 
+      ...o,
+      x_relative_offset: o.x_relative_offset + xShift,
+      y_relative_offset: o.y_relative_offset + yShift,
+    };
+  }, ks);
 }
 
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
@@ -156,9 +156,11 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   const cross_all = cross.dimension(x => x.logks);
   const cross_x = cross.dimension(x => x.x_relative_offset);
   const cross_y = cross.dimension(x => x.y_relative_offset);
-  const filters = _(['logks', 'logkn', 'logknks'])
-    .map(field => [field, cross.dimension(x => x[field])])
-    .fromPairs().value();
+  const fields = ['logks', 'logkn', 'logknks'];
+  const filters = _.zipObject(
+    fields,
+    _.map(field => cross.dimension(x => x[field]), fields)
+  );
 
   ret.getXLineOffsets = function() {
     return _.chain(xmap).values().sortBy().value();
@@ -193,19 +195,24 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   ret.currentDataSummary = function currentDataSummary(ticks, field) {
-    const group = filters[field].group(x => ticks[_.sortedIndex(ticks, x)]);
+    const group = filters[field].group(x => ticks[_.sortedIndex(x, ticks)]);
     const dx = ticks[1] - ticks[0];
 
     return function() {
-      const groups = group.top(Infinity);
-      const result = _.fromPairs(groups.map(x => [x.key, x.value]));
-      const zeros = _.fromPairs(ticks.map(x => [x, 0]));
+      const groupList = group.top(Infinity);
+      const groups = _.zipObject(
+        _.map(_.get('key'), groupList),
+        _.map(_.get('value'), groupList)
+      );
 
-      return _(zeros).merge(result)
-        .toPairs().map(x => x.map(Number))
-        .map(([x, y]) => ({x, y, dx}))
-        .sortBy('x')
-        .value();
+      return _.map(
+        tick => ({
+            x: Number(tick),
+            y: Number(_.getOr(0, tick, groups)),
+            dx
+        }),
+        ticks
+      );
     };
   };
 
@@ -240,9 +247,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   ret.notifyListeners = function(typeOfChange) {
-    _.each(listeners, function(x) {
-      x(typeOfChange);
-    });
+    _.each(f => f(typeOfChange), listeners);
   };
 
   return ret;

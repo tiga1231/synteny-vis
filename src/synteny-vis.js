@@ -2,9 +2,10 @@
 
 const histogram = require('./histogram');
 const dotplot = require('./dotplot');
-const _ = require('lodash');
+const _ = require('lodash/fp');
 const d3 = require('d3');
 const autoscale = require('./auto-colorscale');
+const utils = require('./utils');
 
 require('./style.css');
 
@@ -142,14 +143,14 @@ function controller(dataObj, element_id, meta) {
 
   buildDiv('#' + element_id, meta.have_ks);
 
-  const refreshPlot = _.debounce(function(colorScale) {
+  const refreshPlot = _.debounce(100, function(colorScale) {
     syntenyPlot.setField(activeField);
     syntenyPlot.setColorScale(colorScale);
-  }, 100);
+  });
 
-  const refreshAutoScale = _.throttle(function(persistence) {
+  const refreshAutoScale = _.throttle(50, function(persistence) {
     const radio = document.getElementById('color-options');
-    const auto = _.find(radio.children, {value: 'auto'});
+    const auto = _.find({value: 'auto'}, radio.children);
     auto.checked = true;
 
     const bins = histograms[activeField].bins();
@@ -159,8 +160,8 @@ function controller(dataObj, element_id, meta) {
     refreshPlot(newAutoScale);
 
     if (SHOW_MAXIMA_AND_MINIMA)
-      _.each(histograms, h => h.updateMinMaxMarkers(persistence));
-  }, 50);
+      _.each(h => h.updateMinMaxMarkers(persistence), histograms);
+  });
 
   const getPersistence = () => d3.select('#persistence').node().value;
 
@@ -276,7 +277,7 @@ function controller(dataObj, element_id, meta) {
     // Eventually, we should fix this up.
     dataObj.addListener(function(typeHint) {
       if (typeHint.indexOf('stop') > -1 && SHOW_MAXIMA_AND_MINIMA)
-        _.each(histograms, h => h.updateMinMaxMarkers(getPersistence()));
+        _.each(h => h.updateMinMaxMarkers(getPersistence()), histograms);
     });
     return histograms;
   }
@@ -303,11 +304,10 @@ function controller(dataObj, element_id, meta) {
   if (RUN_BENCHMARKS) {
     const [minLogKs, maxLogKs] = d3.extent(
       dataObj.currentData().raw, x => x.logks);
-    const points = _.range(minLogKs, maxLogKs, (maxLogKs - minLogKs) / 10);
+    const points = utils.samplePointsInRange([minLogKs, maxLogKs], 10);
 
-    const rangeList = _.chain(points)
-      .map(lo => _.map(points, hi => [lo, hi]))
-      .flatten()
+    const rangeList = _(points)
+      .flatMap(lo => _.map(hi => [lo, hi], points))
       .filter(([lo, hi]) => lo < hi)
       .value();
 
@@ -322,8 +322,3 @@ function controller(dataObj, element_id, meta) {
 }
 
 exports.controller = controller;
-
-// Local Variables:
-// mode: js2
-// js2-basic-offset: 8
-// End:

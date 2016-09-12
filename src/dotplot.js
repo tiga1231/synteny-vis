@@ -1,7 +1,7 @@
 'use strict';
 
 const utils = require('./utils');
-const _ = require('lodash');
+const _ = require('lodash/fp');
 const d3 = require('d3');
 const transform = require('svg-transform');
 
@@ -58,9 +58,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var yScale = d3.scale.linear().domain(yExtent).range([getHeight(), 0]);
 
   const darknessOfTextGaps = function(values, scale) {
-    return _.zipWith(values, _.tail(values), function(a, b) {
+    return _.zipWith(function(a, b) {
       return b ? Math.abs(scale(b) - scale(a)) : 10000;
-    })
+    }, values, _.tail(values))
       .map(v => v > MIN_TEXT_GAP ? 1 : v / MIN_TEXT_GAP)
       .map(v => 255 - Math.floor(v * 256))
       .map(v => Math.min(v, 245));
@@ -100,7 +100,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       const y_component = Math.pow(d.y_relative_offset - y, 2);
       return Math.sqrt(x_component + y_component);
     };
-    const point = _.minBy(dataObj.currentData().raw, distance);
+    const point = _.minBy(distance, dataObj.currentData().raw);
     highlighted = point;
 
     const ratio = (xScale.range()[1] - xScale.range()[0]) /
@@ -129,10 +129,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     const xFilter = x => (0 <= xScale(x) && xScale(x) <= getWidth());
     const yFilter = y => (0 <= yScale(y) && yScale(y) <= getHeight());
 
-    const tempXOffsets = _.filter(xOffsets, xFilter);
-    const tempYOffsets = _.filter(yOffsets, yFilter);
-    const tempXGaps = filterTextGaps(_.filter(xMidpoints, xFilter), xScale);
-    const tempYGaps = filterTextGaps(_.filter(yMidpoints, yFilter), yScale);
+    const tempXOffsets = _.filter(xFilter, xOffsets);
+    const tempYOffsets = _.filter(yFilter, yOffsets);
+    const tempXGaps = filterTextGaps(_.filter(xFilter, xMidpoints), xScale);
+    const tempYGaps = filterTextGaps(_.filter(yFilter, yMidpoints), yScale);
 
     xGridLines.tickValues(tempXOffsets);
     xLabels.tickValues(tempXGaps);
@@ -185,15 +185,15 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     var horizontalRescale = corners.concat(vertical);
     var verticalRescale = corners.concat(horizontal);
 
-    _.map(horizontalRescale, function(name) {
+    _.map(function(name) {
       d3.select('.resize' + name).select('rect')
         .attr('width', 6 / scaling).attr('x', -3 / scaling);
-    });
+    }, horizontalRescale);
 
-    _.map(verticalRescale, function(name) {
+    _.map(function(name) {
       d3.select('.resize' + name).select('rect')
         .attr('height', 6 / scaling).attr('y', -3 / scaling);
-    });
+    }, verticalRescale);
   }
 
   /* We are copying the scale here because brushes do not play nice with
@@ -271,13 +271,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .attr('fill', 'black');
 
   const midpoints = function(points) {
-    return _.zipWith(_.initial(points), _.tail(points), (a, b) => (a + b) / 2);
+    return _.zipWith((a, b) => (a + b) / 2, _.initial(points), _.tail(points));
   };
 
   var xOffsets = dataObj.getXLineOffsets();
   var xMidpoints = midpoints(xOffsets);
 
-  const xOffsetToName = _.fromPairs(_.zip(xMidpoints, dataObj.getXLineNames()));
+  const xOffsetToName = _.zipObject(xMidpoints, dataObj.getXLineNames());
   const xAxisBase = () => d3.svg.axis().scale(xScale).orient('bottom');
 
   var xGridLines = xAxisBase()
@@ -298,7 +298,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var yOffsets = dataObj.getYLineOffsets();
   var yMidpoints = midpoints(yOffsets);
 
-  const yOffsetToName = _.fromPairs(_.zip(yMidpoints, dataObj.getYLineNames()));
+  const yOffsetToName = _.zipObject(yMidpoints, dataObj.getYLineNames());
   const yAxisBase = () => d3.svg.axis().scale(yScale).orient('left');
 
   var yGridLines = yAxisBase()
@@ -337,7 +337,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     const height = getHeight();
     background.clearRect(0, 0, width, height);
     background.fillStyle = UNSELECTED_DOT_FILL;
-    _.each(allDots, function(d) {
+    _.each(function(d) {
       const cx = xScale(d.x_relative_offset);
       const cy = yScale(d.y_relative_offset);
 
@@ -348,7 +348,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
         cy - CIRCLE_RADIUS,
         CIRCLE_RADIUS,
         CIRCLE_RADIUS);
-    });
+    }, allDots);
   }
 
   function draw(elapsedMS, initialColorScale, finalColorScale) {
@@ -383,13 +383,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     while (index < activeDots.length) {
       var low = index;
       var val = rounded(activeDots[index]);
-      index = _.sortedLastIndexBy(activeDots, {
+      index = _.sortedLastIndexBy(x => -rounded(x), {
         [field]: val
-      }, x => -rounded(x));
+      }, activeDots);
       groups.push([low, index]);
     }
 
-    _.each(groups, function([loIndex, hiIndex]) {
+    _.each(function([loIndex, hiIndex]) {
       context.fillStyle = intermediateColorScale(rounded(activeDots[loIndex]));
       for (var i = loIndex; i < hiIndex; i++) {
         const d = activeDots[i];
@@ -404,7 +404,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
           CIRCLE_RADIUS,
           CIRCLE_RADIUS);
       }
-    });
+    }, groups);
 
     if (highlighted) {
       context.beginPath();
@@ -427,11 +427,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     const min = Math.min(aDomain[0], bDomain[0]);
     const max = Math.max(aDomain[aDomain.length - 1],
       bDomain[bDomain.length - 1]);
-    const step = (max - min) / NUM_COLOR_SCALE_INTERPOLATION_SAMPLES;
-    const domain = _.range(min, max + 1, step);
-    const range = _.map(domain, function(input) {
+    const domain = utils.samplePointsInRange([min, max + 1], NUM_COLOR_SCALE_INTERPOLATION_SAMPLES);
+    const range = _.map(function(input) {
       return d3.interpolateRgb(a(input), b(input))(t);
-    });
+    }, domain);
     return d3.scale.linear().domain(domain).range(range);
   }
 
@@ -479,8 +478,3 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 }
 
 exports.synteny = synteny;
-
-// Local Variables:
-// mode: js2
-// js2-basic-offset: 8
-// End:

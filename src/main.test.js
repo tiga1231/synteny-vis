@@ -5,7 +5,7 @@ const sinon = require('sinon');
 const queue = require('d3-queue');
 const d3 = require('d3');
 const sv = require('./synteny-vis');
-const _ = require('lodash-fp');
+const _ = require('lodash/fp');
 
 const main = require('./main');
 
@@ -54,9 +54,9 @@ describe('main', function() {
       genome_x, genome_y, data_url: 'not_used', element_id: 'not_used'
     });
 
-    _(sv_stub.firstCall.args[0].currentData())
-      .map(_.has(['x_feature_id', 'y_feature_id']))
-      .all().should.be.true;
+    const aDataPoint = sv_stub.firstCall.args[0].currentData().raw[0];
+    if(!aDataPoint.x_feature_id || !aDataPoint.y_feature_id)
+      throw Error('feature id is missing');
   });
 
 });
