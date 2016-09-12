@@ -1,13 +1,11 @@
-'use strict';
+import jsdom from 'mocha-jsdom';
+import sinon from 'sinon';
+import queue from 'd3-queue';
+import d3 from 'd3';
+import sv from './synteny-vis';
+import _ from 'lodash/fp';
 
-const jsdom = require('mocha-jsdom');
-const sinon = require('sinon');
-const queue = require('d3-queue');
-const d3 = require('d3');
-const sv = require('./synteny-vis');
-const _ = require('lodash/fp');
-
-const main = require('./main');
+import main from './main';
 
 /* eslint-disable */
 const ks = [

@@ -28,5 +28,10 @@
 		"browser": true,
 		"node": true
 	},
+    "ecmaFeatures": {
+        "modules": true,
+        "impliedStrict": true,
+        "experimentalObjectRestSpread": true
+    },
 	"extends": "eslint:recommended"
 }

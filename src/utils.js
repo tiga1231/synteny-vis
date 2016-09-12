@@ -1,7 +1,5 @@
-'use strict';
-
-const _ = require('lodash/fp');
-const d3 = require('d3');
+import _ from 'lodash/fp';
+import d3 from 'd3';
 
 exports.getComputedAttr = function getComputedAttr(element, attr) {
   const computed = getComputedStyle(element)[attr];

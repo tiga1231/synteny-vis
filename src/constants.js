@@ -1,5 +1,3 @@
-'use strict';
-
 exports.ROUNDING_FACTOR = 10;
 
 exports.RUN_BENCHMARKS = false;

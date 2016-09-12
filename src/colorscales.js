@@ -1,10 +1,10 @@
-const d3 = require('d3');
-const _ = require('lodash/fp');
-const utils = require('./utils');
+import d3 from 'd3';
+import _ from 'lodash/fp';
+import utils from './utils';
 
-const {
+import {
   COLOR_RANGES
-} = require('constants');
+} from 'constants';
 
 exports.onData = function(data) {
   const generateScale = function({field, name}) {

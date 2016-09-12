@@ -1,18 +1,18 @@
-'use strict';
+import histogram from './histogram';
+import dotplot from './dotplot';
+import _ from 'lodash/fp';
+import d3 from 'd3';
+import autoscale from './auto-colorscale';
+import utils from './utils';
+import asyncBenchmark from './async-benchmark';
+import { onData } from './colorscales';
 
-const histogram = require('./histogram');
-const dotplot = require('./dotplot');
-const _ = require('lodash/fp');
-const d3 = require('d3');
-const autoscale = require('./auto-colorscale');
-const utils = require('./utils');
+import './style.css';
 
-require('./style.css');
-
-const {
+import {
   RUN_BENCHMARKS,
   SHOW_MAXIMA_AND_MINIMA
-} = require('constants');
+} from './constants';
 
 function buildDiv(element_id, show_histograms) {
   const div = d3.select(element_id)
@@ -198,7 +198,7 @@ function controller(dataObj, element_id, meta) {
       syntenyPlot.setColorScale(newCS);
     });
 
-  const colorScale = require('colorscales').onData(dataObj.currentData().raw);
+  const colorScale = onData(dataObj.currentData().raw);
 
   const initial = colorScale(activeField, 'rg');
 
@@ -311,7 +311,6 @@ function controller(dataObj, element_id, meta) {
       .filter(([lo, hi]) => lo < hi)
       .value();
 
-    const asyncBenchmark = require('async-benchmark');
     asyncBenchmark.benchmark(rangeList, function(range) {
       histograms.logks.brush.extent(range);
       histograms.logks.brush.event(histograms.logks.selection);

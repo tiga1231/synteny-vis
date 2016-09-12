@@ -1,11 +1,9 @@
-'use strict';
+import utils from './utils';
+import _ from 'lodash/fp';
+import d3 from 'd3';
+import transform from 'svg-transform';
 
-const utils = require('./utils');
-const _ = require('lodash/fp');
-const d3 = require('d3');
-const transform = require('svg-transform');
-
-const {
+import {
   SYNTENY_MARGIN,
   CIRCLE_RADIUS,
   UNSELECTED_DOT_FILL,
@@ -15,7 +13,7 @@ const {
   MAXIMIZE_WIDTH,
   MIN_TEXT_GAP,
   ROUNDING_FACTOR
-} = require('constants');
+} from 'constants';
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
   var xExtent = d3.extent(dataObj.getXLineOffsets());
@@ -427,7 +425,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     const min = Math.min(aDomain[0], bDomain[0]);
     const max = Math.max(aDomain[aDomain.length - 1],
       bDomain[bDomain.length - 1]);
-    const domain = utils.samplePointsInRange([min, max + 1], NUM_COLOR_SCALE_INTERPOLATION_SAMPLES);
+    const domain = utils.samplePointsInRange([min, max + 1],
+                                    NUM_COLOR_SCALE_INTERPOLATION_SAMPLES);
     const range = _.map(function(input) {
       return d3.interpolateRgb(a(input), b(input))(t);
     }, domain);

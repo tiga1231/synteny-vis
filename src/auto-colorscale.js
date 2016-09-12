@@ -1,12 +1,10 @@
-'use strict';
+import persistenceFuncs from './persistence';
+import d3 from 'd3';
+import _ from 'lodash/fp';
 
-const persistenceFuncs = require('./persistence');
-const d3 = require('d3');
-const _ = require('lodash/fp');
-
-const {
+import {
   AUTO_SCALE_VALLEY_FILL
-} = require('constants');
+} from 'constants';
 
 exports.generateAutoScale = (points, persistence) => {
   const extrema = persistenceFuncs.simplify(points, persistence);

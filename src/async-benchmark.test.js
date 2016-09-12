@@ -1,9 +1,7 @@
-'use strict';
+import should from 'should';
+import _ from 'lodash/fp';
 
-const should = require('should');
-const _ = require('lodash/fp');
-
-const asyncBenchmark = require('../src/async-benchmark');
+import asyncBenchmark from '../src/async-benchmark';
 
 describe('async-benchmark', function() {
 

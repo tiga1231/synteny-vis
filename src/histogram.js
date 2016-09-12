@@ -1,25 +1,23 @@
-'use strict';
-
-const {
+import {
   HISTOGRAM_MARGIN,
   HISTOGRAM_Y_SCALE_TRANS_LEN,
   NUM_HISTOGRAM_TICKS,
   UNSELECTED_BAR_FILL
-} = require('./constants');
+} from './constants';
 
-const persistenceFuncs = require('./persistence');
-const utils = require('./utils');
-const _ = require('lodash/fp');
-const d3 = require('d3');
-const transform = require('svg-transform');
+import persistenceFuncs from './persistence';
+import utils from './utils';
+import _ from 'lodash/fp';
+import d3 from 'd3';
+import transform from 'svg-transform';
 
 function histogram(id, dataObj, field, colorScale) {
   const dataExtent = d3.extent(_.map(field, dataObj.currentData().raw));
 
   const plot = d3.select(id);
-  const plotWidth = () => 
+  const plotWidth = () =>
     utils.getComputedAttr(document.getElementById(id.substring(1)), 'width');
-  const plotHeight = () => 
+  const plotHeight = () =>
     utils.getComputedAttr(document.getElementById(id.substring(1)), 'height');
 
   function plotBrushBrush() {

@@ -1,7 +1,7 @@
-const _ = require('lodash/fp');
+import _ from 'lodash/fp';
 
 /*
- * I want to run a benchmark, but I don't want to block UI updates 
+ * I want to run a benchmark, but I don't want to block UI updates
  * in between iterations.
  *
  * My guess is that this isn't super accurate for fast functions.

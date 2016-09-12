@@ -1,6 +1,4 @@
-'use strict';
-
-const _ = require('lodash/fp');
+import _ from 'lodash/fp';
 
 const simplify = (dirtyPoints, persistence) => {
   const points = removeNonExtrema(dirtyPoints);

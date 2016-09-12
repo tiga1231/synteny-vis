@@ -1,10 +1,8 @@
-'use strict';
-
-const _ = require('lodash/fp');
-const d3 = require('d3');
-const queue = require('d3-queue');
-const sv = require('./synteny-vis');
-const crossfilter = require('crossfilter');
+import _ from 'lodash/fp';
+import d3 from 'd3';
+import queue from 'd3-queue';
+import sv from './synteny-vis';
+import crossfilter from 'crossfilter';
 
 exports.makeSyntenyDotPlot = function({
     data_url,
@@ -142,7 +140,7 @@ function inlineKSData(ks, xmap, ymap) {
     return { 
       ...o,
       x_relative_offset: o.x_relative_offset + xShift,
-      y_relative_offset: o.y_relative_offset + yShift,
+      y_relative_offset: o.y_relative_offset + yShift
     };
   }, ks);
 }
@@ -207,9 +205,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
       return _.map(
         tick => ({
-            x: Number(tick),
-            y: Number(_.getOr(0, tick, groups)),
-            dx
+          x: Number(tick),
+          y: Number(_.getOr(0, tick, groups)),
+          dx
         }),
         ticks
       );
