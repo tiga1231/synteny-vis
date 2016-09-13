@@ -3,7 +3,6 @@ import sinon from 'sinon';
 import queue from 'd3-queue';
 import d3 from 'd3';
 import sv from './synteny-vis';
-import _ from 'lodash/fp';
 
 import main from './main';
 

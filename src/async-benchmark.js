@@ -1,5 +1,3 @@
-import _ from 'lodash/fp';
-
 /*
  * I want to run a benchmark, but I don't want to block UI updates
  * in between iterations.
@@ -24,10 +22,11 @@ exports.benchmark = function(testArgs, f, done) {
     return Date.now() - start;
   };
 
+  const sum = A => A.reduce((a, b) => a + b, 0);
   const stats = times => ({
-    totalTime: _.sum(times),
+    totalTime: sum(times),
     count: times.length,
-    max: _.max(times),
-    average: _.sum(times) / times.length
+    max: Math.max(...times),
+    average: sum(times) / times.length
   });
 };

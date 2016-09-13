@@ -1,5 +1,4 @@
 import d3 from 'd3';
-import _ from 'lodash/fp';
 import utils from './utils';
 
 import {
@@ -7,7 +6,7 @@ import {
 } from 'constants';
 
 exports.onData = function(data) {
-  const generateScale = function({field, name}) {
+  const generateScale = function(field, name) {
     const extent = d3.extent(data, point => point[field]);
 
     const colorScale = COLOR_RANGES[name];
@@ -21,7 +20,12 @@ exports.onData = function(data) {
     }
   };
 
-  /* _.memoize acts only on the first arg */
-  const m = _.memoize(generateScale);
-  return (field, name) => m({field, name});
+  const cached = {};
+  return (field, name) => {
+    const key = field + '.' + name;
+    if(cached[key] === undefined) {
+      cached[key] = generateScale(field, name);
+    }
+    return cached[key];
+  };
 };

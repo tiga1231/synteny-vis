@@ -1,6 +1,5 @@
 import persistenceFuncs from './persistence';
 import d3 from 'd3';
-import _ from 'lodash/fp';
 
 import {
   AUTO_SCALE_VALLEY_FILL
@@ -15,7 +14,7 @@ const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
 const shouldBeMarked = (x, i, A) => {
   // This is bad, but we are special casing the first maximum if it is "big."
   // This gives the ks == 0 spike color.
-  if(i == 0 && A[i].y >= _.max(_.map(x => x.y, A))) {
+  if(i == 0 && A[i].y >= 0.5 * Math.max(...A.map(x => x.y))) {
     return true;
   }
   // common case: normal maxima
@@ -30,8 +29,8 @@ const generateColorScaleFromExtrema = extrema => {
     return { ...x, color };
   });
 
-  const domain = _.map(d => d.x + d.dx / 2, colored);
-  const range = _.map(_.get('color'), colored);
+  const domain = colored.map(d => d.x + d.dx / 2);
+  const range = colored.map(x => x.color);
 
   return d3.scale.linear().domain(domain).range(range);
 };

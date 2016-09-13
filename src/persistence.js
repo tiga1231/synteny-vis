@@ -1,5 +1,3 @@
-import _ from 'lodash/fp';
-
 const simplify = (dirtyPoints, persistence) => {
   const points = removeNonExtrema(dirtyPoints);
   const index = indexOfSmallestDifference(points);
@@ -29,5 +27,10 @@ const removeNonExtrema = A => {
 const gapBetweenPoints = (A, i) => Math.abs(A[i].y - A[i + 1].y);
 
 const indexOfSmallestDifference = A => {
-  return _.minBy(_.partial(gapBetweenPoints, [A]), _.range(0, A.length - 1));
+  const wrapped = A.map((value, index) => ({
+    value: (index < A.length - 1) ? gapBetweenPoints(A, index) : Infinity,
+    index
+  }));
+  wrapped.sort((a, b) => a.value - b.value);
+  return wrapped[0].index;
 };

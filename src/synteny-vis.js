@@ -1,11 +1,12 @@
 import histogram from './histogram';
 import dotplot from './dotplot';
-import _ from 'lodash/fp';
 import d3 from 'd3';
 import autoscale from './auto-colorscale';
 import utils from './utils';
 import asyncBenchmark from './async-benchmark';
 import { onData } from './colorscales';
+
+const { debounced } = utils;
 
 import './style.css';
 
@@ -143,15 +144,18 @@ function controller(dataObj, element_id, meta) {
 
   buildDiv('#' + element_id, meta.have_ks);
 
-  const refreshPlot = _.debounce(100, function(colorScale) {
+  const refreshPlot = debounced(100, function(colorScale) {
     syntenyPlot.setField(activeField);
     syntenyPlot.setColorScale(colorScale);
   });
 
-  const refreshAutoScale = _.throttle(50, function(persistence) {
+  const refreshAutoScale = debounced(100, function(persistence) {
     const radio = document.getElementById('color-options');
-    const auto = _.find({value: 'auto'}, radio.children);
-    auto.checked = true;
+    for(let child of radio.children) {
+      if(child.value === 'auto') {
+        child.checked = true;
+      }
+    }
 
     const bins = histograms[activeField].bins();
     const newAutoScale = autoscale.generateAutoScale(bins, persistence);
@@ -160,7 +164,7 @@ function controller(dataObj, element_id, meta) {
     refreshPlot(newAutoScale);
 
     if (SHOW_MAXIMA_AND_MINIMA)
-      _.each(h => h.updateMinMaxMarkers(persistence), histograms);
+      histograms.forEach(h => h.updateMinMaxMarkers(persistence));
   });
 
   const getPersistence = () => d3.select('#persistence').node().value;
@@ -228,11 +232,11 @@ function controller(dataObj, element_id, meta) {
       getPersistence());
     activePlot.setColorScale(initialAutoScale);
 
-    _(histograms)
-      .toPairs()
-      .filter(([name]) => name !== activeField)
-      .forEach(([name, plot]) => plot.setColorScale(
-        colorScale(name, 'unselected')));
+    Object.keys(histograms)
+      .filter(name => name !== activeField)
+      .forEach(name => {
+        histograms[name].setColorScale(colorScale(name, 'unselected'));
+      });
   
     //FIXME
     const name_map = {
@@ -267,17 +271,19 @@ function controller(dataObj, element_id, meta) {
         which = (which + 1) % 3;
         common();
       });
-  
+
     d3.selectAll('.histogram').classed('hidden', true);
     d3.select('#' + name_map[activeField]).classed('hidden', false);
     d3.select('#histogram-button-title-text').text(scientific_names[which]);
-  
-    // Since the histograms aren't controlling their own color scale policy 
-    // now (a good thing), we need to manually fire of their update methods. 
+
+    // Since the histograms aren't controlling their own color scale policy
+    // now (a good thing), we need to manually fire of their update methods.
     // Eventually, we should fix this up.
     dataObj.addListener(function(typeHint) {
       if (typeHint.indexOf('stop') > -1 && SHOW_MAXIMA_AND_MINIMA)
-        _.each(h => h.updateMinMaxMarkers(getPersistence()), histograms);
+        Object.values(histograms).forEach(h => {
+          h.updateMinMaxMarkers(getPersistence());
+        });
     });
     return histograms;
   }
@@ -285,7 +291,7 @@ function controller(dataObj, element_id, meta) {
   var histograms = setUpHistograms(initial);
   syntenyPlot = dotplot.synteny('#dotplot', dataObj, 'logks',
     getInitialColorScale(histograms), meta);
-  
+
   dataObj.notifyListeners('initial');
 
   // Resize the window? Tear everything out and rebuild it.
@@ -306,12 +312,12 @@ function controller(dataObj, element_id, meta) {
       dataObj.currentData().raw, x => x.logks);
     const points = utils.samplePointsInRange([minLogKs, maxLogKs], 10);
 
-    const rangeList = _(points)
-      .flatMap(lo => _.map(hi => [lo, hi], points))
-      .filter(([lo, hi]) => lo < hi)
-      .value();
+    const grouped_pairs = points.map(lo => {
+      return points.map(hi => [lo, hi]).filter(([lo, hi]) => lo < hi);
+    });
+    const pairs = Array.prototype.concat.apply([], grouped_pairs);
 
-    asyncBenchmark.benchmark(rangeList, function(range) {
+    asyncBenchmark.benchmark(pairs, function(range) {
       histograms.logks.brush.extent(range);
       histograms.logks.brush.event(histograms.logks.selection);
     }, function({average, max}) {

@@ -1,5 +1,5 @@
 module.exports = {
-  entry: __dirname + '/src/hook.js',
+  entry: ['babel-polyfill', __dirname + '/src/hook.js'],
   output: {
     path: __dirname + '/build',
     filename: 'synteny-dotplot-builder.js'

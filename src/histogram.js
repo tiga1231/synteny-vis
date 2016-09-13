@@ -7,12 +7,11 @@ import {
 
 import persistenceFuncs from './persistence';
 import utils from './utils';
-import _ from 'lodash/fp';
 import d3 from 'd3';
 import transform from 'svg-transform';
 
 function histogram(id, dataObj, field, colorScale) {
-  const dataExtent = d3.extent(_.map(field, dataObj.currentData().raw));
+  const dataExtent = d3.extent(dataObj.currentData().raw.map(x => x[field]));
 
   const plot = d3.select(id);
   const plotWidth = () =>
@@ -40,7 +39,7 @@ function histogram(id, dataObj, field, colorScale) {
 
   const bins = utils.samplePointsInRange(dataExtent, NUM_HISTOGRAM_TICKS);
   const summaryF = dataObj.currentDataSummary(bins, field);
-  const getYExtent = (summary) => [0, 3 / 2 * _.max(_.map('y', summary))];
+  const getYExtent = summary => [0, 3 / 2 * Math.max(...summary.map(x => x.y))];
 
   const yPlotScale = d3.scale.linear()
     .domain(getYExtent(summaryF()))
@@ -53,13 +52,13 @@ function histogram(id, dataObj, field, colorScale) {
     const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
     const shouldBeMarked = (x, i, A) =>
       i > 0 && i < A.length - 1 && isMaxima(A, i);
-    const markers = _.map(function(d, i, A) {
+    const markers = extrema.map(function(d, i, A) {
       return {
         color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
         x: d.x + d.dx / 2,
         y: d.y
       };
-    }, extrema);
+    });
 
     const tempSelA = plot.selectAll('.maxMark').data(markers);
     tempSelA.exit().remove();

@@ -1,4 +1,3 @@
-import _ from 'lodash/fp';
 import d3 from 'd3';
 
 exports.getComputedAttr = function getComputedAttr(element, attr) {
@@ -8,7 +7,7 @@ exports.getComputedAttr = function getComputedAttr(element, attr) {
 
 exports.samplePointsInRange = function(extent, n) {
   const scale = d3.scale.linear().domain([0, n-1]).range(extent);
-  return _.map(scale, _.range(0, n));
+  return Array(n).fill(0).map((_, i) => scale(i));
 };
 
 exports.timeIt = function(f, name) {
@@ -20,4 +19,44 @@ exports.timeIt = function(f, name) {
   };
 };
 
+exports.zipObject = function(ks, vs) {
+  const o = {};
+  for(let i = 0; i < ks.length; i++) {
+    o[ks[i]] = vs[i];
+  }
+  return o;
+};
 
+exports.zipWith = function(f, as, bs) {
+  const v = [];
+  for(let i = 0; i < as.length; i++) {
+    v.push(f(as[i], bs[i]));
+  }
+  return v;
+};
+
+exports.minBy = function(f, xs) {
+  const wrapped = xs.map((value, index) => ({
+    value: f(index),
+    index
+  }));
+  wrapped.sort((a, b) => a.value - b.value);
+  return wrapped[0].value;
+};
+
+exports.debounced = function(ms, f) {
+  let last_invoke = undefined;
+  let timeoutID = undefined;
+  return function debounced(...args) {
+    if(last_invoke === undefined || Date.now() - last_invoke < ms) {
+      last_invoke = Date.now();
+      clearTimeout(timeoutID);
+      timeoutID = setTimeout(debounced, ms, ...args);
+      return;
+    }
+    last_invoke = undefined;
+    clearTimeout(timeoutID);
+    timeoutID = undefined;
+    f(...args);
+  };
+};

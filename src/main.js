@@ -1,8 +1,8 @@
-import _ from 'lodash/fp';
 import d3 from 'd3';
 import queue from 'd3-queue';
 import sv from './synteny-vis';
 import crossfilter from 'crossfilter';
+import { timeIt, zipObject } from './utils';
 
 exports.makeSyntenyDotPlot = function({
     data_url,
@@ -49,27 +49,25 @@ function ksTextToObjects(text) {
     .replace(' ', '')
     .split('\n');
 
-  const dots = _(csvLines)
+  const dots = csvLines
     .filter(line => line && line[0] !== '#')
     .map(ksLineToSyntenyDot)
-    .filter(x => x)
-    .value();
+    .filter(x => x);
 
-  const min_logks = _(dots)
+  const min_logks = Math.min(...dots
     .filter(line => isFinite(line.logks))
-    .map(line => line.logks)
-    .min();
-  const min_logkn = _(dots)
-    .filter(line => isFinite(line.logkn))
-    .map(line => line.logkn)
-    .min();
+    .map(line => line.logks));
 
-  return _.map(x => {
+  const min_logkn = Math.min(...dots
+    .filter(line => isFinite(line.logkn))
+    .map(line => line.logkn));
+
+  return dots.map(x => {
     x.logks = isFinite(x.logks) ? x.logks : min_logks;
     x.logkn = isFinite(x.logkn) ? x.logkn : min_logkn;
     x.logknks = x.logkn - x.logks;
     return x;
-  }, dots);
+  });
 }
 
 function ksLineToSyntenyDot(line) {
@@ -99,8 +97,8 @@ function ksLineToSyntenyDot(line) {
 }
 
 function lengthsToCumulativeBPCounts(len_list) {
-  const ntLenList = _(len_list)
-    .sortBy('length')
+  const ntLenList = len_list.slice()
+    .sort((a, b) => a.length - b.length)
     .reverse()
     .reduce(function(map, kv) {
       map[kv.name] = map.total;
@@ -110,8 +108,8 @@ function lengthsToCumulativeBPCounts(len_list) {
       total: 0
     });
 
-  const nameLenList = _(len_list)
-    .sortBy('name')
+  const nameLenList = len_list.slice()
+    .sort((a, b) => a.name - b.name)
     .reduce(function(map, kv) {
       map[kv.name] = map.total;
       map.total += kv.gene_count;
@@ -120,9 +118,9 @@ function lengthsToCumulativeBPCounts(len_list) {
       total: 0
     });
 
-  const geneCounts = _.zipObject(
-    _.map(_.get('name'), len_list),
-    _.map(_.get('gene_count'), len_list)
+  const geneCounts = zipObject(
+    len_list.map(x => x.name),
+    len_list.map(x => x.gene_count)
   );
 
   return {
@@ -134,15 +132,15 @@ function lengthsToCumulativeBPCounts(len_list) {
 
 // Compute absolute BP offset from chromosome and relative offset
 function inlineKSData(ks, xmap, ymap) {
-  return _.map(o => {
+  return ks.map(o => {
     const xShift = xmap.nt[o.x_chromosome_id];
     const yShift = ymap.nt[o.y_chromosome_id];
-    return { 
+    return {
       ...o,
       x_relative_offset: o.x_relative_offset + xShift,
       y_relative_offset: o.y_relative_offset + yShift
     };
-  }, ks);
+  });
 }
 
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
@@ -155,18 +153,14 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   const cross_x = cross.dimension(x => x.x_relative_offset);
   const cross_y = cross.dimension(x => x.y_relative_offset);
   const fields = ['logks', 'logkn', 'logknks'];
-  const filters = _.zipObject(
+  const filters = zipObject(
     fields,
-    _.map(field => cross.dimension(x => x[field]), fields)
+    fields.map(field => cross.dimension(x => x[field]))
   );
 
-  ret.getXLineOffsets = function() {
-    return _.chain(xmap).values().sortBy().value();
-  };
+  ret.getXLineOffsets = () => Object.values(xmap).sort((a, b) => a - b);
 
-  ret.getYLineOffsets = function() {
-    return _.chain(ymap).values().sortBy().value();
-  };
+  ret.getYLineOffsets = () => Object.values(ymap).sort((a, b) => a - b);
 
   ret.getXLineNames = function() {
     return filterMapForNames(xmap);
@@ -177,12 +171,9 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   function filterMapForNames(map) {
-    return _.chain(map)
-      .toPairs()
-      .sortBy('1')
-      .map('0')
-      .reject(x => x === 'total')
-      .value();
+    return Object.keys(map)
+      .sort((a, b) => map[a] - map[b])
+      .filter(x => x !== 'total');
   }
 
   ret.currentData = function currentData() {
@@ -192,24 +183,24 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     };
   };
 
-  ret.currentDataSummary = function currentDataSummary(ticks, field) {
-    const group = filters[field].group(x => ticks[_.sortedIndex(x, ticks)]);
+  ret.currentDataSummary = function currentDataSummary(raw_ticks, field) {
+    const ticks = raw_ticks.map(x => x).sort((a, b) => a - b);
+    const group = filters[field].group(x => ticks.find(t => t >= x));
     const dx = ticks[1] - ticks[0];
 
     return function() {
       const groupList = group.top(Infinity);
-      const groups = _.zipObject(
-        _.map(_.get('key'), groupList),
-        _.map(_.get('value'), groupList)
+      const groups = zipObject(
+        groupList.map(x => x.key),
+        groupList.map(x => x.value)
       );
 
-      return _.map(
+      return ticks.map(
         tick => ({
           x: Number(tick),
-          y: Number(_.getOr(0, tick, groups)),
+          y: Number(groups[tick] || 0),
           dx
-        }),
-        ticks
+        })
       );
     };
   };
@@ -245,7 +236,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   ret.notifyListeners = function(typeOfChange) {
-    _.each(f => f(typeOfChange), listeners);
+    listeners.forEach(f => f(typeOfChange));
   };
 
   return ret;
