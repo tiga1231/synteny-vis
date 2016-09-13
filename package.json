@@ -17,7 +17,6 @@
     "css-loader": "0.21.0",
     "d3": "3.5.6",
     "d3-queue": "^2.0.3",
-    "esformatter": "^0.9.5",
     "eslint": "1.9.0",
     "ignore-styles": "^2.0.0",
     "jsdom": "^9.5.0",
@@ -30,7 +29,6 @@
     "webpack": "^1.13.2"
   },
   "scripts": {
-    "format": "esformatter -i src/*.js",
     "lint": "eslint src/*.js",
     "test": "find src -name \\*.test.js | xargs mocha --require ignore-styles --compilers js:babel-core/register",
     "all": "npm run lint && npm run test",
