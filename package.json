@@ -30,13 +30,13 @@
     "webpack": "1.13.2"
   },
   "scripts": {
-    "lint": "eslint src/*.js",
-    "test": "find src -name \\*.test.js | xargs mocha --require ignore-styles --compilers js:babel-core/register",
+    "lint": "node_modules/.bin/eslint src/*.js",
+    "test": "find src -name \\*.test.js | xargs node_modules/.bin/mocha --require ignore-styles --compilers js:babel-core/register",
     "all": "npm run lint && npm run test",
-    "build": "npm run all && webpack --progress",
-    "build-production": "PRODUCTION=1 npm run all && webpack --progress -p",
+    "build": "npm run all && node_modules/.bin/webpack --progress",
+    "build-production": "PRODUCTION=1 npm run all && node_modules/.bin/webpack --progress -p",
     "build-gh-pages": "npm run build-production && cp -r build/* gh-pages",
-    "test-watch": "mocha --compilers js:babel-core/register --watch",
-    "build-watch": "webpack --watch"
+    "test-watch": "node_modules/.bin/mocha --compilers js:babel-core/register --watch",
+    "build-watch": "node_modules/.bin/webpack --watch"
   }
 }
