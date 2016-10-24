@@ -272,7 +272,18 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     return zipWith((a, b) => (a + b) / 2, points.slice(0, -1), points.slice(1));
   };
 
-  var xOffsets = dataObj.getXLineOffsets();
+  const makeGapFilter = () => {
+    let last = 0;
+    return t => {
+      if(t - last < 10000) {
+        return false;
+      }
+      last = t;
+      return true;
+    };
+  };
+
+  var xOffsets = dataObj.getXLineOffsets().filter(makeGapFilter());
   var xMidpoints = midpoints(xOffsets);
 
   const xOffsetToName = zipObject(xMidpoints, dataObj.getXLineNames());
@@ -293,7 +304,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var xAxisGapsGroup = xAxisWrapper.append('g');
   var xAxisLineGroup = xAxisWrapper.append('g');
 
-  var yOffsets = dataObj.getYLineOffsets();
+  var yOffsets = dataObj.getYLineOffsets().filter(makeGapFilter());
   var yMidpoints = midpoints(yOffsets);
 
   const yOffsetToName = zipObject(yMidpoints, dataObj.getYLineNames());
