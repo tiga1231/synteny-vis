@@ -26,7 +26,7 @@
 
 <body>
 	<div class="grey-text">
-		Datasets: 
+		Datasets:
 		<span id='m-link' class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
 		<span id='a-link' class="underline hover-black" onClick="load('a')">Aribidopsis</span>,
 		<span id='e-link' class="underline hover-black" onClick="load('e')">Ecoli</span>,
@@ -35,6 +35,7 @@
 		<span id='2a-link' class="underline hover-black" onClick="load('2a')">Aribidopsis2</span>,
 		<span id='2e-link' class="underline hover-black" onClick="load('2e')">Ecoli2</span>,
 		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>
+    <span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span>
 	</div>
 
 	<div id="main"></div>
@@ -83,8 +84,13 @@
 				id_1: '11691',
 				id_2: '25577',
 				data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			}, {
+				identifier: 'z',
+				id_1: '19927',
+				id_2: '9050',
+        data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
 			}];
-		
+
 		var load = function(dataset) {
 			/* Persist dataset between refreshes */
 			window.location.hash = '#' + dataset;
@@ -106,7 +112,7 @@
 			/* Pick the file that matches window.location.hash */
 			var selected = files
 				.filter(function(info) {
-				 	return dataset.indexOf(info.identifier) === 0; 
+				 	return dataset.indexOf(info.identifier) === 0;
 				})[0];
 
 			/* Load the auxillary data */
@@ -116,20 +122,24 @@
 						console.log(err1, err2);
 						return;
 					}
-			
+
 					/* Make sure we aren't using things we aren't allowed to. */
 					var genome_x = {
-						name: genome_x_extra.organism.name,
+						name: genome_x_extra.organism ?
+						  genome_x_extra.organism.name :
+						  genome_x_extra.name,
 						id: selected.id_1,
 						chromosomes: genome_x_extra.chromosomes
 					};
-			
+
 					var genome_y = {
-						name: genome_y_extra.organism.name,
+						name: genome_y_extra.organism ?
+						  genome_y_extra.organism.name :
+						  genome_y_extra.name,
 						id: selected.id_2,
 						chromosomes: genome_y_extra.chromosomes
 					};
-			
+
 					/* This is the call that actually builds the plots! */
 					makeSyntenyDotPlot({
 						element_id: 'main', /* div from above */
