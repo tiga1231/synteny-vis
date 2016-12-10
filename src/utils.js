@@ -36,12 +36,15 @@ exports.zipWith = function(f, as, bs) {
 };
 
 exports.minBy = function(f, xs) {
-  const wrapped = xs.map((value, index) => ({
-    value: f(index),
-    index
-  }));
-  wrapped.sort((a, b) => a.value - b.value);
-  return wrapped[0].value;
+  let min = xs[0];
+  let minVal = f(min);
+  for(let i = 1; i < xs.length; i++) {
+    if(f(xs[i]) < minVal) {
+      minVal = f(xs[i]);
+      min = xs[i];
+    }
+  }
+  return min;
 };
 
 exports.debounced = function(ms, f) {
