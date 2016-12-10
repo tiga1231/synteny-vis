@@ -163,7 +163,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       var s = d3.event.scale;
       t[0] = Math.min(0, Math.max(-getWidth() * s + getWidth(), t[0]));
       t[1] = Math.min(0, Math.max(-getHeight() * s + getHeight(), t[1]));
-      // prevents the translate from growing large. This way, you don't 
+      // prevents the translate from growing large. This way, you don't
       // have to "scroll back" onto the canvas if you pan past the edge.
       zoom.translate(t);
 
@@ -275,7 +275,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   const makeGapFilter = () => {
     let last = 0;
     return t => {
-      if(t - last < 10000) {
+      if(t > 0 && t - last < 10000) {
         return false;
       }
       last = t;
