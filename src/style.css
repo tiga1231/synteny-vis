@@ -16,7 +16,7 @@
 }
 
 /* Borders and background */
-._synteny-dotplot-builder .dotplot, 
+._synteny-dotplot-builder .dotplot,
 ._synteny-dotplot-builder #histogram-and-top-form,
 ._synteny-dotplot-builder #form-wrapper
 {
@@ -28,7 +28,7 @@
 
 /* Dot plot */
 
-/* The float and position properties here are black magic to get the 
+/* The float and position properties here are black magic to get the
  * canvas and svg to sit on top of each other. */
 ._synteny-dotplot-builder .dotplot {
   float: left;
@@ -119,8 +119,8 @@
   display: inline;
 }
 
-#histogram-button-left, 
-#histogram-button-right, 
+#histogram-button-left,
+#histogram-button-right,
 #histogram-button-title {
     margin-top: 2%;
 }
