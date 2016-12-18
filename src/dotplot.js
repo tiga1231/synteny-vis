@@ -1,6 +1,7 @@
 import utils from './utils';
 import d3 from 'd3';
 import transform from 'svg-transform';
+import { getSingleFeatureDescription } from './coge-util';
 const { minBy, zipObject, zipWith } = utils;
 
 import {
@@ -75,17 +76,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     }, []);
   };
 
-  const genGeVOLink = (aDbId, bDbId) =>
-    'http://geco.iplantcollaborative.org/asherkhb/coge/GEvo.pl?' +
-    `fid1=${aDbId};fid2=${bDbId};apply_all=${50000};num_seqs=${2}`;
 
-  const getSingleGeVoDescription = id =>
-  fetch(`https://genomevolution.org/coge/api/v1/features/${id}`)
-    .then(r => r.json());
-
-  const getGeVODescription = (aDbId, bDbId) => Promise.all([
-    getSingleGeVoDescription(aDbId),
-    getSingleGeVoDescription(bDbId)
+  const getFeatureDescription = (aDbId, bDbId) => Promise.all([
+    getSingleFeatureDescription(aDbId),
+    getSingleFeatureDescription(bDbId)
   ])
     .then(([x, y]) => {
       return {x_name: x.names.join(', '), y_name: y.names.join(', ')};
@@ -107,10 +101,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       d3.select('#gevo-link')
         .text('Compare in GEvo >>>')
         .attr('onclick', () => {
-          const link = genGeVOLink(point.x_feature_id, point.y_feature_id);
+          const { x_feature_id, y_feature_id } = point;
+          const { gen_coge_seq_link } = meta;
+          const link = gen_coge_seq_link(x_feature_id, y_feature_id);
           return `window.open('${link}')`;
         });
-      getGeVODescription(point.x_feature_id, point.y_feature_id)
+      getFeatureDescription(point.x_feature_id, point.y_feature_id)
         .then(({x_name, y_name}) => {
           d3.select('#gevo-link-xname')
             .text(`${meta.x_name}: ${x_name}`);
