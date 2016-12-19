@@ -36,6 +36,7 @@
     "build": "npm run all && node_modules/.bin/webpack --progress",
     "build-production": "PRODUCTION=1 npm run all && node_modules/.bin/webpack --progress -p",
     "build-gh-pages": "npm run build-production && cp -r build/* gh-pages",
+    "build-release": "npm run all && npm run build && cp build/synteny-dotplot-builder.* release && npm run build-production && cp -r build/synteny-dotplot-builder.js release/synteny-dotplot-builder.min.js",
     "test-watch": "node_modules/.bin/mocha --compilers js:babel-core/register --watch",
     "build-watch": "node_modules/.bin/webpack --watch"
   }
