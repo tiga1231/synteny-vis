@@ -1,5 +1,0 @@
-node_modules
-build/*.js
-build/*.js.map
-gh-pages/
-coverage
