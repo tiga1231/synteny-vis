@@ -271,20 +271,29 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       }
     });
 
+  const dpr = window.devicePixelRatio;
+  
   const canvas = d3.select(id + '-canvas')
-    .attr('width', getWidth())
-    .attr('height', getHeight())
+    .attr('width', getWidth() * dpr)
+    .attr('height', getHeight() * dpr)
+    .style('width', String(getWidth()) + 'px')
+    .style('height', String(getHeight()) + 'px')
     .style('left', SYNTENY_MARGIN)
     .style('top', SYNTENY_MARGIN);
 
   const backCanvas = d3.select(id + '-canvas-background')
-    .attr('width', getWidth())
-    .attr('height', getHeight())
+    .attr('width', getWidth() * dpr)
+    .attr('height', getHeight() * dpr)
+    .style('width', String(getWidth()) + 'px')
+    .style('height', String(getHeight()) + 'px')
     .style('left', SYNTENY_MARGIN)
     .style('top', SYNTENY_MARGIN);
 
   const context = canvas.node().getContext('2d');
   const background = backCanvas.node().getContext('2d');
+
+  context.scale(dpr,dpr);
+  background.scale(dpr,dpr);
 
   var svg = d3.select(id);
 
@@ -537,3 +546,11 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 }
 
 exports.synteny = synteny;
+
+
+
+
+/* Local Variables:  */
+/* mode: js2         */
+/* js2-basic-offset: 2 */
+/* End:              */
