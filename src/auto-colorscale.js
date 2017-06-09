@@ -23,13 +23,39 @@ const shouldBeMarked = (x, i, A) => {
 
 const generateColorScaleFromExtrema = extrema => {
   const colors = d3.scale.category10();
+  // function calls into d3 colorscales mutate the object, which
+  // means that the calls are order-dependent, which means
+  // we need to "prime" the colormap here with the right calls
 
+  var markedColors = [];
+  var markedColorByIndex = {};
+  extrema.forEach((x, i, A) => {
+    if (shouldBeMarked(x,i,A)) {
+      markedColorByIndex[i] = markedColors.length;
+      markedColors.push(colors(i));
+    }
+  });
+
+  // FIXME: this is an embarrassing amount of work to write "compute
+  // the color in between two consecutive steps in the colormap".
   const colored = extrema.map((x, i, A) => {
-    const color = shouldBeMarked(x, i, A) ? colors(i) : AUTO_SCALE_VALLEY_FILL;
+    var color;
+    if (shouldBeMarked(x, i, A)) {
+      color = colors(i);
+    } else if (i === 0) {
+      color = markedColors[0];
+    } else {
+      var valleyLeft = d3.lab(markedColors[markedColorByIndex[i-1]]);
+      var valleyRight = d3.lab(
+        markedColors[Math.min(markedColorByIndex[i-1]+1,
+                              markedColors.length-1)]);
+      color = d3.lab(0.5 * (valleyLeft.l + valleyRight.l),
+                     0.5 * (valleyLeft.a + valleyRight.a),
+                     0.5 * (valleyLeft.b + valleyRight.b));
+    }
     var result = Object.assign({}, x);
     result.color = color;
     return result;
-    // return { ...x, color }; this kills the js2-mode
   });
 
   const domain = colored.map(d => d.x + d.dx / 2);
