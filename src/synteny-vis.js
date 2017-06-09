@@ -108,7 +108,10 @@ function buildDiv(element_id, show_histograms) {
       .append('strong').text('Plot Options');
     makeForm('Chromosome Order', 'order-options', [
       option('order-by-size', 'By Size'),
-      option('order-by-name', 'By Name')
+      option('order-by-name', 'By Name'),
+      option('order-by-number', 'By Number')
+      // order by match count doesn't work very well, drop for now
+      // option('order-by-match', 'By Match Count') 
     ], 1);
     formWrapper.append('div')
       // .attr('id', 'form-top-label')
@@ -172,9 +175,45 @@ function controller(ksData, element_id, meta) {
     dataObj = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
   }
 
+  // compute per-chromosome match counts in x and y
+  var xChromosomesById = {};
+  var yChromosomesById = {};
+  const initChromosome = dict => {
+    return c => {
+      dict[c.name] = c;
+      c.matchCount = 0;
+    };
+  };
+  meta.genome_x.chromosomes.forEach(initChromosome(xChromosomesById));
+  meta.genome_y.chromosomes.forEach(initChromosome(yChromosomesById));
+  ksData.forEach(d => {
+    if (d.x_chromosome_id === undefined ||
+        d.y_chromosome_id === undefined)
+      return;
+    xChromosomesById[d.x_chromosome_id].matchCount++;
+    yChromosomesById[d.y_chromosome_id].matchCount++;
+  });
+
   const orderFuns = {
-    'order-by-size': ((a, b) => -(a.length - b.length)),
-    'order-by-name': ((a, b) => a.name.localeCompare(b.name))
+    'order-by-size': (a, b) => -(a.length - b.length),
+    'order-by-name': (a, b) => a.name.localeCompare(b.name),
+    'order-by-match': (a, b) => -(a.matchCount - b.matchCount),
+    'order-by-number': (a, b) => {
+      var na = Number(a.name), nb = Number(b.name);
+      if (isNaN(na)) {
+        if (isNaN(nb)) {
+          return a.name.localeCompare(b.name);
+        } else {
+          return 1;
+        }
+      } else {
+        if (isNaN(nb)) {
+          return -1;
+        } else {
+          return (na - nb);
+        }
+      }
+    }
   };
   changeOrderFunAndRebuildDataObject(orderFuns['order-by-name']);
 
