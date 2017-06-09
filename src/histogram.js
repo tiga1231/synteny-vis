@@ -79,8 +79,8 @@ function histogram(id, dataObj, field, colorScale) {
     .data(summaryF())
     .enter()
     .append('rect').classed('dataBars', true)
-    .attr('x', d => xPlotScale(d.x))
-    .attr('width', d => xPlotScale(d.x + d.dx) - xPlotScale(d.x));
+    .attr('x', d => ~~(xPlotScale(d.x)))
+    .attr('width', d => ~~(xPlotScale(d.x + d.dx)) - ~~(xPlotScale(d.x)));
 
   const brushSelectForBM = plot.append('g').attr('id', 'plotbrush-group')
     .attr('transform', transform([{translate: [0, HISTOGRAM_MARGIN]}]))

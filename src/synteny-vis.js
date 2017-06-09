@@ -22,7 +22,9 @@ function buildDiv(element_id, show_histograms) {
     .append('div')
     .classed('_synteny-dotplot-builder', true);
 
-  div.append('svg').attr('id', 'dotplot').classed('dotplot', true);
+  div.append('svg').attr('id', 'dotplot')
+    .style('shape-rendering', 'crispEdges')
+    .classed('dotplot', true);
 
   const subdiv = div.append('div').classed('dotplot', true);
   /* pointer-events = none stops the canvas from intercepting brush events
@@ -59,11 +61,17 @@ function buildDiv(element_id, show_histograms) {
     const histogramWrapper = histogramAndTopForm
         .append('div').attr('id', 'histogram-wrapper');
     histogramWrapper.append('svg')
-      .attr('id', 'plot').classed('histogram', true);
+      .attr('id', 'plot')
+      .style('shape-rendering', 'crispEdges')
+      .classed('histogram', true);
     histogramWrapper.append('svg')
-      .attr('id', 'plot2').classed('histogram', true);
+      .attr('id', 'plot2')
+      .style('shape-rendering', 'crispEdges')
+      .classed('histogram', true);
     histogramWrapper.append('svg')
-      .attr('id', 'plot3').classed('histogram', true);
+      .attr('id', 'plot3')
+      .style('shape-rendering', 'crispEdges')
+      .classed('histogram', true);
   }
 
   const formWrapper = div.append('div').attr('id', 'form-wrapper');
