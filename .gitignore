@@ -4,3 +4,4 @@ build/*.js.map
 gh-pages/
 release/
 coverage
+*~

@@ -26,7 +26,10 @@ const generateColorScaleFromExtrema = extrema => {
 
   const colored = extrema.map((x, i, A) => {
     const color = shouldBeMarked(x, i, A) ? colors(i) : AUTO_SCALE_VALLEY_FILL;
-    return { ...x, color };
+    var result = Object.assign({}, x);
+    result.color = color;
+    return result;
+    // return { ...x, color }; this kills the js2-mode
   });
 
   const domain = colored.map(d => d.x + d.dx / 2);
@@ -35,3 +38,7 @@ const generateColorScaleFromExtrema = extrema => {
   return d3.scale.linear().domain(domain).range(range);
 };
 
+/* Local Variables:  */
+/* mode: js2         */
+/* js2-basic-offset: 2 */
+/* End:              */

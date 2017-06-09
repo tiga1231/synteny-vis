@@ -5,7 +5,9 @@ import autoscale from './auto-colorscale';
 import utils from './utils';
 import asyncBenchmark from './async-benchmark';
 import { onData } from './colorscales';
-
+import { createDataObj } from './dataObject';
+import { chromosomesToCumulativeBPCounts,
+         inlineKSData } from './chromosomeUtils';
 const { debounced } = utils;
 
 import './style.css';
@@ -92,8 +94,16 @@ function buildDiv(element_id, show_histograms) {
 
   if (show_histograms) {
     const option = (value, text) => [value, text];
+
     formWrapper.append('div')
       .attr('id', 'form-top-label')
+      .append('strong').text('Plot Options');
+    makeForm('Chromosome Order', 'order-options', [
+      option('order-by-size', 'By Size'),
+      option('order-by-name', 'By Name')
+    ], 1);
+    formWrapper.append('div')
+      // .attr('id', 'form-top-label')
       .append('strong').text('Controls');
     makeForm('Navigation', 'mouse-options', [
       option('brush', 'Brushing'),
@@ -140,8 +150,28 @@ function buildDiv(element_id, show_histograms) {
     .text('No Point Selected');
 }
 
-function controller(dataObj, element_id, meta) {
+function controller(ksData, element_id, meta) {
+  var chromosomeOrderFun, dataObj;
 
+  function changeOrderFunAndRebuildDataObject(newOrderFun) {
+    chromosomeOrderFun = newOrderFun;
+    const xCumLenMap = chromosomesToCumulativeBPCounts(
+      meta.genome_x.chromosomes, chromosomeOrderFun);
+    const yCumLenMap = chromosomesToCumulativeBPCounts(
+      meta.genome_y.chromosomes, chromosomeOrderFun);
+    const inlinedKSData = inlineKSData(ksData, xCumLenMap, yCumLenMap);
+    
+    dataObj = createDataObj(inlinedKSData, xCumLenMap, yCumLenMap);
+  }
+
+  const orderFuns = {
+    'order-by-size': ((a, b) => -(a.length - b.length)),
+    'order-by-name': ((a, b) => a.name.localeCompare(b.name))
+  };
+  changeOrderFunAndRebuildDataObject(orderFuns['order-by-name']);
+
+  console.log('Total synteny dots:', dataObj.currentData().raw.length);
+  
   buildDiv('#' + element_id, meta.have_ks);
 
   const refreshPlot = debounced(100, function(colorScale) {
@@ -166,8 +196,14 @@ function controller(dataObj, element_id, meta) {
     if (SHOW_MAXIMA_AND_MINIMA)
       histograms.forEach(h => h.updateMinMaxMarkers(persistence));
   });
-
+ 
   const getPersistence = () => d3.select('#persistence').node().value;
+
+  d3.selectAll('#order-options input[name=order-options]')
+    .on('change', function() {
+      changeOrderFunAndRebuildDataObject(orderFuns[this.value]);
+      rebuild();
+    });
 
   d3.select('#persistence')
     .on('input', function() {
@@ -249,9 +285,9 @@ function controller(dataObj, element_id, meta) {
     const other_smh = ['logks', 'logkn', 'logknks'];
     const names_smh = ['plot', 'plot2', 'plot3'];
     const scientific_names = [
-      'Synonomous - ks',
-      'Non-Synonomous - kn',
-      'Non-Synonomous / Synonomous ratio - kn/ks'
+      'Synonymous - ks',
+      'Non-Synonymous - kn',
+      'Non-Synonymous / Synonymous ratio - kn/ks'
     ];
 
     const common = () => {
@@ -294,8 +330,9 @@ function controller(dataObj, element_id, meta) {
 
   dataObj.notifyListeners('initial');
 
-  // Resize the window? Tear everything out and rebuild it.
-  window.onresize = () => {
+  // Tear everything out and rebuild. Used for resizing and
+  // chromosome reordering
+  const rebuild = () => {
     ['dotplot', 'plot', 'plot2', 'plot3'].forEach(id => {
       const el = document.getElementById(id);
       while(el.firstChild) el.removeChild(el.firstChild);
@@ -305,7 +342,10 @@ function controller(dataObj, element_id, meta) {
     histograms = setUpHistograms(cs);
     syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
   };
-
+  
+  // Resize the window? Rebuild.
+  window.onresize = rebuild;
+  
   /* Benchmark */
   if (RUN_BENCHMARKS) {
     const [minLogKs, maxLogKs] = d3.extent(
@@ -327,3 +367,9 @@ function controller(dataObj, element_id, meta) {
 }
 
 exports.controller = controller;
+
+
+/* Local Variables:  */
+/* mode: js2         */
+/* js2-basic-offset: 2 */
+/* End:              */
