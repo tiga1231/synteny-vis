@@ -1,6 +1,7 @@
 import histogram from './histogram';
 import dotplot from './dotplot';
 import d3 from 'd3';
+import naturalSort from 'javascript-natural-sort';
 import autoscale from './auto-colorscale';
 import utils from './utils';
 import asyncBenchmark from './async-benchmark';
@@ -196,7 +197,7 @@ function controller(ksData, element_id, meta) {
 
   const orderFuns = {
     'order-by-size': (a, b) => -(a.length - b.length),
-    'order-by-name': (a, b) => a.name.localeCompare(b.name),
+    'order-by-name': (a, b) => naturalSort(a.name, b.name),
     'order-by-match': (a, b) => -(a.matchCount - b.matchCount),
     'order-by-number': (a, b) => {
       var na = Number(a.name), nb = Number(b.name);
