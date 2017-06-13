@@ -42,7 +42,8 @@ const generateColorScaleFromExtrema = extrema => {
 
   return d3.scale.linear()
            .domain(pairs.map(d => d.midpoint))
-           .range(pairs.map(d => d.color));
+           .range(pairs.map(d => d.color))
+           .interpolate(d3.interpolateLab);
 };
 
 /* Local Variables:  */
