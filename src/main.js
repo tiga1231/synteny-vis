@@ -65,13 +65,23 @@ function ksTextToObjects(text) {
     .map(ksLineToSyntenyDot)
     .filter(x => x);
 
-  const min_logks = Math.min(...dots
-    .filter(line => isFinite(line.logks))
-    .map(line => line.logks));
 
-  const min_logkn = Math.min(...dots
-    .filter(line => isFinite(line.logkn))
-    .map(line => line.logkn));
+  var min_logks; 
+  var min_logkn;
+  // not using Math.min(...dots because of stack size overflow
+  for(var i=0; i<dots.length;i++){
+    var line = dots[i];
+    if(isFinite(line.logks)){
+      if(min_logks === undefined || line.logks < min_logks){
+        min_logks = line.logks;
+      }
+    }
+    if(isFinite(line.logkn)){
+      if(min_logkn === undefined || line.logkn < min_logkn){
+        min_logkn = line.logkn;
+      }
+    }
+  }
 
   return dots.map(x => {
     x.logks = isFinite(x.logks) ? x.logks : min_logks;
