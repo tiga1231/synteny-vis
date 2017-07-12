@@ -1,5 +1,7 @@
 import crossfilter from 'crossfilter';
 import { zipObject } from './utils';
+import { Tree } from './bvhTree';
+
 
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
   const xmap = xmapPair.nt;
@@ -15,6 +17,11 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     fields,
     fields.map(field => cross.dimension(x => x[field]))
   );
+
+
+  //console.log(syntenyDots.slice(0,5));
+  console.log('building tree...');
+  ret.tree = new Tree(syntenyDots, 3000);
 
   ret.getXLineOffsets = () => Object.values(xmap).sort((a, b) => a - b);
 
@@ -64,6 +71,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   ret.addSpatialFilter = function(extents, typeHint) {
+
     cross_x.filter([extents[0][0], extents[1][0]]);
     cross_y.filter([extents[0][1], extents[1][1]]);
     ret.notifyListeners(typeHint);

@@ -443,16 +443,41 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     var allData = dataObj.currentData();
     var activeDots = allData.active;
 
+
+
+
     const width = getWidth();
     const height = getHeight();
 
     context.clearRect(0, 0, width, height);
 
     /* On top, active dots */
+    //sort activeDots by logks/logkn/...(=>change color/fillStyle)
+
+
+    
+    const viewBox = {
+      top: yScale.invert(0), 
+      bottom: yScale.invert(height), 
+      left: xScale.invert(0), 
+      right: xScale.invert(width)
+    };
+    //console.log(viewBox);
+
+    var viewingDots = dataObj.tree.dotsIn(viewBox);
+    var viewingDotsSet = new Set(viewingDots);
+    console.log(viewingDots.length);
+    activeDots = activeDots.filter(x => viewingDotsSet.has(x));
+    
+
     activeDots.sort((a, b) => b[field] - a[field]);
     const rounded = x => {
       return Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
     };
+
+    
+    //TODO further filter active dots to canvas view to reduce activeDots.length
+    //console.log(activeDots.length);
 
     let last_rounded_val = undefined;
     for (var i = 0; i < activeDots.length; i++) {
