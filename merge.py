@@ -4,7 +4,9 @@ import json
 from natsort import natsorted
 
 def getOffset(gid):
-    with open('build/lengths0/'+str(gid)) as f:
+    gid = str(gid)
+
+    with open('build/lengths0/'+gid) as f:
         chrs = json.load(f)['chromosomes']
         chrs = [  (c['name'],c['length']) for c in chrs   ]
         chrs = natsorted(chrs)
@@ -66,11 +68,25 @@ def changeChrName(line, tonames):
     return '\t'.join(line) + '\n'
 
 
+def deleteUnusedFields(line):
+    if isComment(line):
+        return line
+    line =  line.split()
+    for i in [3,7]:
+        l = line[i].split('||')
+        l[3:9] = ['_'] * 6
+        line[i] = '||'.join(l)
+    return '\t'.join(line) + '\n'
+
+
 def test_singleline():
     off1 = getOffset(6807)
     off2 = getOffset(8082)
+    print off1, off2
     line = '0.1738  0.0081  a6807_4 4||54946689||54949182||Sb04g025090||-1||CDS||19484486||19363||95.64 54949182    54946689    b8082_5 5||180599163||180602043||GRMZM2G029583||1||CDS||56309405||28121||95.64  180599163   180602043   1.000000e-250   11685'
-    line = applyOffset(line, off1, off2)
+    line = deleteUnusedFields(line)
+    print line
+    line, line = applyOffset(line, off1, off2)
     line = changeChrName(line, ['jack', 'alice'])
     print line
 
@@ -92,6 +108,8 @@ def test_file():
             print '-'*20
 
 
+
+
 def changeKsFile(fns, fnout, dictNames):
     with open(fnout, 'w') as fout:
         for fn in fns:
@@ -101,7 +119,8 @@ def changeKsFile(fns, fnout, dictNames):
 
             with open(fn) as f:
                 for line in f:
-                    l1, l2 = applyOffset(line, off1, off2)
+                    l0  = deleteUnusedFields(line)
+                    l1, l2 = applyOffset(l0, off1, off2)
                     l = changeChrName(l1, [dictNames[gid1],dictNames[gid2]])
                     fout.write(l)
                     l = changeChrName(l2, [dictNames[gid2],dictNames[gid1]])
@@ -166,3 +185,4 @@ def changeMetaFile(gids, names, fnout):
               
 if __name__ == '__main__':
    test_manyFile()
+   #test_singleline()

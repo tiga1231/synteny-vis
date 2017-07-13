@@ -20,8 +20,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
 
   //console.log(syntenyDots.slice(0,5));
-  console.log('building tree...');
-  ret.tree = new Tree(syntenyDots, 3000);
+  ret.tree = new Tree(syntenyDots, 500);
+  //console.log(ret.tree._dumpNodes());
 
   ret.getXLineOffsets = () => Object.values(xmap).sort((a, b) => a - b);
 

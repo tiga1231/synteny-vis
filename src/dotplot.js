@@ -20,6 +20,25 @@ import {
   ROUNDING_FACTOR
 } from 'constants';
 
+
+//=================temp start=================
+function tickStart(){
+  return performance.now();
+}
+
+function tickStop(msg, t0){
+  
+  var t = performance.now() - t0;
+  //console.log('-----');
+  console.log(msg, Math.floor(t), 'ms | total', 
+  Math.floor(performance.now()), 'ms');
+  //console.log('total:', Math.floor(performance.now()), 'ms');
+}
+//=================temp end =================
+
+
+
+
 function synteny(id, dataObj, field, initialColorScale, meta) {
   var xExtent = d3.extent(dataObj.getXLineOffsets());
   var yExtent = d3.extent(dataObj.getYLineOffsets());
@@ -441,7 +460,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       t);
 
     var allData = dataObj.currentData();
-    var activeDots = allData.active;
+    //var activeDots = allData.active;
 
 
 
@@ -455,20 +474,42 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     //sort activeDots by logks/logkn/...(=>change color/fillStyle)
 
 
-    
-    const viewBox = {
-      top: yScale.invert(0), 
-      bottom: yScale.invert(height), 
-      left: xScale.invert(0), 
-      right: xScale.invert(width)
-    };
-    //console.log(viewBox);
+    var brushExtent = brush.extent();
+    var brushTop = brushExtent[1][1];
+    var brushBottom = brushExtent[0][1];
 
-    var viewingDots = dataObj.tree.dotsIn(viewBox);
+    var brushLeft = brushExtent[0][0];
+    var brushRight = brushExtent[1][0];
+
+    var viewBox;
+    if(brush.empty()){
+      viewBox = {
+        top: yScale.invert(0),
+        bottom: yScale.invert(height),
+        left: xScale.invert(0),
+        right: xScale.invert(width)
+      };
+    }else{
+      viewBox = {
+        top: Math.min( yScale.invert(0), brushTop),
+        bottom: Math.max( yScale.invert(height), brushBottom),
+        left: Math.max( xScale.invert(0), brushLeft),
+        right: Math.min( xScale.invert(width), brushRight)
+      };
+    }
+
+    var activeDots = dataObj.tree.dotsIn(viewBox);
+    console.log(activeDots.length + ' dots');
+
+    /*
+    var t0 = tickStart();
     var viewingDotsSet = new Set(viewingDots);
+    tickStop('set', t0);
+    t0 = tickStart();
     console.log(viewingDots.length);
     activeDots = activeDots.filter(x => viewingDotsSet.has(x));
-    
+    tickStop('filter', t0);
+    */
 
     activeDots.sort((a, b) => b[field] - a[field]);
     const rounded = x => {
@@ -481,9 +522,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
     let last_rounded_val = undefined;
     for (var i = 0; i < activeDots.length; i++) {
+
       const d = activeDots[i];
-      const cx = xScale(d.x_relative_offset);
-      const cy = yScale(d.y_relative_offset);
+
+      const x = d.x_relative_offset;
+      const y = d.y_relative_offset;
+
+      const cx = xScale(x);
+      const cy = yScale(y);
 
       if(rounded(d) !== last_rounded_val) {
         context.fillStyle = intermediateColorScale(rounded(d));
@@ -492,6 +538,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
       if (cx < 0 || cx > width || cy < 0 || cy > height)
         continue;
+      if(!brush.empty()){
+        if (x < brushLeft || x > brushRight || y < brushBottom || y > brushTop)
+          continue;
+      }
 
       context.fillRect(cx - CIRCLE_RADIUS,
         cy - CIRCLE_RADIUS,

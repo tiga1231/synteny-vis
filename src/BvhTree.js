@@ -5,9 +5,24 @@ function Node(top, bottom, left, right, start, stop, children){
   this.size = stop-start; //data array length
 }
 
+function tickStart(){
+  return performance.now();
+}
+
+function tickStop(msg, t0){
+  
+  var t = performance.now() - t0;
+  //console.log('-----');
+  console.log(msg, Math.floor(t), 'ms | total', 
+  Math.floor(performance.now()), 'ms');
+  //console.log('total:', Math.floor(performance.now()), 'ms');
+}
+
+
 
 //bounding volume hierarchy tree
 function Tree(dots, maxDotsPerNode=2000){
+  
 
   //build tree
   dots = dots.slice();
@@ -26,8 +41,10 @@ function Tree(dots, maxDotsPerNode=2000){
   }
 
   var rootNode = new Node(top, bottom, left, right, 0, dots.length, null);
+  var t0;
+  t0 = tickStart();
   [rootNode,dots] = splitNodeRecursively(rootNode, dots, maxDotsPerNode);
-  
+  tickStop('splitNodeRecursively', t0);
   this.rootNode = rootNode;
   this.dots = dots;
 
@@ -39,6 +56,13 @@ function Tree(dots, maxDotsPerNode=2000){
     var res = dotsFromRanges(this.dots, ranges);
     return res;
   };
+
+  this._dumpNodes = function(){
+    var res = {};
+    res.rootNode = this.rootNode;
+    return JSON.stringify(res);
+  };
+
 }
 
 
@@ -179,8 +203,10 @@ function findIndexOf(value, arr, start, stop){
 
 }
 
-
+var count = 0;
 function splitNode(node, dots, method){
+  //count += 1;
+  //console.log('splitNode..', count);
 
   var box = node.box;
   var left = box.left;
@@ -195,45 +221,64 @@ function splitNode(node, dots, method){
 
   var boxMiddle;
   var node1, node2;
-  var indexSplit;
+  var splitIndex;
+
+
+  //split by data median
+  splitIndex = Math.floor(start/2 + stop/2);
 
   if(method === byX){
+    //split by data median
+    boxMiddle = dots[splitIndex].x_relative_offset;
+
+
+    ////split by box middle
+    /*
     var xValues = dots.map(function(d){
       return d.x_relative_offset;
     });
     boxMiddle = left/2 + right/2;
-    indexSplit = findIndexOf(boxMiddle, xValues, start, stop);
+    splitIndex = findIndexOf(boxMiddle, xValues, start, stop);
+    */
     node1 = new Node(top, bottom, left, boxMiddle,      
-      start, indexSplit, null);
+      start, splitIndex, null);
     node2 = new Node(top, bottom, boxMiddle, right, 
-      indexSplit, stop, null);
-
+      splitIndex, stop, null);
+    
   }else if(method === byY){
+    //split by data median
+    boxMiddle = dots[splitIndex].y_relative_offset;
+
+    //split by box middle
+    /*
     var yValues = dots.map(function(d){
       return d.y_relative_offset;
     });
     boxMiddle = top/2 + bottom/2;
-    indexSplit = findIndexOf(boxMiddle, yValues, start, stop);
+    splitIndex = findIndexOf(boxMiddle, yValues, start, stop);
+    */
     node1 = new Node(boxMiddle, bottom, left, right,
-      start, indexSplit, null);
+      start, splitIndex, null);
     node2 = new Node(top, boxMiddle, left, right, 
-      indexSplit, stop, null);
+      splitIndex, stop, null);
+    
   }
 
   var res = {};
   res.nodes = [node1, node2];
   res.dots = dots;
+
+  
   return res;
 }
 
-
-function splitNodeRecursively(node, dots, maxDotsPerNode=2000){
+function splitNodeRecursively(node, dots, maxDotsPerNode=2000, level=0){
 //make tree recursively
 
 //return [node, dots];
 //node - the same node as argument(with children added)
 //dots - permuted dots
-
+  
   var splitMethod;
   if(node.size <= maxDotsPerNode){
     return [node, dots];
@@ -250,7 +295,7 @@ function splitNodeRecursively(node, dots, maxDotsPerNode=2000){
     dots = splitResult.dots;
     for(var i=0; i<node.children.length; i++){
       [node.children[i],dots] 
-        = splitNodeRecursively(node.children[i], dots, maxDotsPerNode);
+        = splitNodeRecursively(node.children[i], dots, maxDotsPerNode, level+1);
     }
     return [node, dots];
   }
