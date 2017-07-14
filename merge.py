@@ -84,7 +84,7 @@ def test_singleline():
     off2 = getOffset(8082)
     print off1, off2
     line = '0.1738  0.0081  a6807_4 4||54946689||54949182||Sb04g025090||-1||CDS||19484486||19363||95.64 54949182    54946689    b8082_5 5||180599163||180602043||GRMZM2G029583||1||CDS||56309405||28121||95.64  180599163   180602043   1.000000e-250   11685'
-    line = deleteUnusedFields(line)
+    #line = deleteUnusedFields(line)
     print line
     line, line = applyOffset(line, off1, off2)
     line = changeChrName(line, ['jack', 'alice'])
@@ -119,7 +119,8 @@ def changeKsFile(fns, fnout, dictNames):
 
             with open(fn) as f:
                 for line in f:
-                    l0  = deleteUnusedFields(line)
+                    #l0  = deleteUnusedFields(line)
+                    l0  = line
                     l1, l2 = applyOffset(l0, off1, off2)
                     l = changeChrName(l1, [dictNames[gid1],dictNames[gid2]])
                     fout.write(l)
