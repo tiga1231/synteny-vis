@@ -449,7 +449,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   }
 
   const draw = (elapsedMS, initialColorScale, finalColorScale) => {
-
     const start = Date.now();
 
     var intermediateColorScale;
@@ -459,19 +458,11 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       finalColorScale,
       t);
 
-    var allData = dataObj.currentData();
-    //var activeDots = allData.active;
-
-
-
+    
 
     const width = getWidth();
     const height = getHeight();
-
     context.clearRect(0, 0, width, height);
-
-    /* On top, active dots */
-    //sort activeDots by logks/logkn/...(=>change color/fillStyle)
 
 
     var brushExtent = brush.extent();
@@ -498,8 +489,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       };
     }
 
-    var activeDots = dataObj.tree.dotsIn(viewBox);
-    console.log(activeDots.length + ' dots');
+    //without tree
+    //var allData = dataObj.currentData();
+    //var activeDots = allData.active;
+
+    var allData = dataObj.currentData(viewBox);
+    var activeDots = allData.active;
+    //var activeDots = dataObj.tree.dotsIn(viewBox);
+    console.log(activeDots.length, 'dots');
 
     /*
     var t0 = tickStart();
@@ -511,14 +508,15 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     tickStop('filter', t0);
     */
 
+    /* On top, active dots */
+    //sort by field e.g ks, kn
     activeDots.sort((a, b) => b[field] - a[field]);
     const rounded = x => {
+      //e.g. ROUNDING_FACTOR=100
       return Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
     };
 
     
-    //TODO further filter active dots to canvas view to reduce activeDots.length
-    //console.log(activeDots.length);
 
     let last_rounded_val = undefined;
     for (var i = 0; i < activeDots.length; i++) {

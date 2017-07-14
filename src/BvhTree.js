@@ -51,10 +51,23 @@ function Tree(dots, maxDotsPerNode=2000){
 
   //method
   //tree.dotsIn(box)
-  this.dotsIn = function(viewBox){
+  this.dotsIn = function(viewBox, candidateDots=dots){
     var ranges = dotsRange(this.rootNode, viewBox);
-    var res = dotsFromRanges(this.dots, ranges);
-    return res;
+    var res0 = dotsFromRanges(this.dots, ranges);
+
+    //take intersection of res0 and candidateDots
+    // new Set(<shorter array>) will be faster
+    if(res0.length > candidateDots.length){
+      var candidateDots1 = new Set(candidateDots);
+      var res1 = res0.filter(function(d){return candidateDots1.has(d); });
+      return res1;
+    }else{
+      var res2 = new Set(res0);
+      res2 = candidateDots.filter(function(d){return res2.has(d); });
+      return res2;
+    }
+
+    
   };
 
   this._dumpNodes = function(){
@@ -283,12 +296,40 @@ function splitNodeRecursively(node, dots, maxDotsPerNode=2000, level=0){
   if(node.size <= maxDotsPerNode){
     return [node, dots];
   }else{
+
+
     //split box relatively square
+    
     if(node.box.right-node.box.left > node.box.top-node.box.bottom){
       splitMethod = byX;
     }else{
       splitMethod = byY;
     }
+
+
+    //split box by larger data range
+    /*
+    var xMin, xMax, yMin, yMax;
+    for(var i=0; i<dots.length; i++){
+      if(xMin === undefined || xMin > dots[i].x_relative_offset){
+        xMin = dots[i].x_relative_offset;
+      }
+      if(yMin === undefined || yMin > dots[i].y_relative_offset){
+        yMin = dots[i].y_relative_offset;
+      }
+      if(xMax === undefined || xMax < dots[i].x_relative_offset){
+        xMax = dots[i].x_relative_offset;
+      }
+      if(yMax === undefined || yMax > dots[i].y_relative_offset){
+        yMax = dots[i].y_relative_offset;
+      }
+    }
+    if(yMax-yMin > xMax-xMin){
+      splitMethod = byY;
+    }else{
+      splitMethod = byX;
+    }
+    */
 
     var splitResult = splitNode(node, dots, splitMethod);
     node.children = splitResult.nodes;
