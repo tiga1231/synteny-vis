@@ -20,8 +20,6 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     fields.map(field => cross.dimension(x => x[field]))
   );
 
-
-  //console.log(syntenyDots.slice(0,5));
   ret.tree = new Tree(syntenyDots, 3000);
   //console.log(ret.tree._dumpNodes());
 
