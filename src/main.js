@@ -70,12 +70,12 @@ function ksTextToObjects(text) {
   // causes a stack overflow on large datasets.
   dots.forEach(line => {
     if (isFinite(line.logks)) {
-      if (min_logks === undefined || min_logks > line.logks) {
+      if (min_logks === undefined || line.logks < min_logks) {
         min_logks = line.logks;
       }
     }
     if (isFinite(line.logkn)) {
-      if (min_logkn === undefined || min_logkn > line.logkn) {
+      if (min_logkn === undefined || line.logkn > min_logkn) {
         min_logkn = line.logkn;
       }
     }
