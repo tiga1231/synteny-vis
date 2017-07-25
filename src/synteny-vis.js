@@ -217,6 +217,7 @@ function controller(ksData, element_id, meta) {
       }
     }
   };
+
   changeOrderFunAndRebuildDataObject(orderFuns['order-by-name']);
 
   console.log('Total synteny dots:', dataObj.currentData().raw.length);

@@ -19,15 +19,14 @@ function tickStop(msg, t0){
 }
 
 
-
+//TODO sort dots in each leave node by field(ks, kn, ... i.e. color)
 //bounding volume hierarchy tree
-function Tree(dots, maxDotsPerNode=2000){
-  
+function Tree(dots, maxDotsPerNode=2000, field='ks'){
 
+  this.field = field;
   //build tree
   dots = dots.slice();
   dots.sort(byX);
-
   var left = dots[0].x_relative_offset;
   var right = dots[dots.length-1].x_relative_offset;
   var top, bottom;
@@ -51,24 +50,30 @@ function Tree(dots, maxDotsPerNode=2000){
 
   //method
   //tree.dotsIn(box)
-  this.dotsIn = function(viewBox, candidateDots=dots){
+  this.dotsIn = function(viewBox, candidateDots=null){
     var ranges = dotsRange(this.rootNode, viewBox);
     var res0 = dotsFromRanges(this.dots, ranges);
-
-    //take intersection of res0 and candidateDots
-    // new Set(<shorter array>) will be faster
-    if(res0.length > candidateDots.length){
-      var candidateDots1 = new Set(candidateDots);
-      var res1 = res0.filter(function(d){return candidateDots1.has(d); });
-      return res1;
+    if (candidateDots === null){
+      return res0;
     }else{
-      var res2 = new Set(res0);
-      res2 = candidateDots.filter(function(d){return res2.has(d); });
-      return res2;
-    }
 
+      //take intersection of res0 and candidateDots
+      // new Set(<shorter array>) will be faster
+      
+      if(res0.length > candidateDots.length){
+        var candidateDots1 = new Set(candidateDots);
+        var res1 = res0.filter(function(d){return candidateDots1.has(d); });
+        return res1;
+      }else{
+        var res2 = new Set(res0);
+        res2 = candidateDots.filter(function(d){return res2.has(d); });
+        return res2;
+      }
+      
+    }
     
   };
+
 
   this._dumpNodes = function(){
     var res = {};
@@ -76,21 +81,54 @@ function Tree(dots, maxDotsPerNode=2000){
     return JSON.stringify(res);
   };
 
+  
+  this.sortDotsInLeaveNodesBy = function(field='ks'){
+    this.dots = 
+      sortDotsInLeaveNodesRecursively(this.rootNode, this.dots, field, true);
+    this.field = field;
+    return this.dots;
+  };
+
+}
+
+
+
+function sortDotsInLeaveNodesRecursively(startNode, dots, key, reverse=true){
+  if(startNode.children === null){
+    var range = startNode.range;
+    dots = sortedSubArray(dots, range.start, range.stop, by(key, reverse));
+  }else{
+    for(var i=0; i<startNode.children.length; i++){
+      dots = sortDotsInLeaveNodesRecursively(startNode.children[i], dots, key);
+    }
+  }
+  return dots;
+
+}
+
+function sortDotsInNode(node, dots, key='ks'){
+  var range = node.range;
+  var res = sortedSubArray(dots, range.start, range.stop, by(key));
+  return res;
+}
+
+
+function by(field, reverse=false){
+  if(reverse){
+    return function(a,b){
+      return b[field]-a[field];
+    };
+  }else{
+    return function(a,b){
+      return a[field]-b[field];
+    };
+  }
 }
 
 
 function dotsRange(node, viewBox){
   var relation = boxRelation(node.box, viewBox);
   var ranges = [];
-  //debug
-  /*
-  var b1 = drawBox(node.box,'red');
-  var b2 = drawBox(viewBox,'blue');
-  console.log(relation);
-  debugger;
-  b1.remove();
-  b2.remove();
-  */
   if(relation === 'A<=B'){
     ranges.push(node.range);
   }else if(relation === 'A>=B' || relation === 'partialOverlap'){
@@ -159,6 +197,7 @@ function byX(a,b){
 function byY(a,b){
   return a.y_relative_offset - b.y_relative_offset;
 }
+
 
 
 function sortedSubArray(arr, start=0, stop=null, sortMethod=null){

@@ -4,7 +4,7 @@ import { Tree } from './bvhTree';
 
 
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
-  const xmap = xmapPair.nt; //nt = {chromosomeName:total} ?
+  const xmap = xmapPair.nt; // NT = {(chromosome)Name:Total} (?)
   const ymap = ymapPair.nt;
   const ret = {};
 
@@ -21,8 +21,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   );
 
   ret.tree = new Tree(syntenyDots, 3000);
-  //console.log(ret.tree._dumpNodes());
 
+  //console.log(ret.tree._dumpNodes());
   ret.getXLineOffsets = () => Object.values(xmap).sort((a, b) => a - b);
 
   ret.getYLineOffsets = () => Object.values(ymap).sort((a, b) => a - b);
@@ -35,24 +35,58 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     return filterMapForNames(ymap);
   };
 
+
   function filterMapForNames(map) {
     return Object.keys(map)
       .sort((a, b) => map[a] - map[b])
       .filter(x => x !== 'total');
   }
 
-  ret.currentData = function currentData(viewBox=null) {
+  ret.currentData = function currentData(viewBox=null, 
+                                          isHistogramBrushEmpty=true) {
+    /*
+    return {
+      raw: syntenyDots,
+      ////cross_all.top(Infinity) has the (histogram) filtered dots
+      active: ret.tree.dotsIn(viewBox, cross_all.top(Infinity))
+    };*/
+
+
+    
     if(viewBox === null){
       return {
         raw: syntenyDots,
         active: cross_all.top(Infinity)
       };
-    }else{
+
+    }else if (isHistogramBrushEmpty){
       return {
         raw: syntenyDots,
-        active: ret.tree.dotsIn(viewBox, cross_all.top(Infinity))
+        ////cross_all.top(Infinity) has the (histogram) filtered dots
+        active: ret.tree.dotsIn(viewBox)
       };
+
+    }else{
+      //TODO to be cleaned up later
+      //after comparing the performance
+
+      //choice 1
+      return {
+        raw: syntenyDots,
+        active: cross_all.top(Infinity)
+      };
+
+      //choice 2
+
+      //return {
+      //  raw: syntenyDots,
+      //  ////cross_all.top(Infinity) has the (histogram) filtered dots
+      //  active: ret.tree.dotsIn(viewBox, cross_all.top(Infinity))
+      //};
+
     }
+      
+    
   };
 
   ret.currentDataSummary = function currentDataSummary(raw_ticks, field) {

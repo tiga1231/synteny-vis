@@ -5,6 +5,7 @@ build/data/p.ks
 build/data/2p.ks
 build/data/3p.ks
 build/data/4p.ks
+build/data/*.compressed.ks
 build/data0/
 build/lengths0/
 

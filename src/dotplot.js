@@ -112,6 +112,11 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   let highlighted;
   const updateGeVOLink = function(x, y) {
+    //dont support this now
+    var a = true;
+    if(a) return;
+
+
     const distance = d => {
       const x_component = Math.pow(d.x_relative_offset - x, 2);
       const y_component = Math.pow(d.y_relative_offset - y, 2);
@@ -139,7 +144,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
             .text(`${meta.y_name}: ${y_name}`);
         });
     }
-
+    console.log('updateGeVOLink draw');
     setSyntenyData();
   };
 
@@ -224,24 +229,37 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       .style('stroke', d => d3.rgb(d, d, d));
   };
 
+
   var zoom = d3.behavior.zoom()
     .x(xScale).y(yScale)
     .scaleExtent([1, 100])
     .on('zoom', function() {
+
       var t = d3.event.translate;
       var s = d3.event.scale;
       t[0] = Math.min(0, Math.max(-getWidth() * s + getWidth(), t[0]));
       t[1] = Math.min(0, Math.max(-getHeight() * s + getHeight(), t[1]));
+
       // prevents the translate from growing large. This way, you don't
       // have to "scroll back" onto the canvas if you pan past the edge.
       zoom.translate(t);
-
+      
       brushGroup.attr('transform', transform([{translate: t}, {scale: s}]));
 
-      resizeBrushBoundary();
-      makeLabels();
-      drawBG();
-      setSyntenyData();
+      
+      //lazy update
+      //draw only if zoom changed
+      if(zoom.t0 && zoom.s0 
+          && (zoom.t0[0]!=t[0] || zoom.t0[1]!=t[1] || zoom.s0!=s)   ){
+        resizeBrushBoundary();
+        makeLabels();
+        drawBG();
+        console.log('zoom draw');
+        setSyntenyData();
+      }
+
+      zoom.t0 = t;
+      zoom.s0 = s;
     });
 
   function resizeBrushBoundary() {
@@ -492,8 +510,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     //without tree
     //var allData = dataObj.currentData();
     //var activeDots = allData.active;
+    var histogramBrush = d3.select('#histogram-wrapper').select('.extent');
+    var isHistogramBrushEmpty = histogramBrush.attr('width') == 0;
 
-    var allData = dataObj.currentData(viewBox);
+    var allData = dataObj.currentData(viewBox, isHistogramBrushEmpty, field);
     var activeDots = allData.active;
     //var activeDots = dataObj.tree.dotsIn(viewBox);
     console.log(activeDots.length, 'dots');
@@ -510,7 +530,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
     /* On top, active dots */
     //sort by field e.g ks, kn
+
     activeDots.sort((a, b) => b[field] - a[field]);
+    
     const rounded = x => {
       //e.g. ROUNDING_FACTOR=100
       return Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
@@ -529,6 +551,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       const cx = xScale(x);
       const cy = yScale(y);
 
+      //TODO try to round by color?
       if(rounded(d) !== last_rounded_val) {
         context.fillStyle = intermediateColorScale(rounded(d));
         last_rounded_val = rounded(d);
@@ -556,7 +579,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     }
 
     const diff = Date.now() - start;
-    if (elapsedMS > 0) {
+    if (elapsedMS > 0) {//for colorscale transition only
+      console.log('transition draw');
       setTimeout(draw, 0, elapsedMS - diff, initialColorScale, finalColorScale);
     }
   };
@@ -578,9 +602,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   function setSyntenyData() {
     draw(0, colorScale, colorScale);
   }
+
+
   dataObj.addListener(setSyntenyData);
   drawBG();
-  setSyntenyData();
+
+  //maybe we dont need this
+  //setSyntenyData();
 
   function setNavigationMode(mode) {
     if (mode === 'pan') {
@@ -602,12 +630,15 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   }
 
   function setColorScale(newColorScale) {
+    console.log('setColorScale draw');
     draw(DOTPLOT_COLOR_TRANS_LEN, colorScale, newColorScale);
     colorScale = newColorScale;
   }
 
   function setField(f) {
     field = f;
+    //added sorting outside draw() for performance
+    console.log('setfield draw');
     setSyntenyData();
   }
 
