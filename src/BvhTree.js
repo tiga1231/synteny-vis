@@ -21,9 +21,8 @@ function tickStop(msg, t0){
 
 //TODO sort dots in each leave node by field(ks, kn, ... i.e. color)
 //bounding volume hierarchy tree
-function Tree(dots, maxDotsPerNode=2000, field='ks'){
+function Tree(dots, maxDotsPerNode=2000){
 
-  this.field = field;
   //build tree
   dots = dots.slice();
   dots.sort(byX);
@@ -50,16 +49,18 @@ function Tree(dots, maxDotsPerNode=2000, field='ks'){
 
   //method
   //tree.dotsIn(box)
-  this.dotsIn = function(viewBox, candidateDots=null){
+  this.dotsIn = function(viewBox=null, candidateDots=null){
+    if(viewBox === null){
+      return this.dots;
+    }
     var ranges = dotsRange(this.rootNode, viewBox);
     var res0 = dotsFromRanges(this.dots, ranges);
+
     if (candidateDots === null){
       return res0;
     }else{
-
       //take intersection of res0 and candidateDots
       // new Set(<shorter array>) will be faster
-      
       if(res0.length > candidateDots.length){
         var candidateDots1 = new Set(candidateDots);
         var res1 = res0.filter(function(d){return candidateDots1.has(d); });
@@ -81,37 +82,8 @@ function Tree(dots, maxDotsPerNode=2000, field='ks'){
     return JSON.stringify(res);
   };
 
-  
-  this.sortDotsInLeaveNodesBy = function(field='ks'){
-    this.dots = 
-      sortDotsInLeaveNodesRecursively(this.rootNode, this.dots, field, true);
-    this.field = field;
-    return this.dots;
-  };
 
 }
-
-
-
-function sortDotsInLeaveNodesRecursively(startNode, dots, key, reverse=true){
-  if(startNode.children === null){
-    var range = startNode.range;
-    dots = sortedSubArray(dots, range.start, range.stop, by(key, reverse));
-  }else{
-    for(var i=0; i<startNode.children.length; i++){
-      dots = sortDotsInLeaveNodesRecursively(startNode.children[i], dots, key);
-    }
-  }
-  return dots;
-
-}
-
-function sortDotsInNode(node, dots, key='ks'){
-  var range = node.range;
-  var res = sortedSubArray(dots, range.start, range.stop, by(key));
-  return res;
-}
-
 
 function by(field, reverse=false){
   if(reverse){
@@ -244,27 +216,9 @@ function findIndexOf(value, arr, start, stop){
     probe = stop;
   }
   return probe;
-  
-
-/*
-//linear search
-  if (value < arr[start]) {
-    return start;
-  }else{
-    for(var i=start; i<stop; i++){
-      if (arr[i] < value && value < arr[i+1]){
-        return i+1;
-      }
-    }
-  }
-  return stop;*/
-
 }
 
-var count = 0;
 function splitNode(node, dots, method){
-  //count += 1;
-  //console.log('splitNode..', count);
 
   var box = node.box;
   var left = box.left;
@@ -289,7 +243,6 @@ function splitNode(node, dots, method){
     //split by data median
     boxMiddle = dots[splitIndex].x_relative_offset;
 
-
     ////split by box middle
     /*
     var xValues = dots.map(function(d){
@@ -298,6 +251,7 @@ function splitNode(node, dots, method){
     boxMiddle = left/2 + right/2;
     splitIndex = findIndexOf(boxMiddle, xValues, start, stop);
     */
+
     node1 = new Node(top, bottom, left, boxMiddle,      
       start, splitIndex, null);
     node2 = new Node(top, bottom, boxMiddle, right, 
@@ -330,7 +284,7 @@ function splitNode(node, dots, method){
   return res;
 }
 
-function splitNodeRecursively(node, dots, maxDotsPerNode=2000, level=0){
+function splitNodeRecursively(node, dots, maxDotsPerNode=2000){
 //make tree recursively
 
 //return [node, dots];
@@ -341,8 +295,6 @@ function splitNodeRecursively(node, dots, maxDotsPerNode=2000, level=0){
   if(node.size <= maxDotsPerNode){
     return [node, dots];
   }else{
-
-
     //split box relatively square
     
     if(node.box.right-node.box.left > node.box.top-node.box.bottom){
@@ -381,7 +333,7 @@ function splitNodeRecursively(node, dots, maxDotsPerNode=2000, level=0){
     dots = splitResult.dots;
     for(var i=0; i<node.children.length; i++){
       [node.children[i],dots] 
-        = splitNodeRecursively(node.children[i], dots, maxDotsPerNode, level+1);
+        = splitNodeRecursively(node.children[i], dots, maxDotsPerNode);
     }
     return [node, dots];
   }

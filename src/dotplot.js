@@ -531,7 +531,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     /* On top, active dots */
     //sort by field e.g ks, kn
 
-    activeDots.sort((a, b) => b[field] - a[field]);
+    //removed sort for performance
+    if(activeDots.length < 30000){
+      activeDots.sort((a, b) => b[field] - a[field]);
+    }
     
     const rounded = x => {
       //e.g. ROUNDING_FACTOR=100
@@ -637,7 +640,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   function setField(f) {
     field = f;
-    //added sorting outside draw() for performance
     console.log('setfield draw');
     setSyntenyData();
   }
