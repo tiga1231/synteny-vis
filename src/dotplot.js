@@ -8,6 +8,7 @@ const { minBy, zipObject, zipWith } = utils;
 import {
   SYNTENY_MARGIN,
   CIRCLE_RADIUS,
+  LARGE_CIRCLE_EXTENT,
   UNSELECTED_DOT_FILL,
   NUM_COLOR_SCALE_INTERPOLATION_SAMPLES,
   GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS,
@@ -567,10 +568,23 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
           continue;
       }
 
-      context.fillRect(cx - CIRCLE_RADIUS,
+      if( yScale.invert(0) - yScale.invert(height) < LARGE_CIRCLE_EXTENT || 
+          xScale.invert(width) - xScale.invert(0)  < LARGE_CIRCLE_EXTENT){
+
+        context.fillRect(cx - CIRCLE_RADIUS*3,
+        cy - CIRCLE_RADIUS*3,
+        CIRCLE_RADIUS*3,
+        CIRCLE_RADIUS*3);
+      }else{
+        context.fillRect(cx - CIRCLE_RADIUS,
         cy - CIRCLE_RADIUS,
         CIRCLE_RADIUS,
         CIRCLE_RADIUS);
+      }
+      
+
+
+      
     }
 
     if (highlighted) {
