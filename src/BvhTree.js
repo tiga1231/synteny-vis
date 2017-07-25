@@ -150,11 +150,17 @@ function dotsFromRange(dots, range){
 
 function dotsFromRanges(dots, ranges){
   var range;
+  
   var res = [];
+  /*
   for(var i=0; i<ranges.length; i++){
     range = ranges[i];
     res = res.concat(dotsFromRange(dots, range));
-  }
+  }*/
+  var dotArrays = ranges.map(function(range){
+    return dotsFromRange(dots, range);
+  });
+  res = res.concat(...dotArrays);
   return res;
 }
 

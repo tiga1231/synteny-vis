@@ -59,31 +59,29 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
         active: cross_all.top(Infinity)
       };
 
-    }else if (isHistogramBrushEmpty){
-      return {
-        raw: syntenyDots,
-        ////cross_all.top(Infinity) has the (histogram) filtered dots
-        active: ret.tree.dotsIn(viewBox)
-      };
-
     }else{
+      var viewingDots = ret.tree.dotsIn(viewBox);
+      if (isHistogramBrushEmpty){
+        return {
+          raw: viewingDots,
+          active: viewingDots
+        };
+      }else{
       //TODO to be cleaned up later
       //after comparing the performance
-
       //choice 1
-      return {
-        raw: syntenyDots,
-        active: cross_all.top(Infinity)
-      };
-
+        return {
+          raw: viewingDots,
+          active: cross_all.top(Infinity)
+        };
+      
       //choice 2
-
       //return {
-      //  raw: syntenyDots,
+      //  raw: viewingDots,
       //  ////cross_all.top(Infinity) has the (histogram) filtered dots
       //  active: ret.tree.dotsIn(viewBox, cross_all.top(Infinity))
       //};
-
+      }
     }
       
     
