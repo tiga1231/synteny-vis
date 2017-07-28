@@ -9,6 +9,7 @@ import { createDataObj } from './dataObject';
 
 exports.makeSyntenyDotPlot = function({
   data_url,
+  spa_url,
   element_id,
   genome_x,
   genome_y,
@@ -17,39 +18,146 @@ exports.makeSyntenyDotPlot = function({
   if (gen_coge_seq_link === undefined) {
     gen_coge_seq_link = genCogeSequenceLink;
   }
+
+  var q = queue.queue();
+
+  if (data_url === undefined) {
+    console.error('Error - makeSyntenyDotPlot expects data_url parameter');
+    return;
+  }
+  q = q.defer(d3.text, data_url);
+
+  // default modes
+  var mode = {
+    withSpa: false,
+    withKs: true
+  };
   
-  queue.queue()
-    .defer(d3.text, data_url)
-    .await(function(err, ks) {
-      if (err) {
-        console.log(err);
-        return;
+  if (spa_url !== undefined) {
+    q = q.defer(d3.text, spa_url);
+    mode.withSpa = true;
+  }
+
+  if (!data_url.endsWith('.ks')) {
+    mode.withKs = false;
+  }
+
+  q.await(function(err, ks, spa) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    // Dirty hacks to make files with no ks work:
+    if (!mode.withKs) {
+      const random = () => Math.random() * 3 + 2;
+      ks = ks.split('\n')
+        .map(x => x[0] === '#' ? x : `${random()},${random()},` + x)
+        .join('\n');
+    }
+
+    const ksData = ksTextToObjects(ks);
+    if (mode.withSpa) {
+      var newChromosomeIds = {};
+      var remapInstructions = {};
+      var newChrMeta = {};
+      spa = spa.split('\n');
+
+      var genomeYById = {};
+      genome_y.chromosomes.forEach(function(c) {
+        genomeYById[c.name] = c;
+      });
+      for (var i=1; i<spa.length; ++i) {
+        var xChr, yChr;
+        var line = spa[i].split('\t');
+        var newYName;
+        if (line.length === 3) {
+          // this is an actual SPA assignment
+          xChr = line[0];
+          yChr = line[1];
+          var direction = line[2];
+          newYName = 'SPA_' + xChr;
+          
+          if (!(newYName in newChromosomeIds)) {
+            newChromosomeIds[newYName] = {
+              offset: 0
+            };
+            newChrMeta[newYName] = {
+              length: 0,
+              CDS_count: 0,
+              gene_count: 0,
+              name: newYName
+            };
+          }
+          var newChromosome = newChromosomeIds[newYName];
+          var localOffset;
+          var oldChromosomeLength = genomeYById[yChr].length;
+          newChrMeta[newYName].length += genomeYById[yChr].length;
+          // I don't think we're using this, but hey.
+          newChrMeta[newYName].CDS_count += genomeYById[yChr].CDS_count;
+          newChrMeta[newYName].gene_count += genomeYById[yChr].gene_count;
+          if (direction === '-1') {
+            remapInstructions[yChr] = {
+              slope: -1,
+              intercept: newChromosome.offset + oldChromosomeLength,
+              name: newYName
+            };
+          } else {
+            remapInstructions[yChr] = {
+              slope: 1,
+              intercept: newChromosome.offset,
+              name: newYName
+            };
+          }
+          newChromosome.offset += oldChromosomeLength;
+        } else if (line.length === 2) {
+          // this is an unmapped SPA assignment
+          xChr = line[0];
+          yChr = line[1];
+          newYName = 'SPA_unmapped_' + yChr;
+          
+          remapInstructions[yChr] = {
+            slope: 1,
+            intercept: 0,
+            name: newYName
+          };
+          var oldMeta = genomeYById[yChr];
+          newChrMeta[newYName] = {
+            length: oldMeta.length,
+            CDS_count: oldMeta.CDS_count,
+            gene_count: oldMeta.gene_count,
+            name: newYName
+          };
+        }
       }
-
-      // Dirty hacks to make files with no ks work:
-      const have_ks = data_url.endsWith('.ks');
-      if (!have_ks) {
-        const random = () => Math.random() * 3 + 2;
-        ks = ks.split('\n')
-          .map(x => x[0] === '#' ? x : `${random()},${random()},` + x)
-          .join('\n');
-      }
-
-      const x_name = genome_x.name;
-      const y_name = genome_y.name;
-      const meta = {
-        genome_x,
-        genome_y,
-        x_name,
-        y_name,
-        have_ks,
-        gen_coge_seq_link
-      };
-
-      const ksData = ksTextToObjects(ks);
+      ksData.forEach(function(d) {
+        var i = remapInstructions[d.y_chromosome_id];
+        if (i === undefined) return;
+        d.y_chromosome_id = i.name;
+        d.y_relative_offset = d.y_relative_offset * i.slope + i.intercept;
+      });
       
-      sv.controller(ksData, element_id, meta);
-    });
+      genome_y = {
+        name: '(SPA) ' + genome_y.name,
+        id: genome_y.id,
+        chromosomes: Object.values(newChrMeta)
+      };
+    }
+
+    const x_name = genome_x.name;
+    const y_name = genome_y.name;
+    var have_ks = mode.withKs;
+    const meta = {
+      genome_x,
+      genome_y,
+      x_name,
+      y_name,
+      have_ks,
+      gen_coge_seq_link
+    };
+    
+    sv.controller(ksData, element_id, meta);
+  });
 };
 
 function ksTextToObjects(text) {

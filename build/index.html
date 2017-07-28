@@ -35,7 +35,8 @@
 		<span id='2a-link' class="underline hover-black" onClick="load('2a')">Aribidopsis2</span>,
 		<span id='2e-link' class="underline hover-black" onClick="load('2e')">Ecoli2</span>,
 		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>
-    <span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span>
+		<span id='SPA-link' class="underline hover-black" onClick="load('SPA')">SPA test</span>
+		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span>
 	</div>
 
 	<div id="main"></div>
@@ -89,6 +90,12 @@
 				id_1: '19927',
 				id_2: '9050',
         data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			},{
+				identifier: 'SPA',
+				id_1: '4242',
+				id_2: '6872',
+     		                data_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords',
+		                spa_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords_ct0.w1000.spa1.sr.cs1.csoS.log.nsd.spa_info'
 			}];
 
 		var load = function(dataset) {
@@ -143,7 +150,8 @@
 					/* This is the call that actually builds the plots! */
 					makeSyntenyDotPlot({
 						element_id: 'main', /* div from above */
-						data_url: selected.data_url, 
+		                                data_url: selected.data_url,
+		                                spa_url: selected.spa_url,
 						genome_x: genome_x, 
 						genome_y: genome_y
 					});
