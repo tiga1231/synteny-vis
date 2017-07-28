@@ -233,7 +233,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   var zoom = d3.behavior.zoom()
     .x(xScale).y(yScale)
-    .scaleExtent([1, 100])
+    .scaleExtent([1, 300])
     .on('zoom', function() {
 
       var t = d3.event.translate;
@@ -460,10 +460,23 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       if (cx < 0 || cx > width || cy < 0 || cy > height)
         return;
 
-      background.fillRect(cx - CIRCLE_RADIUS,
-        cy - CIRCLE_RADIUS,
-        CIRCLE_RADIUS,
-        CIRCLE_RADIUS);
+      if( yScale.invert(0) - yScale.invert(height) < LARGE_CIRCLE_EXTENT || 
+          xScale.invert(width) - xScale.invert(0)  < LARGE_CIRCLE_EXTENT){
+
+        background.fillRect(cx - CIRCLE_RADIUS*2,
+          cy - CIRCLE_RADIUS*2,
+          CIRCLE_RADIUS*2,
+          CIRCLE_RADIUS*2);
+
+      }else{
+
+        background.fillRect(cx - CIRCLE_RADIUS,
+          cy - CIRCLE_RADIUS,
+          CIRCLE_RADIUS,
+          CIRCLE_RADIUS);
+
+      }
+
     });
   }
 
@@ -533,7 +546,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     //sort by field e.g ks, kn
 
     //removed sort for performance
-    if(activeDots.length < 30000){
+    if(activeDots.length >0){
       activeDots.sort((a, b) => b[field] - a[field]);
     }
     
@@ -571,10 +584,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       if( yScale.invert(0) - yScale.invert(height) < LARGE_CIRCLE_EXTENT || 
           xScale.invert(width) - xScale.invert(0)  < LARGE_CIRCLE_EXTENT){
 
-        context.fillRect(cx - CIRCLE_RADIUS*3,
-        cy - CIRCLE_RADIUS*3,
-        CIRCLE_RADIUS*3,
-        CIRCLE_RADIUS*3);
+        context.fillRect(cx - CIRCLE_RADIUS*2,
+        cy - CIRCLE_RADIUS*2,
+        CIRCLE_RADIUS*2,
+        CIRCLE_RADIUS*2);
       }else{
         context.fillRect(cx - CIRCLE_RADIUS,
         cy - CIRCLE_RADIUS,
