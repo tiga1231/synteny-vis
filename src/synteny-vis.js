@@ -110,7 +110,8 @@ function buildDiv(element_id, show_histograms) {
     makeForm('Chromosome Order', 'order-options', [
       option('order-by-size', 'By Size'),
       option('order-by-name', 'By Name'),
-      option('order-by-number', 'By Number')
+      option('order-by-number', 'By Number'),
+      option('order-by-original', 'By file ordering')
       // order by match count doesn't work very well, drop for now
       // option('order-by-match', 'By Match Count') 
     ], 1);
@@ -214,9 +215,22 @@ function controller(ksData, element_id, meta) {
           return (na - nb);
         }
       }
+    },
+    'order-by-original': (a, b) => {
+      var va = a.order, vb = b.order;
+      // horrible hack;
+      if (va === undefined) va = 10000;
+      if (vb === undefined) vb = 10000;
+      return va - vb;
     }
   };
-  changeOrderFunAndRebuildDataObject(orderFuns['order-by-name']);
+
+  debugger;
+  if (meta.have_spa) {
+    changeOrderFunAndRebuildDataObject(orderFuns['order-by-original']);
+  } else {
+    changeOrderFunAndRebuildDataObject(orderFuns['order-by-name']);
+  }
 
   console.log('Total synteny dots:', dataObj.currentData().raw.length);
   
