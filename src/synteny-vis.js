@@ -225,7 +225,6 @@ function controller(ksData, element_id, meta) {
     }
   };
 
-  debugger;
   if (meta.have_spa) {
     changeOrderFunAndRebuildDataObject(orderFuns['order-by-original']);
   } else {
