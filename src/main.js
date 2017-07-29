@@ -58,107 +58,101 @@ exports.makeSyntenyDotPlot = function({
 
     const ksData = ksTextToObjects(ks);
     if (mode.withSpa) {
-      var newChromosomeIds = {};
-      var remapInstructions = {};
-      var newChrMeta = {};
-      spa = spa.split('\n');
-
-      var genomeYById = {};
-      genome_y.chromosomes.forEach(function(c) {
-        genomeYById[c.name] = c;
-      });
-      for (var i=1; i<spa.length; ++i) {
-        var xChr, yChr;
-        var line = spa[i].split('\t');
-        var newYName;
-        if (line.length === 3) {
-          // this is an actual SPA assignment
-          xChr = line[0];
-          yChr = line[1];
-          var direction = line[2];
-          newYName = 'SPA_' + xChr;
-          
-          if (!(newYName in newChromosomeIds)) {
-            newChromosomeIds[newYName] = {
-              offset: 0
-            };
-            newChrMeta[newYName] = {
-              length: 0,
-              CDS_count: 0,
-              gene_count: 0,
-              name: newYName
-            };
-          }
-          var newChromosome = newChromosomeIds[newYName];
-          var localOffset;
-          var oldChromosomeLength = genomeYById[yChr].length;
-          newChrMeta[newYName].length += genomeYById[yChr].length;
-          // I don't think we're using this, but hey.
-          newChrMeta[newYName].CDS_count += genomeYById[yChr].CDS_count;
-          newChrMeta[newYName].gene_count += genomeYById[yChr].gene_count;
-          if (direction === '-1') {
-            remapInstructions[yChr] = {
-              slope: -1,
-              intercept: newChromosome.offset + oldChromosomeLength,
-              name: newYName
-            };
-          } else {
-            remapInstructions[yChr] = {
-              slope: 1,
-              intercept: newChromosome.offset,
-              name: newYName
-            };
-          }
-          newChromosome.offset += oldChromosomeLength;
-        } else if (line.length === 2) {
-          // this is an unmapped SPA assignment
-          xChr = line[0];
-          yChr = line[1];
-          newYName = 'SPA_unmapped_' + yChr;
-          
-          remapInstructions[yChr] = {
-            slope: 1,
-            intercept: 0,
-            name: newYName
-          };
-          var oldMeta = genomeYById[yChr];
-          newChrMeta[newYName] = {
-            length: oldMeta.length,
-            CDS_count: oldMeta.CDS_count,
-            gene_count: oldMeta.gene_count,
-            name: newYName
-          };
-        }
-      }
-      ksData.forEach(function(d) {
-        var i = remapInstructions[d.y_chromosome_id];
-        if (i === undefined) return;
-        d.y_chromosome_id = i.name;
-        d.y_relative_offset = d.y_relative_offset * i.slope + i.intercept;
-      });
-      
-      genome_y = {
-        name: '(SPA) ' + genome_y.name,
-        id: genome_y.id,
-        chromosomes: Object.values(newChrMeta)
-      };
+      genome_y = processSPAInformation({spa, genome_y, ksData});
     }
 
     const x_name = genome_x.name;
     const y_name = genome_y.name;
     var have_ks = mode.withKs;
+    var have_spa = mode.withSpa;
     const meta = {
       genome_x,
       genome_y,
       x_name,
       y_name,
       have_ks,
+      have_spa,
       gen_coge_seq_link
     };
     
     sv.controller(ksData, element_id, meta);
   });
 };
+
+// this function is a little ugly in that it mutates ksData
+// but returns a new genome_y. I'm ok with that because ksData
+// was created by makeSyntenyDotPlot, while genome_y was passed
+// to makeSyntenyDotPlot, and so other upstream code might
+// assume non-mutation.
+//
+// (FIXME: actually, processSPAInformation does mutate
+// genome_y.chromosomes, so beware of that)
+function processSPAInformation({
+  spa,
+  genome_y,
+  ksData
+}) {
+  var newChromosomeOrder = {};
+  spa = spa.split('\n');
+
+  var genomeYById = {};
+  genome_y.chromosomes.forEach(function(c) {
+    genomeYById[c.name] = c;
+  });
+  var newOrder = 0;
+
+  // loop over SPA information accumulating the chosen order and
+  // recording chromosome flip information
+  for (var i=1; i<spa.length; ++i) {
+    var yChr;
+    var line = spa[i].split('\t');
+    if (line.length === 3) {
+      // this is an actual SPA assignment
+      yChr = line[1];
+      var direction = line[2];
+
+      if (genomeYById[yChr].order === undefined) {
+        var slope = Number(direction);
+        var intercept = slope === -1 ? genomeYById[yChr].length : 0;
+        genomeYById[yChr].SPA_slope = slope;
+        genomeYById[yChr].SPA_intercept = intercept;
+        genomeYById[yChr].order = ++newOrder;
+      }
+    } else if (line.length === 2) {
+      // this is an unmapped SPA assignment
+      yChr = line[1];
+      
+      if (genomeYById[yChr].SPA_slope === undefined) {
+        genomeYById[yChr].SPA_slope = 1;
+        genomeYById[yChr].SPA_intercept = 0;
+      }
+    } // there are some empty lines in the files which we will skip
+      // too
+  }
+  
+  // update the metadata for unmatched chromosomes
+  for (i=0; i<genome_y.chromosomes.length; ++i) {
+    if (genome_y.chromosomes[i].order === undefined) {
+      genome_y.chromosomes[i].order = ++newOrder;
+    }
+  }
+
+  // use this information to remap the existing ksData
+  ksData.forEach(function(d) {
+    var g = genomeYById[d.y_chromosome_id];
+    if (g === undefined) return;
+    var intercept = g.SPA_intercept, slope = g.SPA_slope;
+    d.y_relative_offset = d.y_relative_offset * slope + intercept;
+  });
+  
+  return {
+    name: '(SPA) ' + genome_y.name,
+    id: genome_y.id,
+    chromosomes: genome_y.chromosomes.sort(function(a, b) {
+      return a.order - b.order;
+    })
+  };
+}
 
 function ksTextToObjects(text) {
   /* .ks files are delimited with a combination of tabs and double bars. */
