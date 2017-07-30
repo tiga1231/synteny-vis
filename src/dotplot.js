@@ -327,6 +327,13 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var yOffsetArray = new Float32Array(raw.map(e => e.y_relative_offset));
   var logKsArray = new Float32Array(raw.map(e => e.logks));
 
+  var rb = Lux.renderBuffer({
+    clearColor: [0,0,0,0],
+    width: getWidth() * window.devicePixelRatio,
+    height: getHeight() * window.devicePixelRatio,
+    type: gl.FLOAT
+  });
+
   var xBuffer = Shade(Lux.attributeBuffer({
     vertexArray: xOffsetArray,
     itemSize: 1
@@ -376,13 +383,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   var luxColorScale = Shade.Scale.linear({
     domain: initialColorScale.domain(),
-    range: initialColorScale.range().map(Shade.color)
+    range: initialColorScale.range().map(c => Shade.color(c))
   });
   var dotColor = luxColorScale(vBuffer);
   var unselected = dotColor.mul(Shade.vec(1,1,1,0));
   
   var actor = Lux.Marks.dots({
     elements: xOffsetArray.length,
+    mode: Lux.DrawingMode.additive,
     position: Shade.vec(canvasXScale(luxXScale(xBuffer)),
                         canvasYScale(luxYScale(yBuffer))),
     fillColor: Shade.ifelse(
@@ -399,8 +407,17 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     strokeWidth: 0
   });
 
+  rb.scene.add(actor);
+
   Lux.Scene.add(bgActor);
-  Lux.Scene.add(actor);
+  Lux.Scene.add(Lux.actorList([rb.scene, rb.screenActor({
+    mode: Lux.DrawingMode.overNoDepth,
+    texelFunction: function(texelAccessor) {
+      var color = texelAccessor();
+      var c = color.a();
+      return c.le(1).ifelse(color, color.div(c));
+    }
+  })]));
   background.scale(dpr,dpr);
 
   var svg = d3.select(id);
