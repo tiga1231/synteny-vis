@@ -63,24 +63,33 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     };
   };
 
+  var filterDescription = {
+  };
+  
   ret.addSpatialFilter = function(extents, typeHint) {
+    filterDescription.x = [extents[0][0], extents[1][0]];
+    filterDescription.y = [extents[0][1], extents[1][1]];
     cross_x.filter([extents[0][0], extents[1][0]]);
     cross_y.filter([extents[0][1], extents[1][1]]);
     ret.notifyListeners(typeHint);
   };
 
   ret.removeSpatialFilter = function(typeHint) {
+    filterDescription.x = null;
+    filterDescription.y = null;
     cross_x.filterAll();
     cross_y.filterAll();
     ret.notifyListeners(typeHint);
   };
 
   ret.addDataFilter = function(extent, field, typeHint) {
+    filterDescription[field] = extent;
     filters[field].filter(extent);
     ret.notifyListeners(typeHint || 'data');
   };
 
   ret.removeDataFilter = function(field) {
+    filterDescription[field] = null;
     filters[field].filterAll();
     ret.notifyListeners('data-stop');
   };
@@ -92,7 +101,10 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.clearListeners = function() {
     while(listeners.length > 0) listeners.pop();
   };
-
+  ret.getFilterDescription = function() {
+    return filterDescription;
+  };
+  
   ret.notifyListeners = function(typeOfChange) {
     listeners.forEach(f => f(typeOfChange));
   };

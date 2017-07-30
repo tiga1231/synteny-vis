@@ -221,7 +221,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
       resizeBrushBoundary();
       makeLabels();
-      drawBG();
+      // drawBG();
+      xMin.set(xScale.domain()[0]);
+      xMax.set(xScale.domain()[1]);
+      yMin.set(yScale.domain()[0]);
+      yMax.set(yScale.domain()[1]);
+      Lux.Scene.invalidate();
       setSyntenyData();
     });
 
@@ -253,19 +258,34 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .x(xScale.copy())
     .y(yScale.copy())
     .on('brush', function() {
+      Lux.Scene.invalidate();
       if (!brush.empty()) {
+        brushX.set(vec.make([brush.extent()[0][0],
+                             brush.extent()[1][0]]));
+        brushY.set(vec.make([brush.extent()[0][1],
+                             brush.extent()[1][1]]));
         dataObj.addSpatialFilter(brush.extent(), 'spatial');
         resizeBrushBoundary();
+      } else {
+        brushX.set(vec.make(xScale.domain()));
+        brushY.set(vec.make(yScale.domain()));
       }
     })
     .on('brushend', function() {
+      Lux.Scene.invalidate();
       if (brush.empty()) {
+        brushX.set(vec.make(xScale.domain()));
+        brushY.set(vec.make(yScale.domain()));
         dataObj.removeSpatialFilter('spatial-stop');
         const mouse = d3.mouse(this);
         const x = originalXScale.invert(mouse[0]);
         const y = originalYScale.invert(mouse[1]);
         updateGeVOLink(x, y);
       } else {
+        brushX.set(vec.make([brush.extent()[0][0],
+                             brush.extent()[1][0]]));
+        brushY.set(vec.make([brush.extent()[0][1],
+                             brush.extent()[1][1]]));
         dataObj.addSpatialFilter(brush.extent(), 'spatial-stop');
         resizeBrushBoundary();
       }
@@ -274,8 +294,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   const dpr = window.devicePixelRatio;
   
   const canvas = d3.select(id + '-canvas')
-    .attr('width', getWidth() * dpr)
-    .attr('height', getHeight() * dpr)
+    .attr('width', getWidth())
+    .attr('height', getHeight())
     .style('width', String(getWidth()) + 'px')
     .style('height', String(getHeight()) + 'px')
     .style('left', SYNTENY_MARGIN)
@@ -289,10 +309,98 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .style('left', SYNTENY_MARGIN)
     .style('top', SYNTENY_MARGIN);
 
-  const context = canvas.node().getContext('2d');
+  var gl = Lux.init({
+    canvas: canvas.node(),
+    clearDepth: 1.0,
+    clearColor: [0,0,0,0],
+    attributes: {
+      alpha: true,
+      depth: true
+    }
+  });
+  // const context = Lux.init(canvas.node().getContext('2d');
   const background = backCanvas.node().getContext('2d');
 
-  context.scale(dpr,dpr);
+  var raw = dataObj.currentData().raw;
+  raw.sort((a, b) => b.logks - a.logks);
+  var xOffsetArray = new Float32Array(raw.map(e => e.x_relative_offset));
+  var yOffsetArray = new Float32Array(raw.map(e => e.y_relative_offset));
+  var logKsArray = new Float32Array(raw.map(e => e.logks));
+
+  var xBuffer = Shade(Lux.attributeBuffer({
+    vertexArray: xOffsetArray,
+    itemSize: 1
+  }));
+  var yBuffer = Shade(Lux.attributeBuffer({
+    vertexArray: yOffsetArray,
+    itemSize: 1
+  }));
+  var vBuffer = Shade(Lux.attributeBuffer({
+    vertexArray: logKsArray,
+    itemSize: 1
+  }));
+  var vExtent = d3.extent(logKsArray);
+
+  var xMin = Shade.parameter('float'), xMax = Shade.parameter('float');
+  var yMin = Shade.parameter('float'), yMax = Shade.parameter('float');
+  xMin.set(xScale.domain()[0]);
+  xMax.set(xScale.domain()[1]);
+  yMin.set(yScale.domain()[0]);
+  yMax.set(yScale.domain()[1]);
+
+  var selectionInactive = Shade.parameter('bool', true);
+  var brushX = Shade.parameter('vec2', vec.make(xScale.domain()));
+  var brushY = Shade.parameter('vec2', vec.make(yScale.domain()));
+  var brushV = Shade.parameter('vec2', vec.make(vExtent));
+  
+  var luxXScale = Shade.Scale.linear({ domain: [xMin, xMax],
+                                       range: vec2.make(xScale.range()) });
+  var luxYScale = Shade.Scale.linear({ domain: [yMin, yMax],
+                                       range: vec2.make(yScale.range()) });
+  var canvasXScale = Shade.Scale.linear(
+    { domain: [0, backCanvas.node().width/2],
+      range: [-1, 1] });
+  var canvasYScale = Shade.Scale.linear(
+    { domain: [0, backCanvas.node().height/2],
+      range: [1, -1] });
+                                   
+  var bgActor = Lux.Marks.dots({
+    elements: xOffsetArray.length,
+    position: Shade.vec(canvasXScale(luxXScale(xBuffer)),
+                        canvasYScale(luxYScale(yBuffer))),
+    fillColor: Shade.color('#ccc'),
+    strokeColor: Shade.color('#ccc', 0),
+    pointDiameter: 3,
+    strokeWidth: 0
+  });
+
+  var luxColorScale = Shade.Scale.linear({
+    domain: initialColorScale.domain(),
+    range: initialColorScale.range().map(Shade.color)
+  });
+  var dotColor = luxColorScale(vBuffer);
+  var unselected = dotColor.mul(Shade.vec(1,1,1,0));
+  
+  var actor = Lux.Marks.dots({
+    elements: xOffsetArray.length,
+    position: Shade.vec(canvasXScale(luxXScale(xBuffer)),
+                        canvasYScale(luxYScale(yBuffer))),
+    fillColor: Shade.ifelse(
+      xBuffer.ge(brushX.x())
+        .and(xBuffer.le(brushX.y()))
+        .and(yBuffer.ge(brushY.x()))
+        .and(yBuffer.le(brushY.y()))
+        .and(vBuffer.ge(brushV.x()))
+        .and(vBuffer.le(brushV.y())),
+      dotColor,
+      unselected),
+    strokeColor: unselected,
+    pointDiameter: 5,
+    strokeWidth: 0
+  });
+
+  Lux.Scene.add(bgActor);
+  Lux.Scene.add(actor);
   background.scale(dpr,dpr);
 
   var svg = d3.select(id);
@@ -409,25 +517,25 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   var colorScale = initialColorScale;
 
-  function drawBG() {
-    const allDots = dataObj.currentData().raw;
-    const width = getWidth();
-    const height = getHeight();
-    background.clearRect(0, 0, width, height);
-    background.fillStyle = UNSELECTED_DOT_FILL;
-    allDots.forEach(function(d) {
-      const cx = xScale(d.x_relative_offset);
-      const cy = yScale(d.y_relative_offset);
+  // function drawBG() {
+  //   const allDots = dataObj.currentData().raw;
+  //   const width = getWidth();
+  //   const height = getHeight();
+  //   background.clearRect(0, 0, width, height);
+  //   background.fillStyle = UNSELECTED_DOT_FILL;
+  //   allDots.forEach(function(d) {
+  //     const cx = xScale(d.x_relative_offset);
+  //     const cy = yScale(d.y_relative_offset);
 
-      if (cx < 0 || cx > width || cy < 0 || cy > height)
-        return;
+  //     if (cx < 0 || cx > width || cy < 0 || cy > height)
+  //       return;
 
-      background.fillRect(cx - CIRCLE_RADIUS,
-        cy - CIRCLE_RADIUS,
-        CIRCLE_RADIUS,
-        CIRCLE_RADIUS);
-    });
-  }
+  //     background.fillRect(cx - CIRCLE_RADIUS,
+  //       cy - CIRCLE_RADIUS,
+  //       CIRCLE_RADIUS,
+  //       CIRCLE_RADIUS);
+  //   });
+  // }
 
   const draw = (elapsedMS, initialColorScale, finalColorScale) => {
 
@@ -446,41 +554,41 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     const width = getWidth();
     const height = getHeight();
 
-    context.clearRect(0, 0, width, height);
+    // context.clearRect(0, 0, width, height);
 
     /* On top, active dots */
-    activeDots.sort((a, b) => b[field] - a[field]);
+    // activeDots.sort((a, b) => b[field] - a[field]);
     const rounded = x => {
       return Math.floor(x[field] * ROUNDING_FACTOR) / ROUNDING_FACTOR;
     };
 
     let last_rounded_val = undefined;
-    for (var i = 0; i < activeDots.length; i++) {
-      const d = activeDots[i];
-      const cx = xScale(d.x_relative_offset);
-      const cy = yScale(d.y_relative_offset);
+    // for (var i = 0; i < activeDots.length; i++) {
+    //   const d = activeDots[i];
+    //   const cx = xScale(d.x_relative_offset);
+    //   const cy = yScale(d.y_relative_offset);
 
-      if(rounded(d) !== last_rounded_val) {
-        context.fillStyle = intermediateColorScale(rounded(d));
-        last_rounded_val = rounded(d);
-      }
+    //   if(rounded(d) !== last_rounded_val) {
+    //     context.fillStyle = intermediateColorScale(rounded(d));
+    //     last_rounded_val = rounded(d);
+    //   }
 
-      if (cx < 0 || cx > width || cy < 0 || cy > height)
-        continue;
+    //   if (cx < 0 || cx > width || cy < 0 || cy > height)
+    //     continue;
 
-      context.fillRect(cx - CIRCLE_RADIUS,
-        cy - CIRCLE_RADIUS,
-        CIRCLE_RADIUS,
-        CIRCLE_RADIUS);
-    }
+    //   context.fillRect(cx - CIRCLE_RADIUS,
+    //     cy - CIRCLE_RADIUS,
+    //     CIRCLE_RADIUS,
+    //     CIRCLE_RADIUS);
+    // }
 
-    if (highlighted) {
-      context.beginPath();
-      context.strokeStyle = 'red';
-      context.arc(xScale(highlighted.x_relative_offset),
-        yScale(highlighted.y_relative_offset), 10, 0, 2 * Math.PI);
-      context.stroke();
-    }
+    // if (highlighted) {
+    //   context.beginPath();
+    //   context.strokeStyle = 'red';
+    //   context.arc(xScale(highlighted.x_relative_offset),
+    //     yScale(highlighted.y_relative_offset), 10, 0, 2 * Math.PI);
+    //   context.stroke();
+    // }
 
     const diff = Date.now() - start;
     if (elapsedMS > 0) {
@@ -503,10 +611,28 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   }
 
   function setSyntenyData() {
+    var desc = dataObj.getFilterDescription();
+    console.log(desc);
+    if (desc.x) {
+      brushX.set(vec.make(desc.x));
+    } else {
+      brushX.set(vec.make(xScale.domain()));
+    }
+    if (desc.y) {
+      brushY.set(vec.make(desc.y));
+    } else {
+      brushY.set(vec.make(yScale.domain()));
+    }
+    if (desc.logks) {
+      brushV.set(vec.make(desc.logks));
+    } else {
+      brushV.set(vec.make(vExtent));
+    }
+    Lux.Scene.invalidate();
     draw(0, colorScale, colorScale);
   }
   dataObj.addListener(setSyntenyData);
-  drawBG();
+  // drawBG();
   setSyntenyData();
 
   function setNavigationMode(mode) {
