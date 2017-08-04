@@ -393,6 +393,15 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     mode: Lux.DrawingMode.additive,
     position: Shade.vec(canvasXScale(luxXScale(xBuffer)),
                         canvasYScale(luxYScale(yBuffer))),
+    // fillColor: Shade.ifelse(
+    //   xBuffer.ge(brushX.x())
+    //     .and(xBuffer.le(brushX.y()))
+    //     .and(yBuffer.ge(brushY.x()))
+    //     .and(yBuffer.le(brushY.y()))
+    //     .and(vBuffer.ge(brushV.x()))
+    //     .and(vBuffer.le(brushV.y())),
+    //   dotColor,
+    //   unselected),
     fillColor: Shade.ifelse(
       xBuffer.ge(brushX.x())
         .and(xBuffer.le(brushX.y()))
@@ -400,7 +409,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
         .and(yBuffer.le(brushY.y()))
         .and(vBuffer.ge(brushV.x()))
         .and(vBuffer.le(brushV.y())),
-      dotColor,
+      Shade.vec(Shade.exp(vBuffer), 0, 0, 1),
       unselected),
     strokeColor: unselected,
     pointDiameter: 5,
@@ -414,8 +423,12 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     mode: Lux.DrawingMode.overNoDepth,
     texelFunction: function(texelAccessor) {
       var color = texelAccessor();
-      var c = color.a();
-      return c.le(1).ifelse(color, color.div(c));
+      var count = color.a();
+      var sum_ks = color.r();
+      var arithmetic_avg_ks = Shade.log(sum_ks.div(count));
+      return count.le(0.5).ifelse(Shade.vec(0,0,0,0), luxColorScale(arithmetic_avg_ks));
+      // var c = color.a();
+      // return c.le(1).ifelse(color, color.div(c));
     }
   })]));
   background.scale(dpr,dpr);
