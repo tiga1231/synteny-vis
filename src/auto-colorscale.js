@@ -43,7 +43,6 @@ const generateColorScaleFromExtrema = extrema => {
   */
 
 
-
   //assign colors by y values instead of x
   //sort by y (decreasing)
   ///*
@@ -59,6 +58,7 @@ const generateColorScaleFromExtrema = extrema => {
   //restore the order for consistency
   pairs.sort(function(a,b){return a.midpoint-b.midpoint;});
   //*/
+
 
   //if only one pair, add an artificial one for d3 colorscale to work
   if(pairs.length == 1){
