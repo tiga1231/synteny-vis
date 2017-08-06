@@ -30,10 +30,12 @@ function Tree(dots, maxDotsPerNode=2000){
   var right = dots[dots.length-1].x_relative_offset;
   var top, bottom;
   for(var i=0; i<dots.length; i++){
-    if(top === undefined || dots[i].y_relative_offset > top){
+    if( (top === undefined || dots[i].y_relative_offset > top) 
+        && !isNaN(dots[i].y_relative_offset) ) {
       top = dots[i].y_relative_offset;
     }
-    if(bottom === undefined || dots[i].y_relative_offset < bottom){
+    if( (bottom === undefined || dots[i].y_relative_offset < bottom) 
+        && !isNaN(dots[i].y_relative_offset) ){
       bottom = dots[i].y_relative_offset;
     }
   }
@@ -53,6 +55,7 @@ function Tree(dots, maxDotsPerNode=2000){
     if(viewBox === null){
       return this.dots;
     }
+
     var ranges = dotsRange(this.rootNode, viewBox);
     var res0 = dotsFromRanges(this.dots, ranges);
 
@@ -164,6 +167,7 @@ function boxRelation(boxA, boxB){
   || (r1 >= l2 && r1 <= r2)){
     return 'partialOverlap';
   }
+
   return 'error';
 }
 

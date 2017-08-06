@@ -44,6 +44,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
   ret.currentData = function currentData(viewBox=null, 
                                           isHistogramBrushEmpty=true) {
+    
     var viewingDots = ret.tree.dotsIn(viewBox);
 
     if(isHistogramBrushEmpty){

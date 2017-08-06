@@ -38,6 +38,7 @@
 		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span>
 
 		<div>
+			<span id='0p-link' class="underline hover-black" onClick="load('0p')">plasmodium0</span>
 			<span id='p-link' class="underline hover-black" onClick="load('p')">plasmodium1</span>
 			<span id='2p-link' class="underline hover-black" onClick="load('2p')">plasmodium2</span>
 			<span id='3p-link' class="underline hover-black" onClick="load('3p')">plasmodium3</span>
@@ -97,7 +98,9 @@
 				id_1: '19927',
 				id_2: '9050',
         data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			}, {
+			}, 
+
+			{
 				identifier: 'p',
 				id_1: 'p',
 				id_2: 'p',
@@ -116,12 +119,12 @@
 				identifier: '4p',
 				id_1: '4p',
 				id_2: '4p',
-        //data_url: './data/4p.original.ks',
-        //data_url: './data/4p.ks',
         data_url: './data/4p.compressed.ks',
-
-        //data_url: './data/4p/',
-
+			}, {
+				identifier: '0p',
+				id_1: '0p',
+				id_2: '0p',
+        data_url: './data/0p.ks'
 			}];
 
 		var load = function(dataset) {

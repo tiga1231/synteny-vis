@@ -19,13 +19,13 @@ def getOffset(gid):
 
 def isComment(line):
     #res = line.startswith(('#', 'NA', 'undef'))
+    if line is None:
+        return True
     res = line.startswith('#')
     return res
 
 
 def applyOffset(line, offsets1, offsets2):
-    if isComment(line):
-        return line,line
     line = line.split('\t')
     for i in [3, 7]:
         seg = line[i].split('||')
@@ -44,17 +44,15 @@ def applyOffset(line, offsets1, offsets2):
             line[4], line[5] = stop, start
         elif i==7:
             line[8], line[9] = stop, start
-    res = '\t'.join(line) + '\n'
+    res = '\t'.join(line)
     line[2:6], line[6:10] = line[6:10], line[2:6]
     line[2] = 'a' + line[2][1:]
     line[6] = 'b' + line[6][1:]
-    res2 = '\t'.join(line) + '\n'
+    res2 = '\t'.join(line)
     return res, res2
 
 
 def changeChrName(line, tonames):
-    if isComment(line):
-        return line
     line = line.split('\t')
     
     for i,d in enumerate([2,6]):
@@ -66,13 +64,11 @@ def changeChrName(line, tonames):
         a[0] = tonames[i]
         line[d] = '||'.join(a)
     
-    return '\t'.join(line) + '\n'
+    return '\t'.join(line)
 
 
 def deleteUnusedFields(line):
     line0 = line
-    if isComment(line):
-        return ''
     line =  line.split('\t')
     ks, kn = line[:2]
     chr1, start1, stop1 = line[3].split('||')[:3]
@@ -112,9 +108,10 @@ def test_file():
 
 
 
-def changeKsFile(fns, fnout, dictNames):
+def changeKsFile(fns, fnout, dictNames, compress=True):
     with open(fnout, 'w') as fout:
-        fout.write('ks,kn,chr1,start1,stop1,chr2,start2,stop2\n')
+        if compress:
+            fout.write('ks,kn,chr1,start1,stop1,chr2,start2,stop2\n')
         for fn in fns:
             gid1, gid2 = fn.split('/')[-1].split('.')[0].split('_')
             off1 = getOffset(gid1)
@@ -122,12 +119,16 @@ def changeKsFile(fns, fnout, dictNames):
 
             with open(fn) as f:
                 for line in f:
+                    if isComment(line):
+                        continue
                     l1, l2 = applyOffset(line, off1, off2)
                     l = changeChrName(l1, [dictNames[gid1],dictNames[gid2]])
-                    l  = deleteUnusedFields(l)
+                    if compress:
+                        l  = deleteUnusedFields(l)
                     fout.write(l)
                     l = changeChrName(l2, [dictNames[gid2],dictNames[gid1]])
-                    l  = deleteUnusedFields(l)
+                    if compress:
+                        l = deleteUnusedFields(l)
                     fout.write(l)
 
 
@@ -144,6 +145,20 @@ def test_changeFile():
     changeMetaFile(gid2, name2)
 
     
+def changeMetaFile(gids, names, fnout, organismName=''):
+    with open('build/lengths0/6807.json') as f:
+        j = json.load(f)
+    if j['name']:
+        j['name'] = organismName
+    j['organism']['name'] = organismName
+    j['chromosomes'] = []
+    for gid, name in zip(gids, names):
+        off = getOffset(gid)
+        j['chromosomes'].append( {'name':name, 'length':off[''], 'gene_count':-1} )
+    with open('build/lengths/'+fnout, 'w') as f:
+        json.dump(j, f)
+
+
 
 def test_manyFile():
     with open('build/plasmodiumTags.txt') as f:
@@ -151,11 +166,13 @@ def test_manyFile():
         gids = [line.split(',')[1] for line in lines]
         names = [str(i)+line.split(',')[0] for i,line in enumerate(lines)]
     
-    filename = '4p'
-    gids = gids[:]
-    names = names[:]
-    organismName = str(len(names)) + ' plasmodiums'
+    filename = '0p'
+    gids = gids[:3]
+    names = names[:3]
+    compress = True
 
+    organismName = str(len(names)) + ' plasmodiums'
+    
     print len(names)
     print names
     print gids
@@ -169,34 +186,18 @@ def test_manyFile():
         gid1, gid2 = fn.split('/')[-1].split('.')[0].split('_')
         if gid1 in gids and gid2 in gids:
             fns.append(fn)
-    fnout = 'build/data/'+filename+'.compressed.ks'
+    if compress:
+        fnout = 'build/data/'+filename+'.compressed.ks'
+    else:
+        fnout = 'build/data/'+filename+'.ks'
     print len(fns), 'files'
     try:
         os.remove(fnout)
     except OSError:
         pass
-    changeKsFile(fns,  fnout, dictNames)
+    changeKsFile(fns,  fnout, dictNames, compress)
             
 
-
-
-def changeMetaFile(gids, names, fnout, organismName=''):
-    with open('build/lengths0/6807.json') as f:
-        j = json.load(f)
-    
-    if j['name']:
-        j['name'] = organismName
-    j['organism']['name'] = organismName
-    
-    j['chromosomes'] = []
-    for gid, name in zip(gids, names):
-        off = getOffset(gid)
-        j['chromosomes'].append( {'name':name, 'length':off[''], 'gene_count':-1} )
-    
-    with open('build/lengths/'+fnout, 'w') as f:
-        json.dump(j, f)
-        
-              
 if __name__ == '__main__':
    test_manyFile()
    #test_singleline()

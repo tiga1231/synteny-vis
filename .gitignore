@@ -1,11 +1,18 @@
 .DS_Store
 package-lock.json
 
+build/data/0p.ks
 build/data/p.ks
 build/data/2p.ks
 build/data/3p.ks
 build/data/4p.ks
-build/data/*.compressed.ks
+
+build/data/0p.compressed.ks
+build/data/p.compressed.ks
+build/data/2p.compressed.ks
+build/data/3p.compressed.ks
+build/data/4p.compressed.ks
+
 build/data0/
 build/lengths0/
 
