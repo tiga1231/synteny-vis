@@ -412,7 +412,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       Shade.vec(Shade.exp(vBuffer), 0, 0, 1),
       unselected),
     strokeColor: unselected,
-    pointDiameter: 5,
+    pointDiameter: 3,
     strokeWidth: 0
   });
 
