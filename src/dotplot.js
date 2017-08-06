@@ -426,7 +426,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       var count = color.a();
       var sum_ks = color.r();
       var arithmetic_avg_ks = Shade.log(sum_ks.div(count));
-      return count.le(0.5).ifelse(Shade.vec(0,0,0,0), luxColorScale(arithmetic_avg_ks));
+      return count.le(0.5)
+              .ifelse(Shade.vec(0,0,0,0), luxColorScale(arithmetic_avg_ks));
       // var c = color.a();
       // return c.le(1).ifelse(color, color.div(c));
     }
@@ -642,7 +643,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   function setSyntenyData() {
     var desc = dataObj.getFilterDescription();
-    console.log(desc);
     if (desc.x) {
       brushX.set(vec.make(desc.x));
     } else {

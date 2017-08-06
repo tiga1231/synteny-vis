@@ -25,14 +25,20 @@ exports.makeSyntenyDotPlot = function({
     console.error('Error - makeSyntenyDotPlot expects data_url parameter');
     return;
   }
-  q = q.defer(d3.text, data_url);
 
   // default modes
   var mode = {
     withSpa: false,
-    withKs: true
+    withKs: true,
+    isCompressed: data_url.endsWith('compressed.ks')
   };
   
+  if (mode.isCompressed){
+    q = q.defer(d3.csv, data_url);
+  }else{
+    q = q.defer(d3.text, data_url);
+  }
+
   if (spa_url !== undefined) {
     q = q.defer(d3.text, spa_url);
     mode.withSpa = true;
@@ -56,7 +62,13 @@ exports.makeSyntenyDotPlot = function({
         .join('\n');
     }
 
-    const ksData = ksTextToObjects(ks);
+    var ksData;
+    if(mode.isCompressed){
+      ksData = compressedKsTextToObjects(ks);
+    }else{
+      ksData = ksTextToObjects(ks);
+    }
+
     if (mode.withSpa) {
       genome_y = processSPAInformation({spa, genome_y, ksData});
     }
@@ -153,6 +165,64 @@ function processSPAInformation({
     })
   };
 }
+
+
+function compressedKsTextToObjects(csvList){
+
+  const dots = csvList
+    .map(compressedKsLineToSyntenyDot)
+    .filter(x => x);
+
+  //if ks == 0, set to min ks
+  var min_logks, min_logkn;
+  dots.forEach(line => {
+    if (isFinite(line.logks)) {
+      if (min_logks === undefined || line.logks < min_logks) {
+        min_logks = line.logks;
+      }
+    }
+    if (isFinite(line.logkn)) {
+      if (min_logkn === undefined || line.logkn < min_logkn) {
+        min_logkn = line.logkn;
+      }
+    }
+  });
+
+  return dots.map(x => {
+    x.logks = isFinite(x.logks) ? x.logks : min_logks;
+    x.logkn = isFinite(x.logkn) ? x.logkn : min_logkn;
+    x.logknks = x.logkn - x.logks;
+    return x;
+  });
+
+}
+
+
+const log10 = n => Math.log(n) / Math.log(10);
+function compressedKsLineToSyntenyDot(csvRow){
+  if(csvRow.ks === 'NA' || csvRow.ks === 'undef'){
+    return undefined;
+  }
+
+  var logks = log10(Number(csvRow.ks));
+  var logkn = log10(Number(csvRow.kn));
+  var logkskn = logks - logkn;
+  return {
+    ks: csvRow.ks,
+    kn: csvRow.kn,
+
+    logks: logks,
+    logkn: logkn,
+    logknks: logkskn,
+    x_chromosome_id: csvRow.chr1,
+    y_chromosome_id: csvRow.chr2,
+    x_relative_offset: Math.round(
+                        (Number(csvRow.start1)+Number(csvRow.stop1)) / 2),
+    y_relative_offset: Math.round(
+                        (Number(csvRow.start2)+Number(csvRow.stop2)) / 2)
+  };
+}
+
 
 function ksTextToObjects(text) {
   /* .ks files are delimited with a combination of tabs and double bars. */

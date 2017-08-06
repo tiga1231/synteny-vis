@@ -37,6 +37,9 @@
 		<span id='2a-link' class="underline hover-black" onClick="load('2a')">Aribidopsis2</span>,
 		<span id='2e-link' class="underline hover-black" onClick="load('2e')">Ecoli2</span>,
 		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>
+		
+		<span id='0p-link' class="underline hover-black" onClick="load('0p')">plasmodium0</span>
+		<span id='2p-link' class="underline hover-black" onClick="load('2p')">plasmodium2</span>
 		<span id='SPA-link' class="underline hover-black" onClick="load('SPA')">SPA test</span>
 		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span>
 	</div>
@@ -92,12 +95,22 @@
 				id_1: '19927',
 				id_2: '9050',
         data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			},{
+			}, {
+				identifier: '0p',
+				id_1: '0p',
+				id_2: '0p',
+        data_url: './data/0p.ks'
+			}, {
+				identifier: '2p',
+				id_1: '2p',
+				id_2: '2p',
+        data_url: './data/2p.compressed.ks'
+			}, {
 				identifier: 'SPA',
 				id_1: '4242',
 				id_2: '6872',
-     		                data_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords',
-		                spa_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords_ct0.w1000.spa1.sr.cs1.csoS.log.nsd.spa_info'
+        data_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords',
+        spa_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords_ct0.w1000.spa1.sr.cs1.csoS.log.nsd.spa_info'
 			}];
 
 		var load = function(dataset) {
