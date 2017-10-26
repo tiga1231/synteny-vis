@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
 	<!-- You don't need to include this! I am just using the JSON loading function. Presumably you have some other method of loading data, and that is fine. -->
-  <script src="lib/d3.js"></script>
+  <!--script src="lib/d3.js"></script-->
   <script src="lib/jquery-2.1.0.min.js"></script>
   <script src="lib/lux.js"></script>
 	<style>
@@ -29,19 +29,21 @@
 <body>
 	<div class="grey-text">
 		Datasets:
-		<span id='m-link' class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
+		<!--span id='m-link' class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
 		<span id='a-link' class="underline hover-black" onClick="load('a')">Aribidopsis</span>,
 		<span id='e-link' class="underline hover-black" onClick="load('e')">Ecoli</span>,
 		<span id='h-link' class="underline hover-black" onClick="load('h')">Homo Sapiens - Pan Troglodytes</span>
 		<span id='2m-link' class="underline hover-black" onClick="load('2m')">Maize-Sorghum2</span>,
 		<span id='2a-link' class="underline hover-black" onClick="load('2a')">Aribidopsis2</span>,
 		<span id='2e-link' class="underline hover-black" onClick="load('2e')">Ecoli2</span>,
-		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>
-		
+		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>		
+		<br>
+		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span-->
+		<span id='SPA-link' class="underline hover-black" onClick="load('SPA')">SPA test</span>
+
 		<span id='0p-link' class="underline hover-black" onClick="load('0p')">plasmodium0</span>
 		<span id='2p-link' class="underline hover-black" onClick="load('2p')">plasmodium2</span>
-		<span id='SPA-link' class="underline hover-black" onClick="load('SPA')">SPA test</span>
-		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span>
+		<span id='3p-link' class="underline hover-black" onClick="load('3p')">plasmodium3</span>
 	</div>
 
 	<div id="main"></div>
@@ -50,7 +52,8 @@
 	<script>
 		/* List of all possible data files */
 
-		var files = [{
+		var files = [
+			/*{
 				identifier: 'm',
 				id_1: '6807',
 				id_2: '8082',
@@ -95,7 +98,7 @@
 				id_1: '19927',
 				id_2: '9050',
         data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			}, {
+			},*/ {
 				identifier: '0p',
 				id_1: '0p',
 				id_2: '0p',
@@ -105,6 +108,12 @@
 				id_1: '2p',
 				id_2: '2p',
         data_url: './data/2p.compressed.ks'
+			},
+			{
+				identifier: '3p',
+				id_1: '3p',
+				id_2: '3p',
+        data_url: './data/3p.compressed.ks'
 			}, {
 				identifier: 'SPA',
 				id_1: '4242',
@@ -179,7 +188,7 @@
 		 * Default to 'h' manually now that we don't do that through identifiers.
 		 */
 		var hash = window.location.hash;
-		load(hash ? hash.substring(1) : 'h');
+		load(hash ? hash.substring(1) : '0p');
 	</script>
 </body>
 

@@ -2,6 +2,7 @@ from glob import glob
 import os
 import json
 from natsort import natsorted
+import sys
 
 def getOffset(gid):
     gid = str(gid)
@@ -154,7 +155,10 @@ def changeMetaFile(gids, names, fnout, organismName=''):
     j['chromosomes'] = []
     for gid, name in zip(gids, names):
         off = getOffset(gid)
-        j['chromosomes'].append( {'name':name, 'length':off[''], 'gene_count':-1} )
+        with open('build/lengths0/'+str(gid)) as f:
+            js = json.load(f)
+            geneCount = sum([c['gene_count'] for c in js['chromosomes']])
+        j['chromosomes'].append( {'name':name, 'length':off[''], 'gene_count':geneCount} )
     with open('build/lengths/'+fnout, 'w') as f:
         json.dump(j, f)
 
@@ -166,10 +170,11 @@ def test_manyFile():
         gids = [line.split(',')[1] for line in lines]
         names = [str(i)+line.split(',')[0] for i,line in enumerate(lines)]
     
-    filename = '2p'
-    gids = gids[:]
-    names = names[:]
-    compress = True
+    filename = sys.argv[2]
+    start,stop = [int(i) for i in sys.argv[1].split(',')]
+    gids = gids[start:stop]
+    names = names[start:stop]
+    compress = (sys.argv[3] == 'True')
 
     organismName = str(len(names)) + ' plasmodiums'
     

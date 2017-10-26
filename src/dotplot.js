@@ -60,6 +60,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var xScale = d3.scale.linear().domain(xExtent).range([0, getWidth()]);
   var yScale = d3.scale.linear().domain(yExtent).range([getHeight(), 0]);
 
+
   const darknessOfTextGaps = function(values, scale) {
     return zipWith(function(a, b) {
       return b ? Math.abs(scale(b) - scale(a)) : 10000;
@@ -68,6 +69,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       .map(v => 255 - Math.floor(v * 256))
       .map(v => Math.min(v, 245));
   };
+
 
   const filterTextGaps = function(values, scale, labelSize) {
     return values.reduce(function(out, next) {
@@ -90,6 +92,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .then(([x, y]) => {
       return {x_name: x.names.join(', '), y_name: y.names.join(', ')};
     });
+
 
   let highlighted;
   const updateGeVOLink = function(x, y) {

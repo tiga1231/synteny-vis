@@ -1,5 +1,9 @@
 import histogram from './histogram';
 import dotplot from './dotplot';
+
+import dimReductionPlot from './dimReductionPlot';
+import kernel from './kernel';
+
 import d3 from 'd3';
 import naturalSort from 'javascript-natural-sort';
 import autoscale from './auto-colorscale';
@@ -18,10 +22,39 @@ import {
   SHOW_MAXIMA_AND_MINIMA
 } from './constants';
 
+
+function buildDivDr(mainDiv){
+  //dimReductionPlot
+  var svgDr = mainDiv.append('div')
+    .attr('id', 'divDr')
+    .append('svg')
+    .attr('id', 'dimReductionPlot');
+}
+
+function buildDivHeatmap(mainDiv){
+  //dimReductionPlot
+  var svgHeatmap = mainDiv.append('div')
+    .attr('id', 'divHeatmap')
+    .append('svg')
+    .attr('id', 'heatmap');
+}
+
+
 function buildDiv(element_id, show_histograms) {
   const div = d3.select(element_id)
     .append('div')
     .classed('_synteny-dotplot-builder', true);
+
+
+  var div1 = d3.select(element_id)
+    .append('div')
+    .classed('secondRow', true);
+  //heatmap
+  buildDivHeatmap(div1);
+  //dimReductionPlot
+  buildDivDr(div1);
+  
+
 
   div.append('svg').attr('id', 'dotplot')
     .style('shape-rendering', 'crispEdges')
@@ -163,10 +196,13 @@ function buildDiv(element_id, show_histograms) {
     .text('No Point Selected');
 }
 
+
 function controller(ksData, element_id, meta) {
+  
   var chromosomeOrderFun, dataObj;
 
   function changeOrderFunAndRebuildDataObject(newOrderFun) {
+    
     chromosomeOrderFun = newOrderFun;
     const xCumLenMap = chromosomesToCumulativeBPCounts(
       meta.genome_x.chromosomes, chromosomeOrderFun);
@@ -234,6 +270,12 @@ function controller(ksData, element_id, meta) {
   console.log('Total synteny dots:', dataObj.currentData().raw.length);
   
   buildDiv('#' + element_id, meta.have_ks);
+
+  //plot dim redecution and heatmap
+
+  //heatmap.plot(MyKernel.getK(), meta);
+  dimReductionPlot.initPlot(dataObj, meta);
+
 
   const refreshPlot = debounced(100, function(colorScale) {
     syntenyPlot.setField(activeField);
@@ -317,6 +359,7 @@ function controller(ksData, element_id, meta) {
   }
 
   function setUpHistograms(initialCS) {
+
     d3.selectAll('.histogram').classed('hidden', false);
     const histograms = {
       'logks': histogram.histogram('#plot', dataObj, 'logks', initialCS),
@@ -394,6 +437,7 @@ function controller(ksData, element_id, meta) {
   // Tear everything out and rebuild. Used for resizing and
   // chromosome reordering
   const rebuild = () => {
+
     ['dotplot', 'plot', 'plot2', 'plot3'].forEach(id => {
       const el = document.getElementById(id);
       while(el.firstChild) el.removeChild(el.firstChild);
@@ -409,6 +453,7 @@ function controller(ksData, element_id, meta) {
   
   /* Benchmark */
   if (RUN_BENCHMARKS) {
+
     const [minLogKs, maxLogKs] = d3.extent(
       dataObj.currentData().raw, x => x.logks);
     const points = utils.samplePointsInRange([minLogKs, maxLogKs], 10);

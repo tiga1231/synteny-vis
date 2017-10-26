@@ -1,0 +1,33 @@
+<html>
+<head>
+<script src="https://d3js.org/d3.v4.js"></script>
+<style>
+svg{
+  background-color: #eee;
+}
+</style>
+</head>
+<body>
+
+<svg id="plot">
+</svg>
+<script>
+'use strict';
+var width = 500;
+var height = 500;
+
+var svg = d3.select('#plot')
+.attr('width', width)
+.attr('height', height);
+
+
+d3.request('/dr')
+.header("Content-Type", "application/json")
+.post(s, function(e,d){
+  var data = JSON.parse(d.responseText);
+  console.log(data);
+})
+
+</script>
+</body>
+</html>

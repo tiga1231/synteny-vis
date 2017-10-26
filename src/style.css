@@ -1,7 +1,7 @@
 /* Global rules */
 ._synteny-dotplot-builder {
 	width: 100%;
-	height: 100%;
+	height: 45%;
 }
 
 /* Brushes */
@@ -18,7 +18,10 @@
 /* Borders and background */
 ._synteny-dotplot-builder .dotplot,
 ._synteny-dotplot-builder #histogram-and-top-form,
-._synteny-dotplot-builder #form-wrapper
+._synteny-dotplot-builder #form-wrapper,
+.secondRow #dimReductionPlot,
+.secondRow #heatmap
+
 {
   /* background-color: #F5F5F5;*/
   border: 1px solid #119911;
@@ -39,9 +42,28 @@
   position: absolute;
 }
 ._synteny-dotplot-builder #dotplot {
-  width: 70%;
+  width: 35%;
   height: 100%;
 }
+
+
+
+.secondRow #dimReductionPlot {
+  background-color: #eee;
+  width: 35%;
+  height: 45%;
+  float: left;
+}
+
+.secondRow #heatmap {
+  background-color: #eef;
+  width: 35%;
+  height: 45%;
+  float: left;
+}
+
+
+
 /* chromosome boundary lines in dotplot */
 ._synteny-dotplot-builder #dotplot .tick line {
   stroke: rgba(0,0,0, 0.25);
@@ -82,9 +104,9 @@
 }
 
 ._synteny-dotplot-builder #histogram-and-top-form {
-  float: right;
-  width: 28.5%;
-  height: 65%;
+  float: left;
+  width: 35%;
+  height: 100%;
 }
 ._synteny-dotplot-builder #histogram-wrapper {
   float: right;

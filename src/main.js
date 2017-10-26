@@ -4,8 +4,9 @@ import sv from './synteny-vis';
 import { timeIt, zipObject } from './utils';
 import { genCogeSequenceLink } from './coge-util';
 import { inlineKSData,
-         chromosomesToCumulativeBPCounts } from './chromosomeUtils.js';
+         chromosomesToCumulativeBPCounts } from './chromosomeUtils';
 import { createDataObj } from './dataObject';
+
 
 exports.makeSyntenyDotPlot = function({
   data_url,
@@ -15,6 +16,7 @@ exports.makeSyntenyDotPlot = function({
   genome_y,
   gen_coge_seq_link
 }) {
+
   if (gen_coge_seq_link === undefined) {
     gen_coge_seq_link = genCogeSequenceLink;
   }
