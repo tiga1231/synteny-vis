@@ -25,6 +25,13 @@ function dr(K){
 
 
 function drClient(K){
+  //local kernel PCA
+  var ones = [ d3.range(K.length).map(d=>1) ];
+  ones = numeric.dot(numeric.transpose(ones), ones);
+  var identity = numeric.identity(K.length);
+  var C = numeric.sub(identity, numeric.div(ones, K.length));
+  K = numeric.dot(K, C);
+  
   var svd = numeric.svd(K);
   var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S)));
 
