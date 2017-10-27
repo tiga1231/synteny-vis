@@ -125,6 +125,7 @@ function updatePlot(svg, data){
   .text(d=> d.name);
 
   dots = svg.selectAll('.dot')
+    .transition()
     .attr('cx', d=>sx(d.x) )
     .attr('cy', d=>sy(d.y) )
     .attr('r', 5 )

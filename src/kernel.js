@@ -17,7 +17,7 @@ function createKernel(dataObj, meta){
       var i1 = chrNames.indexOf(name1);
       var i2 = chrNames.indexOf(name2);
       K[i1][i2] += f(data[i].ks)
-        /Math.sqrt(chromosomes[i1].gene_count*chromosomes[i2].gene_count);
+        /Math.sqrt(chromosomes[i1].gene_count * chromosomes[i2].gene_count);
       K[i1][i2] = Math.min(1,K[i1][i2]);
     }
     for (i = 0; i < size; i++) {
@@ -32,6 +32,7 @@ function createKernel(dataObj, meta){
   };
 
   Kernel.getData = function(){
+
     return dataObj.currentData().active;
   };
 
@@ -42,7 +43,8 @@ function createKernel(dataObj, meta){
 
 
 function f(ks){
-  return +Math.exp(-ks);
+  ks = +ks;
+  return +Math.exp(-ks*ks);
 }
 
 exports.createKernel = createKernel;

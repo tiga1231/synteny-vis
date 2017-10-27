@@ -167,3 +167,11 @@
 #form-top-label {
     margin-top: 2%;
 }
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: slategray;
+  shape-rendering: crispEdges;
+}
+    
