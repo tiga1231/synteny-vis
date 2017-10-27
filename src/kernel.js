@@ -18,6 +18,7 @@ function createKernel(dataObj, meta){
       var i2 = chrNames.indexOf(name2);
       K[i1][i2] += f(data[i].ks)
         /Math.sqrt(chromosomes[i1].gene_count*chromosomes[i2].gene_count);
+      K[i1][i2] = Math.min(1,K[i1][i2]);
     }
     for (i = 0; i < size; i++) {
       K[i][i] = 1;
