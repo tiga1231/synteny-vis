@@ -16,7 +16,6 @@ function initPlot(dataObj, meta){
   var K = MyKernel.getK();
   dr(K);
   dataObj.addListener(updateK);
-
 }
 
 function dr(K){
@@ -31,7 +30,7 @@ function drClient(K){
   var identity = numeric.identity(K.length);
   var C = numeric.sub(identity, numeric.div(ones, K.length));
   K = numeric.dot(K, C);
-  
+
   var svd = numeric.svd(K);
   var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S)));
 
@@ -76,7 +75,7 @@ function drPOST(K){
 function updateK(type){
   console.log(type);
   if(//type=='histogram-stop'
-      type=='data' || type=='data-stop'
+      true|| type=='data' || type=='data-stop'
     ){
     MyKernel.computeK();
     var K = MyKernel.getK();
@@ -98,15 +97,17 @@ function updatePlot(svg, data){
   var height = svg.style('height');
   width = +width.substring(0,width.length-2);
   height = +height.substring(0,height.length-2);
+  console.log(width, height);
   var margin = 0.1*Math.min(width, height);
+  var side = Math.min(height,width);
 
   var vmax = d3.extent(data, d=>Math.max(Math.abs(d.x), Math.abs(d.y))  )[1];
   var sx = d3.scale.linear()
     .domain([-vmax, vmax])
-    .range([margin, width-margin]);
+    .range([margin, side-margin]);
   var sy = d3.scale.linear()
     .domain([-vmax, vmax])
-    .range([height-margin, margin]);
+    .range([side-margin, margin]);
 
   var sc = d3.scale.category10();
 
@@ -114,27 +115,28 @@ function updatePlot(svg, data){
   var ay = d3.svg.axis().scale(sy).orient('left');
 
   //TODO cache data for alignement
-  svg.selectAll('.dot').remove();
+  //svg.selectAll('.dot').remove();
   svg.selectAll('.axis').remove();
 
+  svg.selectAll('.dot')
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr('class', 'dot');
+
   var dots = svg.selectAll('.dot')
-  .data(data)
-  .enter()
-  .append('circle')
-  .attr('class', 'dot')
-  .attr('cx', d=>sx(d.x) )
-  .attr('cy', d=>sy(d.y) )
-  .attr('r', 5)
-  .attr('fill', d=>sc(d.category));
+    .attr('cx', d=>sx(d.x) )
+    .attr('cy', d=>sy(d.y) )
+    .attr('r', 5 )
+    .attr('fill', d=>sc(d.category) );
 
   dots.append('title')
-  .text(d=> d.name);
+    .text(d=> d.name);
 
-  
   svg.append('g')
-  .attr('class', 'axis x')
-  .attr('transform', 'translate(0,'+sy.range()[0]+')')
-  .call(ax);
+    .attr('class', 'axis x')
+    .attr('transform', 'translate(0,'+sy.range()[0]+')')
+    .call(ax);
 
   svg.append('g')
     .attr('class', 'axis y')

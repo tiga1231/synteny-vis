@@ -437,7 +437,6 @@ function controller(ksData, element_id, meta) {
   // Tear everything out and rebuild. Used for resizing and
   // chromosome reordering
   const rebuild = () => {
-
     ['dotplot', 'plot', 'plot2', 'plot3'].forEach(id => {
       const el = document.getElementById(id);
       while(el.firstChild) el.removeChild(el.firstChild);
@@ -446,6 +445,8 @@ function controller(ksData, element_id, meta) {
     const cs = histograms[activeField].getColorScale();
     histograms = setUpHistograms(cs);
     syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
+    dimReductionPlot.initPlot(dataObj, meta);
+
   };
   
   // Resize the window? Rebuild.
