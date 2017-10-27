@@ -8,7 +8,7 @@ function createKernel(dataObj, meta){
   var chrNames = chromosomes.map(d=>d.name);
   var size = chromosomes.length;
 
-  Kernel.computeK = function(range){
+  Kernel.computeK = function(){
     var K = math.zeros(size, size)._data;
     var data = Kernel.getData();
     for (var i = 0; i < data.length; i++) {
@@ -35,12 +35,14 @@ function createKernel(dataObj, meta){
     return dataObj.currentData().active;
   };
 
+  Kernel.computeK();
+  dataObj.addListener(Kernel.computeK);
   return Kernel;
 }
 
 
 function f(ks){
-  return +Math.exp(-ks*ks);
+  return +Math.exp(-ks);
 }
 
 exports.createKernel = createKernel;

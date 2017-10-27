@@ -1,19 +1,17 @@
 import d3 from 'd3';
-import kernel from './kernel';
 import numeric from 'numeric';
 //usage:
 //import { dr } from './dimReductionPlot';
 
-var MyKernel;
 var chromosomes;
+var myKernel;
 
-function initPlot(dataObj, meta){
+function initPlot(dataObj, meta, kernelObj){
   console.log(meta);
   chromosomes = meta.genome_x.chromosomes;
 
-  MyKernel = kernel.createKernel(dataObj, meta);
-  MyKernel.computeK();
-  var K = MyKernel.getK();
+  myKernel = kernelObj;
+  var K = myKernel.getK();
   dr(K);
   dataObj.addListener(updateK);
 }
@@ -78,12 +76,11 @@ function updateK(type){
   if(//type=='histogram-stop'
       true|| type=='data' || type=='data-stop'
     ){
-    MyKernel.computeK();
-    var K = MyKernel.getK();
+    var K = myKernel.getK();
     dr(K);
   }/*else if(type=='data'){
-    MyKernel.computeK();
-    K = MyKernel.getK();
+    myKernel.computeK();
+    K = myKernel.getK();
     dr(K);
   }*/
 

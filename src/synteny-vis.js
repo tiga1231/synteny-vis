@@ -273,10 +273,9 @@ function controller(ksData, element_id, meta) {
   buildDiv('#' + element_id, meta.have_ks);
 
   //plot dim redecution and heatmap
-
-  //heatmap.plot(MyKernel.getK(), meta);
-  dimReductionPlot.initPlot(dataObj, meta);
-  heatmap.initPlot(dataObj, meta);
+  var myKernel = kernel.createKernel(dataObj, meta);
+  dimReductionPlot.initPlot(dataObj, meta, myKernel);
+  heatmap.initPlot(dataObj, meta, myKernel);
 
   const refreshPlot = debounced(100, function(colorScale) {
     syntenyPlot.setField(activeField);

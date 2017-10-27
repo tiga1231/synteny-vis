@@ -1,18 +1,16 @@
 import d3 from 'd3';
-import kernel from './kernel';
 import numeric from 'numeric';
 
 
-var MyKernel;
+var myKernel;
 var chromosomes;
 
-function initPlot(dataObj, meta){
+function initPlot(dataObj, meta, kernel){
 
   chromosomes = meta.genome_x.chromosomes;
 
-  MyKernel = kernel.createKernel(dataObj, meta);
-  MyKernel.computeK();
-  var K = MyKernel.getK();
+  myKernel = kernel;
+  var K = myKernel.getK();
   var data = genData(K);
   updatePlot(data, chromosomes);
   dataObj.addListener(updateK);
@@ -38,8 +36,7 @@ function genData(K){
 
 function updateK(type){
 
-  MyKernel.computeK();
-  var K = MyKernel.getK();
+  var K = myKernel.getK();
   var data = genData(K);
   updatePlot(data, chromosomes);
 
