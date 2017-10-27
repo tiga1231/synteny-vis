@@ -2,6 +2,7 @@ import histogram from './histogram';
 import dotplot from './dotplot';
 
 import dimReductionPlot from './dimReductionPlot';
+import heatmap from './heatmap';
 import kernel from './kernel';
 
 import d3 from 'd3';
@@ -275,7 +276,7 @@ function controller(ksData, element_id, meta) {
 
   //heatmap.plot(MyKernel.getK(), meta);
   dimReductionPlot.initPlot(dataObj, meta);
-
+  heatmap.initPlot(dataObj, meta);
 
   const refreshPlot = debounced(100, function(colorScale) {
     syntenyPlot.setField(activeField);
@@ -445,7 +446,9 @@ function controller(ksData, element_id, meta) {
     const cs = histograms[activeField].getColorScale();
     histograms = setUpHistograms(cs);
     syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
+
     dimReductionPlot.initPlot(dataObj, meta);
+    heatmap.initPlot(dataObj, meta);
 
   };
   

@@ -18,6 +18,7 @@ function initPlot(dataObj, meta){
   dataObj.addListener(updateK);
 }
 
+
 function dr(K){
   drClient(K);
 }
@@ -90,14 +91,13 @@ function updateK(type){
 
 
 
-
 function updatePlot(svg, data){
 
   var width = svg.style('width');
   var height = svg.style('height');
   width = +width.substring(0,width.length-2);
   height = +height.substring(0,height.length-2);
-  console.log(width, height);
+
   var margin = 0.1*Math.min(width, height);
   var side = Math.min(height,width);
 
@@ -116,32 +116,46 @@ function updatePlot(svg, data){
 
   //TODO cache data for alignement
   //svg.selectAll('.dot').remove();
-  svg.selectAll('.axis').remove();
+  //svg.selectAll('.axis').remove();
 
-  svg.selectAll('.dot')
+  var dots = svg.selectAll('.dot')
     .data(data)
     .enter()
     .append('circle')
     .attr('class', 'dot');
 
-  var dots = svg.selectAll('.dot')
+  dots.append('title')
+  .text(d=> d.name);
+
+  dots = svg.selectAll('.dot')
     .attr('cx', d=>sx(d.x) )
     .attr('cy', d=>sy(d.y) )
     .attr('r', 5 )
     .attr('fill', d=>sc(d.category) );
 
-  dots.append('title')
-    .text(d=> d.name);
+  
 
-  svg.append('g')
-    .attr('class', 'axis x')
+  svg.selectAll('.x.axis')
+    .data([1])
+    .enter()
+    .append('g')
+    .attr('class', 'x axis');
+
+  svg.selectAll('.x.axis')
     .attr('transform', 'translate(0,'+sy.range()[0]+')')
     .call(ax);
 
-  svg.append('g')
-    .attr('class', 'axis y')
+
+  svg.selectAll('.y.axis')
+    .data([1])
+    .enter()
+    .append('g')
+    .attr('class', 'y axis');
+
+  svg.selectAll('.y.axis')
     .attr('transform', 'translate('+sx.range()[0]+',0)')
     .call(ay);
+  
 }
 
 exports.initPlot = initPlot;
