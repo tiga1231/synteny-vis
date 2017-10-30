@@ -1,3 +1,5 @@
+# python merge.py 6,10 4p True
+
 from glob import glob
 import os
 import json

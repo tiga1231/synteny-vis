@@ -5,20 +5,50 @@ import numeric from 'numeric';
 
 var chromosomes;
 var myKernel;
+var x0 = null;
 
 function initPlot(dataObj, meta, kernelObj){
   console.log(meta);
   chromosomes = meta.genome_x.chromosomes;
 
+  x0 = null;
   myKernel = kernelObj;
   var K = myKernel.getK();
   dr(K);
+  console.log('listenter added');
   dataObj.addListener(updateK);
 }
 
 
 function dr(K){
   drClient(K);
+}
+
+
+function dissimilarity(x1, x2){
+  var res = numeric.sub(x1,x2);
+  res = numeric.norm2(res);
+  return res;
+}
+
+
+function procrustes(xTraveler, xBed){
+
+  var x1 = numeric.dot(xTraveler, [[1, 0], [0,1]]);
+  var x2 = numeric.dot(xTraveler, [[-1,0], [0,1]]);
+  var x3 = numeric.dot(xTraveler, [[1, 0], [0,-1]]);
+  var x4 = numeric.dot(xTraveler, [[-1,0], [0,-1]]);
+  
+  var d1 = dissimilarity(x1, xBed);
+  var d2 = dissimilarity(x2, xBed);
+  var d3 = dissimilarity(x3, xBed);
+  var d4 = dissimilarity(x4, xBed);
+
+  var x = [x1,x2,x3,x4];
+  var d = [d1,d2,d3,d4];
+
+  return x[d.indexOf(Math.min(d1,d2,d3,d4))];
+
 }
 
 
@@ -29,10 +59,15 @@ function drClient(K){
   var identity = numeric.identity(K.length);
   var C = numeric.sub(identity, numeric.div(ones, K.length));
   K = numeric.dot(K, C);
+  K = numeric.dot(C, K);
 
   var svd = numeric.svd(K);
-  var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S)));
+  var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S.slice(0,2))));
 
+  if(x0 !== null){
+    x = procrustes(x, x0);
+  }
+  x0 = x;
   var data = x.map(function(d,i){
     return {
       x: d[0],
@@ -131,7 +166,18 @@ function updatePlot(svg, data){
     .attr('r', 5 )
     .attr('fill', d=>sc(d.category) );
 
-  
+  var labels = svg.selectAll('.label')
+    .data(data)
+    .enter()
+    .append('text')
+    .attr('class', 'label');
+
+  labels = svg.selectAll('.label')
+    .transition()
+    .attr('x', d=>sx(d.x) )
+    .attr('y', d=>sy(d.y) )
+    .attr('fill', d=>sc(d.category) )
+    .text(d=>d.name);
 
   svg.selectAll('.x.axis')
     .data([1])

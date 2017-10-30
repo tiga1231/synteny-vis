@@ -446,8 +446,9 @@ function controller(ksData, element_id, meta) {
     histograms = setUpHistograms(cs);
     syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
 
-    dimReductionPlot.initPlot(dataObj, meta);
-    heatmap.initPlot(dataObj, meta);
+    var myKernel = kernel.createKernel(dataObj, meta);
+    dimReductionPlot.initPlot(dataObj, meta, myKernel);
+    heatmap.initPlot(dataObj, meta, myKernel);
 
   };
   
