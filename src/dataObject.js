@@ -1,7 +1,10 @@
 import crossfilter from 'crossfilter';
+import d3 from 'd3';
 import { zipObject } from './utils';
 
+
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
+
   const xmap = xmapPair.nt;
   const ymap = ymapPair.nt;
   const ret = {};
@@ -37,7 +40,8 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.currentData = function currentData() {
     return {
       raw: syntenyDots,
-      active: cross_all.top(Infinity)
+      active: cross_all.top(Infinity),
+      ksExtent: [cross_all.top(1).ks, cross_all.bottom(1).ks]
     };
   };
 
@@ -98,9 +102,11 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.addListener = function(x) {
     listeners.push(x);
   };
+
   ret.clearListeners = function() {
     while(listeners.length > 0) listeners.pop();
   };
+
   ret.getFilterDescription = function() {
     return filterDescription;
   };

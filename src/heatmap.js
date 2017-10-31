@@ -65,8 +65,9 @@ function updatePlot(data){
     .domain([-1, vmax])
     .range([side-margin, margin]);
 
+  var offDiagonalData = data.filter(d=>d.rowIndex!=d.colIndex);
   var sc = d3.scale.linear()
-  .domain([0,1])
+  .domain([0,d3.max(offDiagonalData, d=>d.value)])
   .range(['#deebf7', '#3182bd']);
 
   var ax = d3.svg.axis().scale(sx).orient('bottom'); 
@@ -87,7 +88,7 @@ function updatePlot(data){
     .attr('y', d=>sy(d.rowIndex) )
     .attr('width', (side-2*margin)/(vmax+1) )
     .attr('height', (side-2*margin)/(vmax+1) )
-    .attr('fill', d=>sc(d.value) );
+    .attr('fill', d =>sc(d.value) );
 
   svg.selectAll('title')
     .data(data)

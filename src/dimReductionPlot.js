@@ -32,22 +32,12 @@ function dissimilarity(x1, x2){
 }
 
 
-function procrustes(xTraveler, xBed){
-
-  var x1 = numeric.dot(xTraveler, [[1, 0], [0,1]]);
-  var x2 = numeric.dot(xTraveler, [[-1,0], [0,1]]);
-  var x3 = numeric.dot(xTraveler, [[1, 0], [0,-1]]);
-  var x4 = numeric.dot(xTraveler, [[-1,0], [0,-1]]);
-  
-  var d1 = dissimilarity(x1, xBed);
-  var d2 = dissimilarity(x2, xBed);
-  var d3 = dissimilarity(x3, xBed);
-  var d4 = dissimilarity(x4, xBed);
-
-  var x = [x1,x2,x3,x4];
-  var d = [d1,d2,d3,d4];
-
-  return x[d.indexOf(Math.min(d1,d2,d3,d4))];
+function procrustes(x1, x2){
+  //orthogonal procrustes
+  var svd = numeric.svd(numeric.dot(numeric.transpose(x2), x1));
+  var q = numeric.dot(svd.V, numeric.transpose(svd.U));
+  //var s = numeric.sum(svd.S) / numeric.norm2(x1);
+  return numeric.dot(x1, q);
 
 }
 
@@ -177,7 +167,8 @@ function updatePlot(svg, data){
     .attr('x', d=>sx(d.x) )
     .attr('y', d=>sy(d.y) )
     .attr('fill', d=>sc(d.category) )
-    .text(d=>d.name);
+    .text(d=>d.name)
+    .style('opacity', 0.5);
 
   svg.selectAll('.x.axis')
     .data([1])
