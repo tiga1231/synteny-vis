@@ -3,16 +3,16 @@ import numeric from 'numeric';
 
 
 var myKernel;
-var chromosomes;
-
+var chrNames;
 function initPlot(dataObj, meta, kernel){
 
-  chromosomes = meta.genome_x.chromosomes;
+  var chromosomes = meta.genome_x.chromosomes;
+  chrNames = chromosomes.map(d=>d.name);
 
   myKernel = kernel;
   var K = myKernel.getK();
   var data = genData(K);
-  updatePlot(data, chromosomes);
+  updatePlot(data, chrNames);
   dataObj.addListener(updateK);
 }
 
@@ -26,7 +26,7 @@ function genData(K){
         rowIndex: j,
         colIndex: i,
         value: K[i][j],
-        tag: K[i][j]
+        tag: K[i][j]        
       });
     }
   }
@@ -38,13 +38,13 @@ function updateK(type){
 
   var K = myKernel.getK();
   var data = genData(K);
-  updatePlot(data, chromosomes);
+  updatePlot(data, chrNames);
 
 }
 
 
 
-function updatePlot(data){
+function updatePlot(data, names){
 
   var svg = d3.select('#heatmap');
 
@@ -57,21 +57,39 @@ function updatePlot(data){
   var side = Math.min(height,width);
 
   var vmax = d3.max(data, d=>d.rowIndex);
+
+  //heatmap sticks to the right
   var sx = d3.scale.linear()
     .domain([0, vmax+1])
-    .range([margin, side-margin]);
+    .range([width-side+margin, width-margin]);
 
   var sy = d3.scale.linear()
     .domain([-1, vmax])
     .range([side-margin, margin]);
+
+  //for tick marks / tooltips / else
+  var sxLabel = d3.scale.ordinal()
+  .domain(names)
+  .rangePoints([
+    width-side+margin+(side-2*margin)/names.length/2, 
+    width-margin-(side-2*margin)/names.length/2
+  ]);
+
+  var syLabel = d3.scale.ordinal()
+  .domain(names)
+  .rangePoints([
+    side-margin-(side-2*margin)/names.length/2, 
+    margin+(side-2*margin)/names.length/2
+  ]);
+
 
   var offDiagonalData = data.filter(d=>d.rowIndex!=d.colIndex);
   var sc = d3.scale.linear()
   .domain([0,d3.max(offDiagonalData, d=>d.value)])
   .range(['#deebf7', '#3182bd']);
 
-  var ax = d3.svg.axis().scale(sx).orient('bottom'); 
-  var ay = d3.svg.axis().scale(sy).orient('left');
+  var ax = d3.svg.axis().scale(sxLabel).orient('bottom'); 
+  var ay = d3.svg.axis().scale(syLabel).orient('left');
 
 
   var boxes = svg.selectAll('.box')
@@ -88,12 +106,70 @@ function updatePlot(data){
     .attr('y', d=>sy(d.rowIndex) )
     .attr('width', (side-2*margin)/(vmax+1) )
     .attr('height', (side-2*margin)/(vmax+1) )
-    .attr('fill', d =>sc(d.value) );
+    .attr('fill', function(d){
+      if(d.value==1){//d.rowIndex == d.colIndex){
+        return 'black';
+      }else{
+        return sc(d.value);
+      }
+    });
 
-  svg.selectAll('title')
-    .data(data)
-    .text(d=>d.tag);
-  /*svg.selectAll('.x.axis')
+  svg.selectAll('.chrNameLabel.x')
+    .data([''])
+    .enter()
+    .append('text')
+    .attr('class', 'chrNameLabel x');
+
+  var chrNameLabelX = svg.selectAll('.chrNameLabel.x')
+    .attr('fill', 'black')
+    .style('text-anchor', 'middle');
+
+
+  svg.selectAll('.chrNameLabel.y')
+    .data(chrNames)
+    .enter()
+    .append('text')
+    .attr('class', 'chrNameLabel y');
+
+  var chrNameLabelY = svg.selectAll('.chrNameLabel.y')
+    .attr('fill', 'black')
+    .style('text-anchor', 'end')
+    .attr('x', Math.max(width-side+margin-10, 20))
+    .attr('y', (d,i)=>syLabel(chrNames[i]))
+    .text(d=>d);
+
+
+  boxes.on('mouseover', function(d){
+
+    d3.select(this)
+    .attr('stroke', 'yellow')
+    .attr('stroke-width', 2);
+
+    //hightlight chromosome name in the hovering row 
+    svg.selectAll('.chrNameLabel.y')
+    .filter( (_,i)=>i==d.rowIndex )
+    .attr('fill', 'orange');
+
+    svg.select('.chrNameLabel.x')
+    .text(chrNames[d.colIndex])
+    .attr('x', sxLabel(chrNames[d.colIndex]))
+    .attr('y', side-margin+15);
+  });
+
+  boxes.on('mouseout',function(){
+    d3.select(this)
+      .attr('stroke-width', 0);
+      
+    svg.selectAll('.chrNameLabel.y')
+      .attr('fill', 'black');
+
+    svg.select('.chrNameLabel.x')
+      .text('');
+  });
+
+
+  /*
+  svg.selectAll('.x.axis')
     .data([1])
     .enter()
     .append('g')
@@ -114,6 +190,11 @@ function updatePlot(data){
     .attr('transform', 'translate('+sx.range()[0]+',0)')
     .call(ay);*/
   
+  
 }
+
+
+
+
 
 exports.initPlot = initPlot;

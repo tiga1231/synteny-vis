@@ -40,8 +40,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   ret.currentData = function currentData() {
     return {
       raw: syntenyDots,
-      active: cross_all.top(Infinity),
-      ksExtent: [cross_all.top(1).ks, cross_all.bottom(1).ks]
+      active: cross_all.top(Infinity)
     };
   };
 
@@ -86,13 +85,26 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     ret.notifyListeners(typeHint);
   };
 
+  ret.dataExtent = {};
+  ret.getDataExtent = function(){
+    return ret.dataExtent;
+  };
+
   ret.addDataFilter = function(extent, field, typeHint) {
+
+    ret.dataExtent[field] = extent;
+
     filterDescription[field] = extent;
     filters[field].filter(extent);
     ret.notifyListeners(typeHint || 'data');
+
   };
 
   ret.removeDataFilter = function(field) {
+
+    delete ret.dataExtent[field];
+
+
     filterDescription[field] = null;
     filters[field].filterAll();
     ret.notifyListeners('data-stop');
