@@ -48,6 +48,7 @@ function buildDiv(element_id, show_histograms) {
 
 
   var div1 = d3.select(element_id)
+  //var div1 = div
     .append('div')
     .classed('secondRow', true);
   //heatmap

@@ -1,6 +1,8 @@
 import d3 from 'd3';
 import numeric from 'numeric';
-
+import {
+  SYNTENY_MARGIN
+} from 'constants';
 
 var myKernel;
 var chrNames;
@@ -53,7 +55,7 @@ function updatePlot(data, names){
   width = +width.substring(0,width.length-2);
   height = +height.substring(0,height.length-2);
 
-  var margin = 0.1*Math.min(width, height);
+  var margin = SYNTENY_MARGIN;//0.1*Math.min(width, height);
   var side = Math.min(height,width);
 
   var vmax = d3.max(data, d=>d.rowIndex);

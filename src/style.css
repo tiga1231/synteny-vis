@@ -54,12 +54,16 @@ svg text::selection {
   float: left;
   position: absolute;
 }
+
 ._synteny-dotplot-builder #dotplot {
   width: 35%;
   height: 100%;
 }
 
 
+.secondRow{
+  clear: both;
+}
 
 .secondRow #dimReductionPlot {
   background-color: #eee;

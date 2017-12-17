@@ -163,7 +163,7 @@ function updatePlot(svg, data, data0){
     vmax, 
     d3.extent(data, d=>Math.max(Math.abs(d.x), Math.abs(d.y))  )[1]
   );
-  
+
   var sx = d3.scale.linear()
     .domain([-vmax, vmax])
     .range([margin, side-margin]);
@@ -177,6 +177,14 @@ function updatePlot(svg, data, data0){
   var ay = d3.svg.axis().scale(sy).orient('left');
 
   
+  svg.selectAll('.label')
+    .data(data)
+    .enter()
+    .append('text')
+    .attr('class', 'label')
+    .attr('opacity', 0)
+    .text(d=> d.name);
+    
   svg.selectAll('.trajectoryLine')
     .data(zipWith((a,b)=>[a,b], data0, data))
     .enter()
@@ -194,13 +202,7 @@ function updatePlot(svg, data, data0){
     .attr('fill', '#08519c');//d=>sc(d.category) );
 
 
-  svg.selectAll('.label')
-    .data(data)
-    .enter()
-    .append('text')
-    .attr('class', 'label')
-    .attr('opacity', 0)
-    .text(d=> d.name);
+  
 
 
 
@@ -245,6 +247,7 @@ function updatePlot(svg, data, data0){
 
   //update dot positions
   dots.transition()
+    .duration(100)
     .attr('cx', d=>sx(d.x) )
     .attr('cy', d=>sy(d.y) );
     
@@ -254,6 +257,7 @@ function updatePlot(svg, data, data0){
     .attr('y', d=>sy(d.y) );
 
   lines.transition()
+    .duration(100)
     .attr('x1', d=>sx(d[0].x) )
     .attr('y1', d=>sy(d[0].y) )
     .attr('x2', d=>sx(d[1].x) )

@@ -57,6 +57,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     }
   };
 
+  const CANVAS_X_OFFSET = SYNTENY_MARGIN + getComputedWidth() - getWidth();
+  const CANVAS_Y_OFFSET = SYNTENY_MARGIN + getComputedHeight() - getHeight();
+
   var xScale = d3.scale.linear().domain(xExtent).range([0, getWidth()]);
   var yScale = d3.scale.linear().domain(yExtent).range([getHeight(), 0]);
 
@@ -301,16 +304,20 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .attr('height', getHeight())
     .style('width', String(getWidth()) + 'px')
     .style('height', String(getHeight()) + 'px')
-    .style('left', SYNTENY_MARGIN)
-    .style('top', SYNTENY_MARGIN);
+    .style('left', CANVAS_X_OFFSET)
+    .style('top', CANVAS_Y_OFFSET);
+    //.style('left', SYNTENY_MARGIN)
+    //.style('top', SYNTENY_MARGIN);
 
   const backCanvas = d3.select(id + '-canvas-background')
     .attr('width', getWidth() * dpr)
     .attr('height', getHeight() * dpr)
     .style('width', String(getWidth()) + 'px')
     .style('height', String(getHeight()) + 'px')
-    .style('left', SYNTENY_MARGIN)
-    .style('top', SYNTENY_MARGIN);
+    //.style('left', SYNTENY_MARGIN)
+    //.style('top', SYNTENY_MARGIN);
+    .style('left', CANVAS_X_OFFSET)
+    .style('top', CANVAS_Y_OFFSET);
 
   var gl = Lux.init({
     canvas: canvas.node(),
@@ -439,21 +446,28 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   var svg = d3.select(id);
 
+
+  //axis titles
   var TEXT_OFFSET = 50;
   var TEXT_BOX_HEIGHT = 25;
+
   svg.append('text')
-    .attr('x', (getWidth() + 2 * SYNTENY_MARGIN) / 3)
+    ///.attr('x', (getWidth() + 2 * SYNTENY_MARGIN) / 3)
+    .attr('x', CANVAS_X_OFFSET + getWidth()/3 )
     .attr('width', (getWidth() + 2 * SYNTENY_MARGIN) / 3)
-    .attr('y', SYNTENY_MARGIN + getHeight() + TEXT_OFFSET)
+    ///.attr('y', SYNTENY_MARGIN + getHeight() + TEXT_OFFSET)
+    .attr('y', CANVAS_Y_OFFSET + getHeight() + TEXT_OFFSET)
     .attr('height', TEXT_BOX_HEIGHT)
     .classed('plot-title', true)
     .text(meta.x_name);
 
   svg.append('text')
     .attr('transform', 'rotate(-90)')
-    .attr('x', -2 * (getHeight() + 2 * SYNTENY_MARGIN) / 3)
+    //.attr('x', -2 * (getHeight() + 2 * SYNTENY_MARGIN) / 3)
+    .attr('x', -(CANVAS_Y_OFFSET + getHeight()/3*2) )
     .attr('width', (getHeight() + 2 * SYNTENY_MARGIN) / 3)
-    .attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
+    //.attr('y', SYNTENY_MARGIN - TEXT_OFFSET)
+    .attr('y', CANVAS_X_OFFSET - TEXT_OFFSET)
     .attr('height', TEXT_BOX_HEIGHT)
     .classed('plot-title', true)
     .text(meta.y_name);
@@ -505,7 +519,9 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     .tickSize(0);
 
   const transformer = transform([
-    {translate: [SYNTENY_MARGIN, getHeight() + SYNTENY_MARGIN]}
+    ///{translate: [SYNTENY_MARGIN, getHeight() + SYNTENY_MARGIN]}
+    {translate: [CANVAS_X_OFFSET, getHeight() + CANVAS_Y_OFFSET]}
+
   ]);
   var xAxisWrapper = svg.append('g').attr('transform', transformer);
   var xAxisGapsGroup = xAxisWrapper.append('g');
@@ -531,7 +547,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   var yAxisWrapper = svg.append('g')
     .attr('transform',
-      transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]));
+      transform([{translate: [CANVAS_X_OFFSET, CANVAS_Y_OFFSET]}]));
   var yAxisGapsGroup = yAxisWrapper.append('g');
   var yAxisLineGroup = yAxisWrapper.append('g');
 
@@ -540,7 +556,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   svg = svg
     .append('g')
     .attr('transform',
-      transform([{translate: [SYNTENY_MARGIN, SYNTENY_MARGIN]}]))
+      transform([{translate: [CANVAS_X_OFFSET, CANVAS_Y_OFFSET]}]))
     .append('g').attr('id', 'zoom-group')
     .call(zoom).on('mousedown.zoom', null); //disable panning
 
