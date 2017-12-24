@@ -145,9 +145,12 @@ function updatePlot(data, names){
 
     d3.select(this)
     .attr('stroke', 'yellow')
-    .attr('stroke-width', 2);
+    .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
+    .each(function() {
+      this.parentNode.appendChild(this);
+    });
 
-    //hightlight chromosome name in the hovering row 
+    //hightlight the chromosome name on the corresponding row 
     svg.selectAll('.chrNameLabel.y')
     .filter( (_,i)=>i==d.rowIndex )
     .attr('fill', 'orange');

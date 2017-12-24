@@ -222,14 +222,20 @@ function updatePlot(svg, data, data0){
   // TODO delegate the heatmap part to heatmap.js
   // and show the label
   dots.on('mouseover', function(d,i){
+
+    //change heatmap
     var svgHeatmap = d3.select('#heatmap');
     svgHeatmap.selectAll('.box')
       .filter(function(e){
         return e.rowIndex == i && e.colIndex == i;
       })
-      .attr('stroke-width', 2)
-      .attr('stroke', 'yellow');
+      .attr('stroke', 'yellow')
+      .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
+      .each(function() {
+        this.parentNode.appendChild(this);
+      });
 
+    //change this dim reduction plot
     svg.selectAll('.label')
       .filter( (_,j) => i==j )
       .attr('opacity', 1);
