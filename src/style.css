@@ -1,4 +1,9 @@
 /* Global rules */
+body{
+  font-family: 'Oxygen', sans-serif;
+}
+
+
 ._synteny-dotplot-builder {
 	width: 100%;
 	height: 45%;

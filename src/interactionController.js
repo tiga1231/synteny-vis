@@ -2,7 +2,6 @@
 var controller = undefined;
 
 function createController() {
-  console.log('createController');
   var c = {};
   var listeners = {};
 
@@ -15,7 +14,6 @@ function createController() {
       listeners[eventName].push(f);
     }
 
-    console.log(listeners);
   };
 
 
@@ -25,8 +23,7 @@ function createController() {
 
 
   c.notifyListeners = function(eventName, args) {
-    console.log('interactionController hears:',eventName);
-    
+
     if ('any' in listeners){
       listeners['any'].forEach(f => f(args));
     }

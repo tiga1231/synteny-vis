@@ -24,11 +24,23 @@ function init(dataObj, meta, kernelObj){
   dr(K);
   dataObj.addListener(updateK);
   interactionController = getController();
+  
   interactionController.addListener('dimReductionPlot-hover', showLabel_i);
   interactionController.addListener('dimReductionPlot-dehover', hideLabels);
 
+  interactionController.addListener('heatmap-hover', showLink_ij);
+  interactionController.addListener('heatmap-hover', showLabel_ij);
+  interactionController.addListener('heatmap-dehover', hideLinks);
+  interactionController.addListener('heatmap-dehover', hideLabels);
+
   //interactionController.addListener('heatmap-hover', showLink_ij);
 
+}
+
+
+function showLabel_ij(args){
+  showLabel_i({i:args.i});
+  showLabel_i({i:args.j});
 }
 
 function showLabel_i(args){
@@ -45,11 +57,21 @@ function hideLabels(){
   .attr('opacity', 0);
 }
 
-function showLink_ij(args){
-  var i = args.i;
-  var j = args.j;
-  //TODO....
 
+function showLink_ij(args){
+  var i = Math.min(args.i, args.j);
+  var j = Math.max(args.i, args.j);
+
+  svg.selectAll('.link')
+  .filter(function(d){
+    return d[0].i == i && d[1].i == j;
+  })
+  .attr('opacity', 1);
+}
+
+function hideLinks(){
+  svg.selectAll('.link')
+  .attr('opacity', 0);
 }
 
 
@@ -175,6 +197,21 @@ function updateK(type){
 }
 
 
+
+function makeLinks(data){
+  var res = [];
+  for (var i = 0; i < data.length; i++) {
+    for (var j = i+1; j < data.length; j++) {
+      var di = Object.assign({i:i}, data[i]);
+      var dj = Object.assign({i:j}, data[j]);
+      res.push([di, dj]);
+    }
+  }
+  return res;
+}
+
+
+
 var vmax = null;
 
 function updatePlot(data, data0){
@@ -193,54 +230,69 @@ function updatePlot(data, data0){
   );
 
   var sx = d3.scale.linear()
-    .domain([-vmax, vmax])
-    .range([margin, side-margin]);
+  .domain([-vmax, vmax])
+  .range([margin, side-margin]);
+
   var sy = d3.scale.linear()
-    .domain([-vmax, vmax])
-    .range([side-margin, margin]);
+  .domain([-vmax, vmax])
+  .range([side-margin, margin]);
 
   var sc = d3.scale.category10();
 
   var ax = d3.svg.axis().scale(sx).orient('bottom'); 
   var ay = d3.svg.axis().scale(sy).orient('left');
 
-  
+  //append additional elements
   svg.selectAll('.label')
-    .data(data)
-    .enter()
-    .append('text')
-    .attr('class', 'label')
-    .attr('opacity', 0)
-    .text(d=> d.name);
+  .data(data)
+  .enter()
+  .append('text')
+  .attr('class', 'label')
+  .attr('opacity', 0)
+  .text(d=> d.name);
     
   svg.selectAll('.trajectoryLine')
-    .data(zipWith((a,b)=>[a,b], data0, data))
-    .enter()
-    .append('line')
-    .attr('class', 'trajectoryLine')
-    .attr('stroke', '#aaa');
+  .data(zipWith((a,b)=>[a,b], data0, data))
+  .enter()
+  .append('line')
+  .attr('class', 'trajectoryLine')
+  .attr('stroke', '#aaa');
 
-  
+
+  svg.selectAll('.link')
+  .data( d3.range(data.length*(data.length-1)/2) )
+  .enter()
+  .append('line')
+  .attr('class', 'link');
+
+
   svg.selectAll('.dot')
-    .data(data)
-    .enter()
-    .append('circle')
-    .attr('class', 'dot')
-    .attr('r', 5)
-    .attr('fill', '#08519c');//d=>sc(d.category) );
+  .data(data)
+  .enter()
+  .append('circle')
+  .attr('class', 'dot')
+  .attr('r', 5)
+  .attr('fill', '#08519c');//d=>sc(d.category) );
 
 
   
-
-
-
-
-
-
+  //select all
   var dots = svg.selectAll('.dot');
   var labels = svg.selectAll('.label');
-  var lines = svg.selectAll('.trajectoryLine');
+  var trajectories = svg.selectAll('.trajectoryLine');
+  var links = svg.selectAll('.link');
 
+  
+
+  links
+  .data(makeLinks(data))
+  .attr('x1', d=>sx(d[0].x))
+  .attr('y1', d=>sy(d[0].y))
+  .attr('x2', d=>sx(d[1].x))
+  .attr('y2', d=>sy(d[1].y))
+  .attr('stroke', '#08519c')
+  .attr('stroke-width', 2)
+  .attr('opacity', 0);
 
   dots.append('title')
     .text(d=> d.name);
@@ -278,7 +330,7 @@ function updatePlot(data, data0){
   labels.attr('x', d=>sx(d.x) )
     .attr('y', d=>sy(d.y) );
 
-  lines.transition()
+  trajectories.transition()
     .duration(100)
     .attr('x1', d=>sx(d[0].x) )
     .attr('y1', d=>sy(d[0].y) )

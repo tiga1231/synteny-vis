@@ -54,8 +54,8 @@ function hightlight_ij(args){
 
   //hightlight the chromosome name on the corresponding row 
   svg.selectAll('.chrNameLabel.y')
-  .filter( (_,i2)=>i2==i)
-  .attr('fill', 'orange');
+  .filter( (_,i2)=>i2!=i)
+  .attr('opacity', 0.3);
 
   svg.select('.chrNameLabel.x')
   .text(chrNames[j])
@@ -70,7 +70,7 @@ function dehighlight(){
   .attr('stroke-width', 0);
 
   svg.selectAll('.chrNameLabel.y')
-  .attr('fill', 'black');
+  .attr('opacity', 1);
 
   svg.select('.chrNameLabel.x')
   .text('');
@@ -202,7 +202,6 @@ function redraw(data, names){
 
 
   boxes.on('mouseover', function(d){
-
     interactionController
     .notifyListeners('heatmap-hover', {
       i: d.rowIndex,
@@ -210,13 +209,12 @@ function redraw(data, names){
     });
   });
 
-  boxes.on('mouseout',function(){
-
+  boxes.on('mouseout',function(d){
     interactionController
-    .notifyListeners('heatmap-dehover', {});
-
-
-    
+    .notifyListeners('heatmap-dehover', {
+      i: d.rowIndex,
+      j: d.colIndex
+    });
   });
 
 
