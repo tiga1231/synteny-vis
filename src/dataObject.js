@@ -111,6 +111,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
   const listeners = [];
+  //add a function to the list
   ret.addListener = function(x) {
     listeners.push(x);
   };

@@ -1,21 +1,79 @@
 import d3 from 'd3';
 import numeric from 'numeric';
-import {
-  SYNTENY_MARGIN
-} from 'constants';
+import { SYNTENY_MARGIN } from 'constants';
+import {getController} from 'interactionController';
+
 
 var myKernel;
 var chrNames;
-function initPlot(dataObj, meta, kernel){
+var interactionController;
+var margin, side, sxLabel;
+var svg;
 
+function init(dataObj, meta, kernel){
+  svg = d3.select('#heatmap');
   var chromosomes = meta.genome_x.chromosomes;
   chrNames = chromosomes.map(d=>d.name);
 
   myKernel = kernel;
   var K = myKernel.getK();
   var data = genData(K);
-  updatePlot(data, chrNames);
+  redraw(data, chrNames);
+  //data related callback
   dataObj.addListener(updateK);
+
+
+  interactionController = getController();
+  interactionController.addListener('heatmap-hover', hightlight_ij);
+  interactionController.addListener('heatmap-dehover', dehighlight);
+
+  interactionController.addListener('dimReductionPlot-hover', hightlight_ii);
+  interactionController.addListener('dimReductionPlot-dehover', dehighlight);
+
+}
+
+
+function hightlight_ii(args){
+  hightlight_ij({i:args.i, j:args.i});
+}
+
+function hightlight_ij(args){
+  var i = args.i;
+  var j = args.j;
+
+  //hightlight box(i,j)
+  svg.selectAll('.box')
+  .filter(function(e){
+    return e.rowIndex == i && e.colIndex == j;
+  })
+  .attr('stroke', 'yellow')
+  .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
+  .each(function() {
+    this.parentNode.appendChild(this);
+  });
+
+  //hightlight the chromosome name on the corresponding row 
+  svg.selectAll('.chrNameLabel.y')
+  .filter( (_,i2)=>i2==i)
+  .attr('fill', 'orange');
+
+  svg.select('.chrNameLabel.x')
+  .text(chrNames[j])
+  .attr('x', sxLabel(chrNames[j]))
+  .attr('y', side-margin+15);
+
+}
+
+
+function dehighlight(){
+  d3.selectAll('.box')
+  .attr('stroke-width', 0);
+
+  svg.selectAll('.chrNameLabel.y')
+  .attr('fill', 'black');
+
+  svg.select('.chrNameLabel.x')
+  .text('');
 }
 
 
@@ -40,23 +98,21 @@ function updateK(type){
 
   var K = myKernel.getK();
   var data = genData(K);
-  updatePlot(data, chrNames);
+  redraw(data, chrNames);
 
 }
 
 
 
-function updatePlot(data, names){
-
-  var svg = d3.select('#heatmap');
+function redraw(data, names){
 
   var width = svg.style('width');
   var height = svg.style('height');
   width = +width.substring(0,width.length-2);
   height = +height.substring(0,height.length-2);
 
-  var margin = SYNTENY_MARGIN;//0.1*Math.min(width, height);
-  var side = Math.min(height,width);
+  margin = SYNTENY_MARGIN;//0.1*Math.min(width, height);
+  side = Math.min(height,width);
 
   var vmax = d3.max(data, d=>d.rowIndex);
 
@@ -70,7 +126,7 @@ function updatePlot(data, names){
     .range([side-margin, margin]);
 
   //for tick marks / tooltips / else
-  var sxLabel = d3.scale.ordinal()
+  sxLabel = d3.scale.ordinal()
   .domain(names)
   .rangePoints([
     width-side+margin+(side-2*margin)/names.length/2, 
@@ -87,7 +143,8 @@ function updatePlot(data, names){
 
   var offDiagonalData = data.filter(d=>d.rowIndex!=d.colIndex);
   var sc = d3.scale.linear()
-  .domain([0,d3.max(offDiagonalData, d=>d.value)])
+  //.domain([0,d3.max(offDiagonalData, d=>d.value)]) //adaptive colormap
+  .domain([0,1])
   .range(['#deebf7', '#3182bd']);
 
   var ax = d3.svg.axis().scale(sxLabel).orient('bottom'); 
@@ -95,26 +152,29 @@ function updatePlot(data, names){
 
 
   var boxes = svg.selectAll('.box')
-    .data(data)
-    .enter()
-    .append('rect')
-    .attr('class', 'box');
+  .data(data, d=>d.rowIndex+'_'+d.colIndex)
+  .enter()
+  .append('rect')
+  .attr('class', 'box');
 
-  boxes.append('title')
-    .text(d=> d.tag);
+  boxes.append('title');
 
   boxes = svg.selectAll('.box')
-    .attr('x', d=>sx(d.colIndex) )
-    .attr('y', d=>sy(d.rowIndex) )
-    .attr('width', (side-2*margin)/(vmax+1) )
-    .attr('height', (side-2*margin)/(vmax+1) )
-    .attr('fill', function(d){
-      if(d.value==1){//d.rowIndex == d.colIndex){
-        return 'black';
-      }else{
-        return sc(d.value);
-      }
+  .attr('x', d=>sx(d.colIndex) )
+  .attr('y', d=>sy(d.rowIndex) )
+  .attr('width', (side-2*margin)/(vmax+1) )
+  .attr('height', (side-2*margin)/(vmax+1) )
+  .attr('fill', function(d){
+    return sc(d.value);
+    // }
+  })
+  .each(function(d){
+    d3.select(this)
+    .selectAll('title')
+    .text(function(){
+      return (''+d.tag).slice(0,5);
     });
+  });
 
   svg.selectAll('.chrNameLabel.x')
     .data([''])
@@ -143,33 +203,20 @@ function updatePlot(data, names){
 
   boxes.on('mouseover', function(d){
 
-    d3.select(this)
-    .attr('stroke', 'yellow')
-    .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
-    .each(function() {
-      this.parentNode.appendChild(this);
+    interactionController
+    .notifyListeners('heatmap-hover', {
+      i: d.rowIndex,
+      j: d.colIndex
     });
-
-    //hightlight the chromosome name on the corresponding row 
-    svg.selectAll('.chrNameLabel.y')
-    .filter( (_,i)=>i==d.rowIndex )
-    .attr('fill', 'orange');
-
-    svg.select('.chrNameLabel.x')
-    .text(chrNames[d.colIndex])
-    .attr('x', sxLabel(chrNames[d.colIndex]))
-    .attr('y', side-margin+15);
   });
 
   boxes.on('mouseout',function(){
-    d3.select(this)
-      .attr('stroke-width', 0);
-      
-    svg.selectAll('.chrNameLabel.y')
-      .attr('fill', 'black');
 
-    svg.select('.chrNameLabel.x')
-      .text('');
+    interactionController
+    .notifyListeners('heatmap-dehover', {});
+
+
+    
   });
 
 
@@ -199,7 +246,4 @@ function updatePlot(data, names){
 }
 
 
-
-
-
-exports.initPlot = initPlot;
+exports.init = init;

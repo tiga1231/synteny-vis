@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import numeric from 'numeric';
 import { zipWith } from 'utils';
+import { getController } from 'interactionController';
 
 //usage:
 //import { dr } from './dimReductionPlot';
@@ -9,16 +10,45 @@ var chromosomes;
 var myKernel;
 var x0 = null;
 var data0 = null;
+var interactionController;
+var svg;
 
-function initPlot(dataObj, meta, kernelObj){
+function init(dataObj, meta, kernelObj){
 
   chromosomes = meta.genome_x.chromosomes;
+  svg = d3.select('#dimReductionPlot');
 
   x0 = null;
   myKernel = kernelObj;
   var K = myKernel.getK();
   dr(K);
   dataObj.addListener(updateK);
+  interactionController = getController();
+  interactionController.addListener('dimReductionPlot-hover', showLabel_i);
+  interactionController.addListener('dimReductionPlot-dehover', hideLabels);
+
+  //interactionController.addListener('heatmap-hover', showLink_ij);
+
+}
+
+function showLabel_i(args){
+  var i = args.i;
+  //change this dim reduction plot
+  svg.selectAll('.label')
+  .filter( (_,j) => i==j )
+  .attr('opacity', 1);
+}
+
+function hideLabels(){
+  //change this dim reduction plot
+  svg.selectAll('.label')
+  .attr('opacity', 0);
+}
+
+function showLink_ij(args){
+  var i = args.i;
+  var j = args.j;
+  //TODO....
 
 }
 
@@ -102,8 +132,7 @@ function drLocal(K){
     };
   });
 
-  var svg = d3.select('#dimReductionPlot');
-  updatePlot(svg, data, data0);
+  updatePlot(data, data0);
 
 }
 
@@ -117,7 +146,6 @@ function drPOST(K){
     .header('Content-Type', 'application/json')
     .post(K, function(e,d){
       var x = JSON.parse(d.responseText);//list of [x,y] coordinates
-      var svg = d3.select('#dimReductionPlot');
       var data = x.map(function(d,i){
         return {
           x: d[0],
@@ -126,7 +154,7 @@ function drPOST(K){
           category: i
         };
       });
-      updatePlot(svg, data);
+      updatePlot(data);
     });
 }
 
@@ -149,7 +177,7 @@ function updateK(type){
 
 var vmax = null;
 
-function updatePlot(svg, data, data0){
+function updatePlot(data, data0){
 
   var width = svg.style('width');
   var height = svg.style('height');
@@ -223,31 +251,19 @@ function updatePlot(svg, data, data0){
   // and show the label
   dots.on('mouseover', function(d,i){
 
-    //change heatmap
-    var svgHeatmap = d3.select('#heatmap');
-    svgHeatmap.selectAll('.box')
-      .filter(function(e){
-        return e.rowIndex == i && e.colIndex == i;
-      })
-      .attr('stroke', 'yellow')
-      .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
-      .each(function() {
-        this.parentNode.appendChild(this);
-      });
+    interactionController
+    .notifyListeners('dimReductionPlot-hover', {i: i});
 
-    //change this dim reduction plot
-    svg.selectAll('.label')
-      .filter( (_,j) => i==j )
-      .attr('opacity', 1);
+
+    // //change this dim reduction plot
+    // svg.selectAll('.label')
+    //   .filter( (_,j) => i==j )
+    //   .attr('opacity', 1);
 
   });
 
   dots.on('mouseout', function(d,i){
-    var svgHeatmap = d3.select('#heatmap');
-    svgHeatmap.selectAll('.box')
-      .attr('stroke-width', 0);
-
-    labels.attr('opacity', 0);
+    interactionController.notifyListeners('dimReductionPlot-dehover');
   });
 
 
@@ -294,4 +310,4 @@ function updatePlot(svg, data, data0){
   
 }
 
-exports.initPlot = initPlot;
+exports.init = init;

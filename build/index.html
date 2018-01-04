@@ -29,16 +29,18 @@
 <body>
 	<div class="grey-text">
 		Datasets:
-		<!--span id='m-link' class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
-		<span id='a-link' class="underline hover-black" onClick="load('a')">Aribidopsis</span>,
+<!-- 		<span id='m-link' class="underline hover-black" onClick="load('m')">Maize-Sorghum</span>,
+		<span id='a-link' class="underline hover-black" onClick="load('a')">Aribidopsis</span>, -->
 		<span id='e-link' class="underline hover-black" onClick="load('e')">Ecoli</span>,
-		<span id='h-link' class="underline hover-black" onClick="load('h')">Homo Sapiens - Pan Troglodytes</span>
+		<!-- <span id='h-link' class="underline hover-black" onClick="load('h')">Homo Sapiens - Pan Troglodytes</span>
 		<span id='2m-link' class="underline hover-black" onClick="load('2m')">Maize-Sorghum2</span>,
 		<span id='2a-link' class="underline hover-black" onClick="load('2a')">Aribidopsis2</span>,
 		<span id='2e-link' class="underline hover-black" onClick="load('2e')">Ecoli2</span>,
 		<span id='2h-link' class="underline hover-black" onClick="load('2h')">Homo Sapiens - Pan Troglodytes2</span>		
 		<br>
-		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span-->
+		<span id='z-link' class="underline hover-black" onClick="load('z')">Many chromosomes test</span> -->
+
+
 		<span id='SPA-link' class="underline hover-black" onClick="load('SPA')">SPA test</span>
 
 		<span id='0p-link' class="underline hover-black" onClick="load('0p')">plasmodium0</span>
@@ -53,73 +55,76 @@
 		/* List of all possible data files */
 
 		var files = [
-			/*{
-				identifier: 'm',
-				id_1: '6807',
-				id_2: '8082',
-				data_url: './data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords.ks'
-			}, {
+			// {
+			// 	identifier: 'm',
+			// 	id_1: '6807',
+			// 	id_2: '8082',
+			// 	data_url: './data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords.ks'
+			// }, 
+			{
 				identifier: 'e',
 				id_1: '4241',
 				id_2: '4242',
 				data_url: './data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
-			}, {
-				identifier: 'a',
-				id_1: '16911',
-				id_2: '3068',
-				data_url: './data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
-			}, {
-				identifier: 'h',
-				id_1: '11691',
-				id_2: '25577',
-				data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
-			}, {
-				identifier: '2m',
-				id_1: '6807',
-				id_2: '8082',
-				data_url: './data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords'
-			}, {
-				identifier: '2e',
-				id_1: '4241',
-				id_2: '4242',
-				data_url: './data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			}, {
-				identifier: '2a',
-				id_1: '16911',
-				id_2: '3068',
-				data_url: './data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			}, {
-				identifier: '2h',
-				id_1: '11691',
-				id_2: '25577',
-				data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			}, {
-				identifier: 'z',
-				id_1: '19927',
-				id_2: '9050',
-        data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
-			},*/ {
+			}, 
+			// {
+			// 	identifier: 'a',
+			// 	id_1: '16911',
+			// 	id_2: '3068',
+			// 	data_url: './data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
+			// }, {
+			// 	identifier: 'h',
+			// 	id_1: '11691',
+			// 	id_2: '25577',
+			// 	data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks'
+			// }, {
+			// 	identifier: '2m',
+			// 	id_1: '6807',
+			// 	id_2: '8082',
+			// 	data_url: './data/6807_8082.CDS-CDS.dcmegablast.tdd10.cs0.filtered.dag.all.go_D40_g20_A10.aligncoords.gcoords'
+			// }, {
+			// 	identifier: '2e',
+			// 	id_1: '4241',
+			// 	id_2: '4242',
+			// 	data_url: './data/4241_4242.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			// }, {
+			// 	identifier: '2a',
+			// 	id_1: '16911',
+			// 	id_2: '3068',
+			// 	data_url: './data/16911_3068.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			// }, {
+			// 	identifier: '2h',
+			// 	id_1: '11691',
+			// 	id_2: '25577',
+			// 	data_url: './data/11691_25577.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			// }, {
+			// 	identifier: 'z',
+			// 	id_1: '19927',
+			// 	id_2: '9050',
+   //      data_url: './data/19927_9050.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords'
+			// }, 
+			{
 				identifier: '0p',
 				id_1: '0p',
 				id_2: '0p',
-        data_url: './data/0p.compressed.ks'
+		        data_url: './data/0p.compressed.ks'
 			}, {
 				identifier: '2p',
 				id_1: '2p',
 				id_2: '2p',
-        data_url: './data/2p.compressed.ks'
+				data_url: './data/2p.compressed.ks'
 			},
 			{
 				identifier: '3p',
 				id_1: '3p',
 				id_2: '3p',
-        data_url: './data/3p.compressed.ks'
+				data_url: './data/3p.compressed.ks'
 			}, {
 				identifier: 'SPA',
 				id_1: '4242',
 				id_2: '6872',
-        data_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords',
-        spa_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords_ct0.w1000.spa1.sr.cs1.csoS.log.nsd.spa_info'
+        		data_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords',
+        		spa_url: './data/4242_6872.CDS-genomic.last.new.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords_ct0.w1000.spa1.sr.cs1.csoS.log.nsd.spa_info'
 			}];
 
 		var load = function(dataset) {

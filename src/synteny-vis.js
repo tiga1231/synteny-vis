@@ -14,6 +14,10 @@ import { onData } from './colorscales';
 import { createDataObj } from './dataObject';
 import { chromosomesToCumulativeBPCounts,
          inlineKSData } from './chromosomeUtils';
+
+import {getController} from 'interactionController';
+
+
 const { debounced } = utils;
 
 import './style.css';
@@ -24,13 +28,14 @@ import {
 } from './constants';
 
 
-function buildDivDr(mainDiv){
+function buildDivDimReductionPlot(mainDiv){
   //dimReductionPlot
   var svgDr = mainDiv.append('div')
     .attr('id', 'divDr')
     .append('svg')
     .attr('id', 'dimReductionPlot');
 }
+
 
 function buildDivHeatmap(mainDiv){
   //dimReductionPlot
@@ -46,7 +51,6 @@ function buildDiv(element_id, show_histograms) {
     .append('div')
     .classed('_synteny-dotplot-builder', true);
 
-
   var div1 = d3.select(element_id)
   //var div1 = div
     .append('div')
@@ -54,7 +58,7 @@ function buildDiv(element_id, show_histograms) {
   //heatmap
   buildDivHeatmap(div1);
   //dimReductionPlot
-  buildDivDr(div1);
+  buildDivDimReductionPlot(div1);
   
 
 
@@ -275,8 +279,8 @@ function controller(ksData, element_id, meta) {
 
   //plot dim redecution and heatmap
   var myKernel = kernel.createKernel(dataObj, meta);
-  dimReductionPlot.initPlot(dataObj, meta, myKernel);
-  heatmap.initPlot(dataObj, meta, myKernel);
+  dimReductionPlot.init(dataObj, meta, myKernel);
+  heatmap.init(dataObj, meta, myKernel);
 
   const refreshPlot = debounced(100, function(colorScale) {
     syntenyPlot.setField(activeField);
@@ -442,14 +446,18 @@ function controller(ksData, element_id, meta) {
       const el = document.getElementById(id);
       while(el.firstChild) el.removeChild(el.firstChild);
     });
+    
     dataObj.clearListeners();
+    getController().clearListeners();
+
     const cs = histograms[activeField].getColorScale();
     histograms = setUpHistograms(cs);
     syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
 
     var myKernel = kernel.createKernel(dataObj, meta);
-    dimReductionPlot.initPlot(dataObj, meta, myKernel);
-    heatmap.initPlot(dataObj, meta, myKernel);
+    dimReductionPlot.init(dataObj, meta, myKernel);
+    heatmap.init(dataObj, meta, myKernel);
+
 
   };
   
