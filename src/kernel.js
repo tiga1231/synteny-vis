@@ -6,15 +6,20 @@ function createKernel(dataObj, meta){
 
   var chromosomes = meta.genome_x.chromosomes;
   var chrNames = chromosomes.map(d=>d.name);
+
+  var chrNamesIndices = {};
+  for (var i = 0; i < chrNames.length; i++) {
+    chrNamesIndices[chrNames[i]] = i;
+  }
+
   var size = chromosomes.length;
   
   var cumulatives = {};
   var data = dataObj.currentData().raw;
-  data.sort(function(x, y){
-    return d3.ascending(x.ks, y.ks);
+  data.sort(function(a, b){
+    return d3.ascending(a.ks, b.ks);
   });
-  console.log(data[0]);
-  for (var i = 0; i < data.length; i++) {
+  for (i = 0; i < data.length; i++) {
     var xid = data[i].x_chromosome_id;
     var yid = data[i].y_chromosome_id;
     var ks = +data[i].ks;
@@ -28,52 +33,75 @@ function createKernel(dataObj, meta){
       cumulatives[key].push({ks:ks, value:0+f(ks)});
     }
   }
+
   Kernel.cumulatives = cumulatives;
+
 
   Kernel.computeK = function(){
 
     var K = math.zeros(size, size)._data;
-    var extent = Kernel.getDataExtent();
-    if(extent !== null){
-      for (var i = 0; i < size; i++) {
-        for (var j = 0; j < size; j++){
-          if(i==j){
-            continue;
-          }
-          var name1 = chrNames[i];
-          var name2 = chrNames[j];
-          var key = name1 + '_' + name2;
 
-          var iStart = Kernel.cumulatives[key].binarySearch(extent[0], d=>d.ks);
-          var iEnd = Kernel.cumulatives[key].binarySearch(extent[1], d=>d.ks); 
-          var y1,y2;
-          var n = Kernel.cumulatives[key].length;
+    //compute the kernel by cross filtered data
+    var data = Kernel.getData();
 
-          if(iStart == -0.5){
-            y1 = 0;
-          }else if(iStart == Kernel.cumulatives[key].length-0.5){
-            y1 = Kernel.cumulatives[key][n-1].value;
-          }else{
-            iStart = Math.ceil(iStart);
-            y1 = Kernel.cumulatives[key][iStart].value;
-          }
+    for (var i = 0; i < data.length; i++) {
+      var ks = +data[i].ks;
+      var row = chrNamesIndices[ data[i].x_chromosome_id ];
+      var col = chrNamesIndices[ data[i].y_chromosome_id ];
 
-          if(iEnd == -0.5){
-            y2 = 0;
-          }else if(iEnd == Kernel.cumulatives[key].length-0.5){
-            y2 = Kernel.cumulatives[key][n-1].value;
-          }else{
-            iEnd = Math.floor(iEnd);
-            y2 = Kernel.cumulatives[key][iEnd].value;
-          }
-
-          var k = Math.max((y2-y1), 0) 
-            / Math.sqrt(chromosomes[i].gene_count * chromosomes[j].gene_count);
-          K[i][j] = k;
-          K[i][j] = Math.min(1,K[i][j]);
-        }
-      }
+      K[row][col] += f(ks)
+                      /Math.sqrt(chromosomes[row].gene_count 
+                               * chromosomes[col].gene_count);
     }
+
+
+    // //compute kernel based on current extent of histogram 
+    // var extent = Kernel.getDataExtent();
+    // if(extent !== null){
+    //   for (var i = 0; i < size; i++) {
+    //     for (var j = 0; j < size; j++){
+    //       if(i==j){
+    //         continue;
+    //       }
+    //       var name1 = chrNames[i];
+    //       var name2 = chrNames[j];
+    //       var key = name1 + '_' + name2;
+
+    //       var iStart = Kernel.cumulatives[key]
+    //       .binarySearch(extent[0], d=>d.ks);
+    //       var iEnd = Kernel.cumulatives[key]
+    //       .binarySearch(extent[1], d=>d.ks); 
+    //       var y1,y2;
+    //       var n = Kernel.cumulatives[key].length;
+
+    //       if(iStart == -0.5){
+    //         y1 = 0;
+    //       }else if(iStart == Kernel.cumulatives[key].length-0.5){
+    //         y1 = Kernel.cumulatives[key][n-1].value;
+    //       }else{
+    //         iStart = Math.ceil(iStart);
+    //         y1 = Kernel.cumulatives[key][iStart].value;
+    //       }
+
+    //       if(iEnd == -0.5){
+    //         y2 = 0;
+    //       }else if(iEnd == Kernel.cumulatives[key].length-0.5){
+    //         y2 = Kernel.cumulatives[key][n-1].value;
+    //       }else{
+    //         iEnd = Math.floor(iEnd);
+    //         y2 = Kernel.cumulatives[key][iEnd].value;
+    //       }
+
+    //       var k = Math.max((y2-y1), 0) 
+    //         / Math.sqrt(chromosomes[i].gene_count 
+    //                    * chromosomes[j].gene_count);
+    //       K[i][j] = k;
+    //       K[i][j] = Math.min(1,K[i][j]);
+    //     }
+    //   }
+    // }
+
+
 
     for (i = 0; i < size; i++) {
       K[i][i] = 1;
@@ -86,9 +114,11 @@ function createKernel(dataObj, meta){
     return JSON.parse(JSON.stringify(Kernel.K));
   };
 
+
   Kernel.getData = function(){
     return dataObj.currentData().active;
   };
+
 
   Kernel.getDataExtent = function(){
     var extent = dataObj.getDataExtent();
