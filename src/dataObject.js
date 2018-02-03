@@ -13,6 +13,14 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   const cross_all = cross.dimension(x => x.logks);
   const cross_x = cross.dimension(x => x.x_relative_offset);
   const cross_y = cross.dimension(x => x.y_relative_offset);
+
+  const cross_chromosomePairs_heatmap = 
+  cross.dimension(d => d.x_chromosome_id+'_'+d.y_chromosome_id);
+
+  const cross_chromosomePairs_dimReductionPlot = 
+  cross.dimension(d => d.x_chromosome_id+'_'+d.y_chromosome_id);
+
+
   const fields = ['logks', 'logkn', 'logknks'];
   const filters = zipObject(
     fields,
@@ -66,9 +74,41 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     };
   };
 
+
+  ret.addHeatmapChromosomeFilter = function(xyChromosomePairs, typeHint){
+    xyChromosomePairs = new Set(
+      xyChromosomePairs.map(pair=>pair[0]+'_'+pair[1])
+    );
+    cross_chromosomePairs_heatmap.filterFunction(d=>xyChromosomePairs.has(d));
+    ret.notifyListeners(typeHint);
+  };
+
+  ret.removeHeatmapChromosomeFilter = function(typeHint){
+    cross_chromosomePairs_heatmap.filterAll();
+    ret.notifyListeners(typeHint);
+  };
+
+
+  ret.addDimReductionPlotChromosomeFilter = function(chromosomeNames, typeHint){
+    chromosomeNames = new Set(chromosomeNames);
+    cross_chromosomePairs_dimReductionPlot.filterFunction(function(d){
+      var namePair = d.split('_');
+      return chromosomeNames.has(namePair[0]) 
+        && chromosomeNames.has(namePair[1]);
+    });
+    ret.notifyListeners(typeHint);
+  };
+
+  ret.removeDimReductionPlotChromosomeFilter = function(typeHint){
+    cross_chromosomePairs_dimReductionPlot.filterAll();
+    ret.notifyListeners(typeHint);
+  };
+
+
+
+
   var filterDescription = {
   };
-  
   ret.addSpatialFilter = function(extents, typeHint) {
     filterDescription.x = [extents[0][0], extents[1][0]];
     filterDescription.y = [extents[0][1], extents[1][1]];
@@ -85,26 +125,21 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     ret.notifyListeners(typeHint);
   };
 
+
   ret.dataExtent = {};
   ret.getDataExtent = function(){
     return ret.dataExtent;
   };
 
   ret.addDataFilter = function(extent, field, typeHint) {
-
     ret.dataExtent[field] = extent;
-
     filterDescription[field] = extent;
     filters[field].filter(extent);
     ret.notifyListeners(typeHint || 'data');
-
   };
 
   ret.removeDataFilter = function(field) {
-
     delete ret.dataExtent[field];
-
-
     filterDescription[field] = null;
     filters[field].filterAll();
     ret.notifyListeners('data-stop');

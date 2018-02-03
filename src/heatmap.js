@@ -1,7 +1,7 @@
 import d3 from 'd3';
 import numeric from 'numeric';
 import { SYNTENY_MARGIN } from 'constants';
-import {getController} from 'interactionController';
+import { getController } from 'interactionController';
 
 
 var myKernel;
@@ -9,8 +9,13 @@ var chrNames;
 var interactionController;
 var margin, side, sxLabel;
 var svg;
+var dataObj;
+var brush = null;
+var x0,x1,y0,y1;
 
-function init(dataObj, meta, kernel){
+
+function init(dataObj0, meta, kernel){
+  dataObj = dataObj0;
   svg = d3.select('#heatmap');
   var chromosomes = meta.genome_x.chromosomes;
   chrNames = chromosomes.map(d=>d.name);
@@ -22,26 +27,107 @@ function init(dataObj, meta, kernel){
   //data related callback
   dataObj.addListener(updateK);
 
+  // dataObj.addHeatmapChromosomeFilter(
+  //   [['2P.inui', '1P.cynomolgi']], 
+  //   'heatmap-brush');
+
 
   interactionController = getController();
-  interactionController.addListener('heatmap-hover', hightlight_ij);
-  interactionController.addListener('heatmap-dehover', dehighlight);
+  // interactionController.addListener('heatmap-hover', highlight_ij);
+  // interactionController.addListener('heatmap-dehover', dehighlight);
+  // 
+  interactionController
+  .addListener('heatmap-brush', highlight_namePairs);
+  interactionController
+  .addListener('heatmap-brush-stop', dehighlight);
+  
 
-  interactionController.addListener('dimReductionPlot-hover', hightlight_ii);
-  interactionController.addListener('dimReductionPlot-dehover', dehighlight);
+  interactionController
+  .addListener('dimReductionPlot-hover', highlight_ii);
+  interactionController
+  .addListener('dimReductionPlot-dehover', dehighlight);
+
+  interactionController
+  .addListener('dimReductionPlot-brush', highlight_dimReductionPlot_selection);
+  // interactionController
+  // .addListener('dimReductionPlot-brush-stop', black_cells);
+  interactionController
+  .addListener('dimReductionPlot-brush-empty',dehighlight);
+
+
 
 }
 
 
-function hightlight_ii(args){
-  hightlight_ij({i:args.i, j:args.i});
+function highlight_namePairs(namePairs){
+
+  namePairs = new Set(  namePairs.map(pair=>pair[0]+'_'+pair[1])  );
+
+  svg.selectAll('.box')
+  .attr('stroke-width', 0);
+
+  svg.selectAll('.box')
+  .filter(function(e){
+    return namePairs.has(chrNames[e.colIndex]+'_'+chrNames[e.rowIndex]);
+  })
+  .attr('stroke', 'yellow')
+  .attr('stroke-width', 2) 
+  .each(function() {
+    this.parentNode.appendChild(this);//equivalent to .raise() in d3.v4
+  });
+
+  svg.selectAll('.brush')
+  .each(function() {
+    this.parentNode.appendChild(this);
+  });
 }
 
-function hightlight_ij(args){
+
+function highlight_dimReductionPlot_selection(names){
+  names = new Set(names);
+  svg.selectAll('.box')
+  .attr('stroke-width', 0);
+
+  svg.selectAll('.box')
+  .filter(function(e){
+    return e.rowIndex==e.colIndex && names.has(chrNames[e.rowIndex]);
+  })
+  .attr('stroke', 'yellow')
+  .attr('stroke-width', 2) 
+  .each(function() {
+    this.parentNode.appendChild(this);//equivalent to .raise() in d3.v4
+  });
+
+  svg.selectAll('.brush')
+  .each(function() {
+    this.parentNode.appendChild(this);
+  });
+}
+
+
+function black_cells(names){
+  names = new Set(names);
+
+  svg.selectAll('.box')
+  .filter(function(e){
+    return !(names.has(chrNames[e.rowIndex]) 
+      && names.has(chrNames[e.colIndex]));
+  })
+  .attr('fill','black');
+  
+}
+
+
+function highlight_ii(args){
+  highlight_ij({i:args.i, j:args.i});
+}
+
+
+function highlight_ij(args){
   var i = args.i;
   var j = args.j;
 
-  //hightlight box(i,j)
+  //highlight box(i,j)
   svg.selectAll('.box')
   .filter(function(e){
     return e.rowIndex == i && e.colIndex == j;
@@ -52,7 +138,7 @@ function hightlight_ij(args){
     this.parentNode.appendChild(this);
   });
 
-  //hightlight the chromosome name on the corresponding row 
+  //highlight the chromosome name on the corresponding row 
   svg.selectAll('.chrNameLabel.y')
   .filter( (_,i2)=>i2!=i)
   .attr('opacity', 0.3);
@@ -61,6 +147,12 @@ function hightlight_ij(args){
   .text(chrNames[j])
   .attr('x', sxLabel(chrNames[j]))
   .attr('y', side-margin+15);
+
+  svg.selectAll('.brush')
+  .each(function() {
+    this.parentNode.appendChild(this);
+  });
+
 
 }
 
@@ -218,6 +310,67 @@ function redraw(data, names){
   });
 
 
+  if(brush === null){
+    brush = d3.svg.brush();
+  }
+  brush.x(sx).y(sy);
+
+
+  brush
+  .on('brush', function(){
+    console.log(d3.event);
+    if(!brush.empty()){
+      //chromosome indices
+      if(d3.event.mode == 'move'){
+        x0 = Math.round(brush.extent()[0][0]);
+        x1 = Math.round(brush.extent()[1][0]);
+        y0 = Math.round(brush.extent()[0][1]);
+        y1 = Math.round(brush.extent()[1][1]);
+      }else{
+        x0 = Math.floor(brush.extent()[0][0]);
+        x1 = Math.ceil(brush.extent()[1][0]);
+        y0 = Math.floor(brush.extent()[0][1]);
+        y1 = Math.ceil(brush.extent()[1][1]);
+      }
+      // console.log('x:[', x0,x1,'] y:[',y0,y1,']');
+
+      
+
+      var pairs = [];
+      for (var i = x0; i < x1; i++) {
+        for (var j = y0+1; j < y1+1; j++) {
+          pairs.push([chrNames[i], chrNames[j]]);
+        }
+      }
+      dataObj.addHeatmapChromosomeFilter(pairs, 'heatmap-brush-stop');
+      interactionController.notifyListeners('heatmap-brush', pairs);
+    }
+  })
+  .on('brushend', function(){
+    console.log('brush-end');
+    if(brush.empty()){
+      dataObj.removeHeatmapChromosomeFilter('heatmap-brush-stop');
+      //interactionController.notifyListeners('heatmap-brush-stop');
+    }else{
+      //snap to cell boundary
+      brush.extent([[x0,y0],[x1,y1]]);
+      d3.select('g.brush').call(brush);
+    }
+    interactionController.notifyListeners('heatmap-brush-stop');
+
+  });
+
+  svg.selectAll('.brush')
+  .data([0])
+  .enter()
+  .append('g')
+  .attr('class', 'brush');
+
+  svg.select('.brush')
+  .call(brush);
+
+
+
   /*
   svg.selectAll('.x.axis')
     .data([1])
@@ -239,9 +392,9 @@ function redraw(data, names){
   svg.selectAll('.y.axis')
     .attr('transform', 'translate('+sx.range()[0]+',0)')
     .call(ay);*/
-  
-  
 }
+
+
 
 
 exports.init = init;

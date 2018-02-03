@@ -13,17 +13,23 @@ function createController() {
     if(listeners[eventName].indexOf(f) == -1){
       listeners[eventName].push(f);
     }
-
+    return c;
   };
 
+  c.removeListener = function(eventName, f){
+    var i = listeners[eventName].indexOf(f);
+    listeners[eventName].splice(i, 1);
+    return c;
+  };
 
   c.clearListeners = function() {
     listeners = {};
+    return c;
   };
 
 
   c.notifyListeners = function(eventName, args) {
-
+    // console.log('interaction controller: ', eventName, args);
     if ('any' in listeners){
       listeners['any'].forEach(f => f(args));
     }
@@ -31,9 +37,9 @@ function createController() {
     if(eventName!== 'any' && eventName in listeners){
       listeners[eventName].forEach(f => f(args));
     }
-
-
   };
+
+
 
   controller = c;
   return c;

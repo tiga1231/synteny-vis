@@ -115,28 +115,64 @@ function buildDiv(element_id, show_histograms) {
   }
 
   const formWrapper = div.append('div').attr('id', 'form-wrapper');
+
   function makeForm(title, optionId, elements, checkIndex) {
-    const navOptions = formWrapper
-      .append('div')
-      .classed('radio-button-box', true);
+    
+    const navOptions = formWrapper.append('div');
     if(title) {
-      navOptions.append('text').text(title + ': ');
+      navOptions.append('p')
+      .classed('option-title', true)
+      .text(title + ': ');
     }
 
-    const navForm = navOptions.append('form').attr('id', optionId);
-    const options = navForm.selectAll('input')
-      .data(elements).enter().append('input')
-      .attr('type', 'radio').attr('name', optionId)
-      .attr('value', d => d[0]);
+    const options = navOptions.selectAll('div.form-check')
+      .data(elements)
+      .enter()
+      .append('div')
+      .classed('form-check', true)
+      .attr('id', optionId)
+      .each(function(d){
 
-    options.forEach(function(selection) {
-      selection.forEach(function(element, i) {
-        const label = document.createElement('label');
-        label.textContent = elements[i][1];
-        navForm.node().insertBefore(label, element);
+        d3.select(this)
+        .append('input')
+        .classed('form-check-input', true)
+        .attr('type', 'radio')
+        .attr('name', optionId)
+        .attr('id', d[0])
+        .attr('value', d[0]);
+
+        d3.select(this)
+        .append('label')
+        .classed('form-check-label', true)
+        .attr('for', d[0])
+        .text(d[1]);
       });
-    });
-    options[0][checkIndex].checked = true;
+
+    navOptions
+    .select('input')
+    .attr('checked', true);
+
+    // options.each(function(d,i){
+    //   this.parentNode.appendChild(this);//bring to the end
+    //   var label = navOptions.append('label')
+    //   .classed('form-check-label', true)
+    //   .attr('for', d[0])
+    //   .text(d[1]);
+    //   this.parentNode.appendChild(label.node());
+    // });
+    
+
+
+    // options.forEach(function(selection) {
+    //   selection.forEach(function(element, i) {
+    //     const label = document.createElement('label');
+    //     label.textContent = elements[i][1];
+    //     label.setAttribute('class', 'form-check-label');
+    //     label.setAttribute('for', elements[i][0]);
+    //     // navForm.node().insertBefore(label, element);
+    //     navForm.node().appendChild(label, element);
+    //   });
+    // });
   }
 
 
@@ -146,6 +182,7 @@ function buildDiv(element_id, show_histograms) {
     formWrapper.append('div')
       .attr('id', 'form-top-label')
       .append('strong').text('Plot Options');
+
     makeForm('Chromosome Order', 'order-options', [
       option('order-by-size', 'By Size'),
       option('order-by-name', 'By Name'),
@@ -154,14 +191,24 @@ function buildDiv(element_id, show_histograms) {
       // order by match count doesn't work very well, drop for now
       // option('order-by-match', 'By Match Count') 
     ], 1);
+
+
     formWrapper.append('div')
       // .attr('id', 'form-top-label')
       .append('strong').text('Controls');
+
     makeForm('Navigation', 'mouse-options', [
       option('brush', 'Brushing'),
       option('pan', 'Panning')
     ], 0);
+
+
+    makeForm('PCA brush', 'dimReductionPlot-brush-options', [
+      option('highlight', 'Highlight'),
+      option('subselect', 'Subselect')
+    ], 0);
   
+
     formWrapper.append('div').style('height', '10');
 
     formWrapper.append('strong').text('Color Options');
@@ -173,7 +220,10 @@ function buildDiv(element_id, show_histograms) {
     const persistenceOptions = formWrapper
       .append('div')
       .classed('radio-button-box', true);
-    persistenceOptions.append('text').text('Auto-scale peak threshold: ');
+    persistenceOptions
+    .append('p')
+    .classed('option-title', true)
+    .text('Auto-scale peak threshold: ');
 
     const initialPersistence = 50;
     persistenceOptions

@@ -12,9 +12,11 @@ var x0 = null;
 var data0 = null;
 var interactionController;
 var svg;
+var brush = null;
+var dataObj;
 
-function init(dataObj, meta, kernelObj){
-
+function init(dataObj0, meta, kernelObj){
+  dataObj = dataObj0;
   chromosomes = meta.genome_x.chromosomes;
   svg = d3.select('#dimReductionPlot');
 
@@ -25,16 +27,47 @@ function init(dataObj, meta, kernelObj){
   dataObj.addListener(updateK);
   interactionController = getController();
   
-  interactionController.addListener('dimReductionPlot-hover', showLabel_i);
-  interactionController.addListener('dimReductionPlot-dehover', hideLabels);
+  interactionController
+  .addListener('dimReductionPlot-hover', showLabel_i)
+  .addListener('dimReductionPlot-dehover', hideLabels);
 
-  interactionController.addListener('heatmap-hover', showLink_ij);
-  interactionController.addListener('heatmap-hover', showLabel_ij);
-  interactionController.addListener('heatmap-dehover', hideLinks);
-  interactionController.addListener('heatmap-dehover', hideLabels);
+  // interactionController.addListener('heatmap-hover', showLink_ij);
+  // interactionController.addListener('heatmap-hover', showLabel_ij);
+  // interactionController.addListener('heatmap-dehover', hideLinks);
+  // interactionController.addListener('heatmap-dehover', hideLabels);
 
   //interactionController.addListener('heatmap-hover', showLink_ij);
+  //
+  interactionController
+  .addListener('dimReductionPlot-brush', highlight)
+  .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+  .addListener('dimReductionPlot-brush-empty', dehighlight);
 
+  interactionController
+  .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter);
+
+}
+
+
+function addChromosomeFilter(names){
+  dataObj.addDimReductionPlotChromosomeFilter(
+          names, 'dimReductionPlot-brush-stop');
+}
+
+function highlight(names){
+  names = new Set(names);
+  svg.selectAll('.dot')
+  .filter( d => names.has(d.name) )
+  .attr('stroke', 'yellow')
+  .attr('stroke-width', 2);
+}
+
+
+
+
+function dehighlight(){
+  svg.selectAll('.dot')
+  .attr('stroke-width', 0);
 }
 
 
@@ -49,12 +82,21 @@ function showLabel_i(args){
   svg.selectAll('.label')
   .filter( (_,j) => i==j )
   .attr('opacity', 1);
+
+  svg.selectAll('.dot')
+  .filter( (_,j) => i==j )
+  .attr('stroke', 'yellow')
+  .attr('stroke-width', 2);
+
 }
 
 function hideLabels(){
   //change this dim reduction plot
   svg.selectAll('.label')
   .attr('opacity', 0);
+
+  svg.selectAll('.dot')
+  .attr('stroke-width', 0);
 }
 
 
@@ -184,7 +226,8 @@ function drPOST(K){
 function updateK(type){
   console.log(type);
   if(//type=='histogram-stop'
-      true|| type=='data' || type=='data-stop'
+      true || 
+      type=='data' || type=='data-stop'
     ){
     var K = myKernel.getK();
     dr(K);
@@ -242,6 +285,57 @@ function updatePlot(data, data0){
   var ax = d3.svg.axis().scale(sx).orient('bottom'); 
   var ay = d3.svg.axis().scale(sy).orient('left');
 
+  // add brush
+  if(brush === null){
+    brush = d3.svg.brush();
+  }
+  brush.x(sx).y(sy);
+
+  var brushedChromosomes = null;
+
+  brush.on('brush', function(){
+    var x0 = brush.extent()[0][0];
+    var x1 = brush.extent()[1][0];
+    var y0 = brush.extent()[0][1];
+    var y1 = brush.extent()[1][1];
+    brushedChromosomes = data.filter(function(d){
+      return (x0 <= d.x && d.x <= x1
+          && y0 <= d.y && d.y <= y1);
+    }).map(d=>d.name);
+    console.log(brushedChromosomes);
+    interactionController
+      .notifyListeners('dimReductionPlot-brush', brushedChromosomes);
+
+  })
+  .on('brushend', function(){
+    if(brush.empty()){
+      dataObj
+      .removeDimReductionPlotChromosomeFilter('dimReductionPlot-brush-stop');
+      
+      // interactionController
+      // .notifyListeners('dimReductionPlot-brush-stop');
+      interactionController
+      .notifyListeners('dimReductionPlot-brush-empty');
+
+    }else{
+      interactionController
+      .notifyListeners('dimReductionPlot-brush-stop', brushedChromosomes);
+    }
+  });
+
+  svg.selectAll('.brush')
+  .data([0])
+  .enter()
+  .append('g')
+  .attr('class', 'brush');
+
+  svg.select('.brush')
+  .call(brush);
+
+
+
+
+
   //append additional elements
   svg.selectAll('.label')
   .data(data)
@@ -282,7 +376,6 @@ function updatePlot(data, data0){
   var trajectories = svg.selectAll('.trajectoryLine');
   var links = svg.selectAll('.link');
 
-  
 
   links
   .data(makeLinks(data))
@@ -302,20 +395,14 @@ function updatePlot(data, data0){
   // TODO delegate the heatmap part to heatmap.js
   // and show the label
   dots.on('mouseover', function(d,i){
-
     interactionController
     .notifyListeners('dimReductionPlot-hover', {i: i});
-
-
-    // //change this dim reduction plot
-    // svg.selectAll('.label')
-    //   .filter( (_,j) => i==j )
-    //   .attr('opacity', 1);
 
   });
 
   dots.on('mouseout', function(d,i){
-    interactionController.notifyListeners('dimReductionPlot-dehover');
+    interactionController
+    .notifyListeners('dimReductionPlot-dehover');
   });
 
 
@@ -327,7 +414,7 @@ function updatePlot(data, data0){
     
 
   //update label positions
-  labels.attr('x', d=>sx(d.x) )
+  labels.attr('x', d=>sx(d.x)+10 )
     .attr('y', d=>sy(d.y) );
 
   trajectories.transition()
@@ -359,6 +446,10 @@ function updatePlot(data, data0){
   svg.selectAll('.y.axis')
     .attr('transform', 'translate('+sx.range()[0]+',0)')
     .call(ay);
+
+  
+
+
   
 }
 
