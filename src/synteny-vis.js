@@ -397,6 +397,14 @@ function controller(ksData, element_id, meta) {
       syntenyPlot.setColorScale(newCS);
     });
 
+
+  d3.selectAll('input[name=dimReductionPlot-brush-options]')
+    .on('change', function() {
+      getController()
+      .notifyListeners('dimReductionPlot-brush-options', this.value);
+    });
+
+
   const colorScale = onData(dataObj.currentData().raw);
 
   const initial = colorScale(activeField, 'rg');

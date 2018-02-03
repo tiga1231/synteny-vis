@@ -72,7 +72,7 @@ svg text::selection {
 
 .secondRow #dimReductionPlot {
   background-color: #eee;
-  width: 30%;
+  width: 31.5%;
   height: 45%;
   float: left;
 }
@@ -151,7 +151,7 @@ svg text::selection {
 
 ._synteny-dotplot-builder #histogram-and-top-form {
   float: left;
-  width: 30%;
+  width: 31.5%;
   height: 100%;
 }
 ._synteny-dotplot-builder #histogram-wrapper {

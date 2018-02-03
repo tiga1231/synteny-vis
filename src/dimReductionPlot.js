@@ -14,7 +14,7 @@ var interactionController;
 var svg;
 var brush = null;
 var dataObj;
-
+var brushOption = null;
 
 function init(dataObj0, meta, kernelObj){
   dataObj = dataObj0;
@@ -39,8 +39,9 @@ function init(dataObj0, meta, kernelObj){
   //
   interactionController
   .addListener('dimReductionPlot-brush', highlight)
-  .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
-  .addListener('dimReductionPlot-brush-empty', dehighlight);
+  // .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+  .addListener('dimReductionPlot-brush-empty', dehighlight)
+  .addListener('dimReductionPlot-brush-options', changeBrushOption);
 
   // interactionController
   // .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter);
@@ -48,17 +49,37 @@ function init(dataObj0, meta, kernelObj){
 }
 
 
+function changeBrushOption(option){
+  brushOption = option;
+  if(option=='highlight'){
+    interactionController
+    .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+    .removeListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
+
+  }else if(option == 'subselect'){
+    interactionController
+    .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+    .addListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
+  }
+}
+
+
+
 function addChromosomeFilter(names){
   dataObj.addDimReductionPlotChromosomeFilter(
           names, 'dimReductionPlot-brush-stop');
-
   updateK('dimReductionPlot-brush', names);
-
+  //hide brush
   brush.extent([[99,99],[100,100]]);
   svg.select('.brush').call(brush);
-
-
 }
+
+function removeChromosomeFilter(){
+  dataObj
+  .removeDimReductionPlotChromosomeFilter('dimReductionPlot-brush-stop');
+}
+
+
 
 
 function highlight(names){
@@ -175,7 +196,6 @@ function drLocal(K, chrNames){
   }else{
     chrNames = chromosomes.map(d=>d.name);
   }
-  console.log(chrNames);
 
 
   //normalize K
@@ -241,7 +261,7 @@ function drPOST(K){
 
 
 function updateK(type, chrNames){
-  console.log(type);
+
   if( true || type=='data' || type=='data-stop' ){
     var K = myKernel.getK();
     if(chrNames !== undefined){
@@ -276,7 +296,6 @@ function makeLinks(data){
 var vmax = null;
 
 function updatePlot(data, data0){
-  console.log(data);
 
   var width = svg.style('width');
   var height = svg.style('height');
@@ -321,16 +340,13 @@ function updatePlot(data, data0){
       return (x0 <= d.x && d.x <= x1
           && y0 <= d.y && d.y <= y1);
     }).map(d=>d.name);
-    console.log(brushedChromosomes);
+
     interactionController
       .notifyListeners('dimReductionPlot-brush', brushedChromosomes);
 
   })
   .on('brushend', function(){
     if(brush.empty()){
-      dataObj
-      .removeDimReductionPlotChromosomeFilter('dimReductionPlot-brush-stop');
-      
       // interactionController
       // .notifyListeners('dimReductionPlot-brush-stop');
       interactionController

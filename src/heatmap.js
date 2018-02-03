@@ -65,6 +65,7 @@ function highlight_namePair(arg){
   highlight_ii({i:i});
 }
 
+
 function highlight_namePairs(namePairs){
 
   namePairs = new Set(  namePairs.map(pair=>pair[0]+'_'+pair[1])  );
@@ -108,19 +109,6 @@ function highlight_dimReductionPlot_selection(names){
   .each(function() {
     this.parentNode.appendChild(this);
   });
-}
-
-
-function black_cells(names){
-  names = new Set(names);
-
-  svg.selectAll('.box')
-  .filter(function(e){
-    return !(names.has(chrNames[e.rowIndex]) 
-      && names.has(chrNames[e.colIndex]));
-  })
-  .attr('fill','black');
-  
 }
 
 
@@ -322,9 +310,7 @@ function redraw(data, names){
   brush.x(sx).y(sy);
 
 
-  brush
-  .on('brush', function(){
-    console.log(d3.event);
+  brush.on('brush', function(){
     if(!brush.empty()){
       //chromosome indices
       if(d3.event.mode == 'move'){
@@ -339,9 +325,6 @@ function redraw(data, names){
         y1 = Math.ceil(brush.extent()[1][1]);
       }
       // console.log('x:[', x0,x1,'] y:[',y0,y1,']');
-
-      
-
       var pairs = [];
       for (var i = x0; i < x1; i++) {
         for (var j = y0+1; j < y1+1; j++) {
@@ -353,7 +336,7 @@ function redraw(data, names){
     }
   })
   .on('brushend', function(){
-    console.log('brush-end');
+    
     if(brush.empty()){
       dataObj.removeHeatmapChromosomeFilter('heatmap-brush-stop');
       //interactionController.notifyListeners('heatmap-brush-stop');
