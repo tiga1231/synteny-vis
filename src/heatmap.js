@@ -43,7 +43,7 @@ function init(dataObj0, meta, kernel){
   
 
   interactionController
-  .addListener('dimReductionPlot-hover', highlight_ii);
+  .addListener('dimReductionPlot-hover', highlight_namePair);
   interactionController
   .addListener('dimReductionPlot-dehover', dehighlight);
 
@@ -58,6 +58,12 @@ function init(dataObj0, meta, kernel){
 
 }
 
+
+function highlight_namePair(arg){
+  var name = arg.name;
+  var i = chrNames.indexOf(name);
+  highlight_ii({i:i});
+}
 
 function highlight_namePairs(namePairs){
 

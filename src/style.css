@@ -59,7 +59,7 @@ svg text::selection {
 }
 
 ._synteny-dotplot-builder #dotplot {
-  width: 37%;
+  width: 44%;
   height: 100%;
 }
 
@@ -72,14 +72,18 @@ svg text::selection {
 
 .secondRow #dimReductionPlot {
   background-color: #eee;
-  width: 37%;
+  width: 30%;
   height: 45%;
   float: left;
 }
 
+#dimReductionPlot .label{
+  pointer-events: none;
+}
+
 .secondRow #heatmap {
   background-color: #eef;
-  width: 37%;
+  width: 44%;
   height: 45%;
   float: left;
 }
@@ -147,7 +151,7 @@ svg text::selection {
 
 ._synteny-dotplot-builder #histogram-and-top-form {
   float: left;
-  width: 37%;
+  width: 30%;
   height: 100%;
 }
 ._synteny-dotplot-builder #histogram-wrapper {

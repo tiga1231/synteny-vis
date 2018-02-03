@@ -149,7 +149,8 @@ function buildDiv(element_id, show_histograms) {
       });
 
     navOptions
-    .select('input')
+    .selectAll('input')
+    .filter((d,i)=>i==checkIndex)
     .attr('checked', true);
 
     // options.each(function(d,i){

@@ -15,6 +15,7 @@ var svg;
 var brush = null;
 var dataObj;
 
+
 function init(dataObj0, meta, kernelObj){
   dataObj = dataObj0;
   chromosomes = meta.genome_x.chromosomes;
@@ -28,23 +29,21 @@ function init(dataObj0, meta, kernelObj){
   interactionController = getController();
   
   interactionController
-  .addListener('dimReductionPlot-hover', showLabel_i)
-  .addListener('dimReductionPlot-dehover', hideLabels);
+  .addListener('dimReductionPlot-hover', showLabel_name)
+  .addListener('dimReductionPlot-dehover', hideLabels)
+  .addListener('dimReductionPlot-dehover', dehighlight);
 
-  // interactionController.addListener('heatmap-hover', showLink_ij);
   // interactionController.addListener('heatmap-hover', showLabel_ij);
-  // interactionController.addListener('heatmap-dehover', hideLinks);
   // interactionController.addListener('heatmap-dehover', hideLabels);
 
-  //interactionController.addListener('heatmap-hover', showLink_ij);
   //
   interactionController
   .addListener('dimReductionPlot-brush', highlight)
   .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
   .addListener('dimReductionPlot-brush-empty', dehighlight);
 
-  interactionController
-  .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter);
+  // interactionController
+  // .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter);
 
 }
 
@@ -52,18 +51,27 @@ function init(dataObj0, meta, kernelObj){
 function addChromosomeFilter(names){
   dataObj.addDimReductionPlotChromosomeFilter(
           names, 'dimReductionPlot-brush-stop');
+
+  updateK('dimReductionPlot-brush', names);
+
+  brush.extent([[99,99],[100,100]]);
+  svg.select('.brush').call(brush);
+
+
 }
+
 
 function highlight(names){
   names = new Set(names);
   svg.selectAll('.dot')
-  .filter( d => names.has(d.name) )
-  .attr('stroke', 'yellow')
-  .attr('stroke-width', 2);
+  .attr('stroke-width', function(d){
+    if (names.has(d.name)){
+      return 2;
+    }else{
+      return 0;
+    }
+  });
 }
-
-
-
 
 function dehighlight(){
   svg.selectAll('.dot')
@@ -71,55 +79,35 @@ function dehighlight(){
 }
 
 
-function showLabel_ij(args){
-  showLabel_i({i:args.i});
-  showLabel_i({i:args.j});
-}
 
-function showLabel_i(args){
-  var i = args.i;
+function showLabel_name(args){
+  var name = args.name;
   //change this dim reduction plot
   svg.selectAll('.label')
-  .filter( (_,j) => i==j )
+  .filter( (d,j) => d.name==name )
   .attr('opacity', 1);
 
   svg.selectAll('.dot')
-  .filter( (_,j) => i==j )
-  .attr('stroke', 'yellow')
-  .attr('stroke-width', 2);
-
+  .attr('stroke-width', function(d,j){
+    if(d.name==name){
+      return 2;
+    }else{
+      return 0;
+    }
+  });
 }
+
 
 function hideLabels(){
   //change this dim reduction plot
   svg.selectAll('.label')
   .attr('opacity', 0);
-
-  svg.selectAll('.dot')
-  .attr('stroke-width', 0);
 }
 
 
-function showLink_ij(args){
-  var i = Math.min(args.i, args.j);
-  var j = Math.max(args.i, args.j);
-
-  svg.selectAll('.link')
-  .filter(function(d){
-    return d[0].i == i && d[1].i == j;
-  })
-  .attr('opacity', 1);
-}
-
-function hideLinks(){
-  svg.selectAll('.link')
-  .attr('opacity', 0);
-}
-
-
-function dr(K){
+function dr(K, chrNames){
   //dimReduction or "dr"
-  drLocal(K);
+  drLocal(K, chrNames);
 }
 
 
@@ -158,8 +146,37 @@ function procrustes(x1, x2){
 }
 
 
-function drLocal(K){
+function submatrix(K, subIndices){
+  var res = [];
+  subIndices = new Set(subIndices);
+  for (var i = 0; i < K.length; i++) {
+    if (subIndices.has(i)){
+      res.push([]);
+    }else{
+      continue;
+    }
+    for (var j = 0; j < K[0].length; j++) {
+      if (subIndices.has(j)){
+        res[res.length-1].push(K[i][j]);
+      }
+    }
+  }
+  return res;
+}
+
+
+function drLocal(K, chrNames){
   //kernel PCA running on client(browser)
+  if(chrNames !== undefined){
+    var chrNamesSet = new Set(chrNames);
+    var subIndices = d3.range(K.length)
+    .filter((d,i)=>chrNamesSet.has(chromosomes[i].name));
+    K = submatrix(K, subIndices);
+  }else{
+    chrNames = chromosomes.map(d=>d.name);
+  }
+  console.log(chrNames);
+
 
   //normalize K
   var ones = [ d3.range(K.length).map(d=>1) ];
@@ -178,20 +195,20 @@ function drLocal(K){
       return {
         x: d[0],
         y: d[1],
-        name: chromosomes[i].name,
-        category: i };
+        name: chrNames[i],
+        category: i
+      };
     });
   }
 
   x = procrustes(x, x0);
-
   //x0 = x; //option2: this make procrustes on prev plot
-
+  
   var data = x.map(function(d,i){
     return {
       x: d[0],
       y: d[1],
-      name: chromosomes[i].name,
+      name: chrNames[i],
       category: i//cat[i]
     };
   });
@@ -223,14 +240,15 @@ function drPOST(K){
 }
 
 
-function updateK(type){
+function updateK(type, chrNames){
   console.log(type);
-  if(//type=='histogram-stop'
-      true || 
-      type=='data' || type=='data-stop'
-    ){
+  if( true || type=='data' || type=='data-stop' ){
     var K = myKernel.getK();
-    dr(K);
+    if(chrNames !== undefined){
+      dr(K, chrNames);
+    }else{
+      dr(K);
+    }
   }/*else if(type=='data'){
     myKernel.computeK();
     K = myKernel.getK();
@@ -258,6 +276,7 @@ function makeLinks(data){
 var vmax = null;
 
 function updatePlot(data, data0){
+  console.log(data);
 
   var width = svg.style('width');
   var height = svg.style('height');
@@ -334,60 +353,60 @@ function updatePlot(data, data0){
 
 
 
+  //remove additional visual elements
+  svg.selectAll('.label')
+  .data(data, d=>d.name)
+  .exit()
+  .remove();
+
+  // svg.selectAll('.trajectoryLine')
+  // .data(zipWith((a,b)=>[a,b], data0, data), d=>d[0].name)
+  // .exit()
+  // .remove();
+
+  svg.selectAll('.dot')
+  .data(data, d=>d.name)
+  .exit()
+  .remove();
+
 
 
   //append additional elements
   svg.selectAll('.label')
-  .data(data)
+  .data(data, d=>d.name)
   .enter()
   .append('text')
   .attr('class', 'label')
-  .attr('opacity', 0)
-  .text(d=> d.name);
+  .attr('opacity', 0);
     
-  svg.selectAll('.trajectoryLine')
-  .data(zipWith((a,b)=>[a,b], data0, data))
-  .enter()
-  .append('line')
-  .attr('class', 'trajectoryLine')
-  .attr('stroke', '#aaa');
-
-
-  svg.selectAll('.link')
-  .data( d3.range(data.length*(data.length-1)/2) )
-  .enter()
-  .append('line')
-  .attr('class', 'link');
-
+  // svg.selectAll('.trajectoryLine')
+  // .data(zipWith((a,b)=>[a,b], data0, data), d=>d[0].name)
+  // .enter()
+  // .append('line')
+  // .attr('class', 'trajectoryLine')
+  // .attr('stroke', '#aaa');
 
   svg.selectAll('.dot')
-  .data(data)
+  .data(data, d=>d.name)
   .enter()
   .append('circle')
   .attr('class', 'dot')
   .attr('r', 5)
-  .attr('fill', '#08519c');//d=>sc(d.category) );
+  .attr('stroke', 'yellow')
+  .attr('stroke-width', 0)
+  .attr('fill', '#08519c')
+  .each(function(d){
+    this.parentNode.appendChild(this);//bring to front
+  });
 
 
   
   //select all
   var dots = svg.selectAll('.dot');
   var labels = svg.selectAll('.label');
-  var trajectories = svg.selectAll('.trajectoryLine');
-  var links = svg.selectAll('.link');
+  // var trajectories = svg.selectAll('.trajectoryLine');
 
-
-  links
-  .data(makeLinks(data))
-  .attr('x1', d=>sx(d[0].x))
-  .attr('y1', d=>sy(d[0].y))
-  .attr('x2', d=>sx(d[1].x))
-  .attr('y2', d=>sy(d[1].y))
-  .attr('stroke', '#08519c')
-  .attr('stroke-width', 2)
-  .attr('opacity', 0);
-
-  dots.append('title')
+  dots.select('title')
     .text(d=> d.name);
 
   // hovering on pointhighlights the corresponding
@@ -396,7 +415,7 @@ function updatePlot(data, data0){
   // and show the label
   dots.on('mouseover', function(d,i){
     interactionController
-    .notifyListeners('dimReductionPlot-hover', {i: i});
+    .notifyListeners('dimReductionPlot-hover', {name: d.name});
 
   });
 
@@ -414,43 +433,42 @@ function updatePlot(data, data0){
     
 
   //update label positions
-  labels.attr('x', d=>sx(d.x)+10 )
-    .attr('y', d=>sy(d.y) );
+  labels
+  .text(d=> d.name)
+  .attr('x', d=>sx(d.x)+10)
+  .attr('y', d=>sy(d.y) );
 
-  trajectories.transition()
-    .duration(100)
-    .attr('x1', d=>sx(d[0].x) )
-    .attr('y1', d=>sy(d[0].y) )
-    .attr('x2', d=>sx(d[1].x) )
-    .attr('y2', d=>sy(d[1].y) );
+  // trajectories
+  // .transition()
+  // .duration(100)
+  // .attr('x1', d=>sx(d[0].x) )
+  // .attr('y1', d=>sy(d[0].y) )
+  // .attr('x2', d=>sx(d[1].x) )
+  // .attr('y2', d=>sy(d[1].y) );
 
 
   //axes
   svg.selectAll('.x.axis')
-    .data([1])
-    .enter()
-    .append('g')
-    .attr('class', 'x axis');
+  .data([1])
+  .enter()
+  .append('g')
+  .attr('class', 'x axis');
 
   svg.selectAll('.x.axis')
-    .attr('transform', 'translate(0,'+sy.range()[0]+')')
-    .call(ax);
+  .attr('transform', 'translate(0,'+sy.range()[0]+')')
+  .call(ax);
 
 
   svg.selectAll('.y.axis')
-    .data([1])
-    .enter()
-    .append('g')
-    .attr('class', 'y axis');
+  .data([1])
+  .enter()
+  .append('g')
+  .attr('class', 'y axis');
 
   svg.selectAll('.y.axis')
-    .attr('transform', 'translate('+sx.range()[0]+',0)')
-    .call(ay);
+  .attr('transform', 'translate('+sx.range()[0]+',0)')
+  .call(ay);
 
-  
-
-
-  
 }
 
 exports.init = init;
