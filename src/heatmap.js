@@ -35,42 +35,61 @@ function init(dataObj0, meta, kernel){
   interactionController = getController();
 
   interactionController
-  .addListener('heatmap-label-hover', highlight_label_name)
-  .addListener('heatmap-label-dehover', dehighlight)
-  .addListener('heatmap-brush', highlight_namePairs)
-  .addListener('heatmap-brush-stop', dehighlight);
-  
+  .addListener('heatmap-label-hover', highlight_label_by_name)
+  .addListener('heatmap-label-dehover', dehighlight_all)
 
-  interactionController
-  .addListener('dimReductionPlot-hover', highlight_namePair)
-  .addListener('dimReductionPlot-dehover', dehighlight)
-  .addListener('dimReductionPlot-brush', highlight_dimReductionPlot_selection)
-  .addListener('dimReductionPlot-brush-empty',dehighlight);
+  .addListener('heatmap-brush', highlight_boxes_by_name_pairs)
+  .addListener('heatmap-brush', highlight_labels_by_name_pairs)
+  .addListener('heatmap-brush-stop', dehighlight_all)
+
+  .addListener('dimReductionPlot-hover', highlight_box_by_name)
+  .addListener('dimReductionPlot-hover', highlight_label_by_name)
+  .addListener('dimReductionPlot-dehover', dehighlight_all)
+
+  .addListener('dimReductionPlot-brush', highlight_boxes_by_names)
+  .addListener('dimReductionPlot-brush', highlight_labels_by_names)
+  .addListener('dimReductionPlot-brush-empty',dehighlight_all);
 
 
 }
 
 
-function highlight_label_name(name){
+function highlight_label_by_name(name){
+  highlight_labels_by_names([name]);
+}
+
+
+function highlight_labels_by_name_pairs(namePairs){
+  var names = namePairs.map(d=>d[0])
+    .concat(namePairs.map(d=>d[1]));
+  highlight_labels_by_names(names);
+}
+
+
+function highlight_labels_by_names(names){
+  names = new Set(names);
   svg.selectAll('.chrNameLabel.y')
-  .filter( function(d){
-    return d != name;
-  })
-  .attr('opacity', 0.3);
-  // svg.select('.chrNameLabel.x')
-  // .text(chrNames[j])
-  // .attr('x', sxLabel(chrNames[j]))
-  // .attr('y', side-margin+15);
+  .attr('opacity', function(d){
+    if(names.has(d)){
+      return 1;
+    }else{
+      return 0.1;
+    }
+  });
 }
 
 
-function highlight_namePair(name){
-  var i = chrNames.indexOf(name);
-  highlight_ii({i:i});
+
+function highlight_box_by_name(name){
+  highlight_boxes_by_names([name]);
 }
 
+function highlight_boxes_by_names(names){
+  var namePairs = names.map(d=>[d,d]);
+  highlight_boxes_by_name_pairs(namePairs);
+}
 
-function highlight_namePairs(namePairs){
+function highlight_boxes_by_name_pairs(namePairs){
 
   namePairs = new Set(  namePairs.map(pair=>pair[0]+'_'+pair[1])  );
 
@@ -84,87 +103,76 @@ function highlight_namePairs(namePairs){
   .attr('stroke', 'yellow')
   .attr('stroke-width', 2) 
   .each(function() {
-    this.parentNode.appendChild(this);//equivalent to .raise() in d3.v4
-  });
-
-  svg.selectAll('.brush')
-  .each(function() {
-    this.parentNode.appendChild(this);
-  });
-}
-
-
-function highlight_dimReductionPlot_selection(names){
-  names = new Set(names);
-  svg.selectAll('.box')
-  .attr('stroke-width', 0);
-
-  svg.selectAll('.box')
-  .filter(function(e){
-    return e.rowIndex==e.colIndex && names.has(chrNames[e.rowIndex]);
-  })
-  .attr('stroke', 'yellow')
-  .attr('stroke-width', 2) 
-  .each(function() {
-    this.parentNode.appendChild(this);//equivalent to .raise() in d3.v4
-  });
-
-  svg.selectAll('.brush')
-  .each(function() {
-    this.parentNode.appendChild(this);
-  });
-}
-
-
-function highlight_ii(args){
-  highlight_ij({i:args.i, j:args.i});
-}
-
-
-function highlight_ij(args){
-  var i = args.i;
-  var j = args.j;
-
-  //highlight box(i,j)
-  svg.selectAll('.box')
-  .filter(function(e){
-    return e.rowIndex == i && e.colIndex == j;
-  })
-  .attr('stroke', 'yellow')
-  .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
-  .each(function() {
+    //bring the highlighted boxes to front
+    //so that stroke is shown properly.
+    //equivalent to .raise() in d3.v4
     this.parentNode.appendChild(this);
   });
 
-  //highlight the chromosome name on the corresponding row 
-  svg.selectAll('.chrNameLabel.y')
-  .filter( (_,i2)=>i2!=i)
-  .attr('opacity', 0.3);
-
-  svg.select('.chrNameLabel.x')
-  .text(chrNames[j])
-  .attr('x', sxLabel(chrNames[j]))
-  .attr('y', side-margin+15);
-
-  svg.selectAll('.brush')
-  .each(function() {
-    this.parentNode.appendChild(this);
-  });
-
-
+  bring_brush_to_front();
 }
 
 
-function dehighlight(){
-  d3.selectAll('.box')
-  .attr('stroke-width', 0);
+// function highlight_ii(args){
+//   highlight_ij({i:args.i, j:args.i});
+// }
 
+
+// function highlight_ij(args){
+//   var i = args.i;
+//   var j = args.j;
+
+//   //highlight box(i,j)
+//   svg.selectAll('.box')
+//   .filter(function(e){
+//     return e.rowIndex == i && e.colIndex == j;
+//   })
+//   .attr('stroke', 'yellow')
+//   .attr('stroke-width', 2) //equivalent to .raise() in d3.v4
+//   .each(function() {
+//     this.parentNode.appendChild(this);
+//   });
+
+//   //highlight the chromosome name on the corresponding row 
+//   svg.selectAll('.chrNameLabel.y')
+//   .filter( (_,i2)=>i2!=i)
+//   .attr('opacity', 0.3);
+
+//   svg.select('.chrNameLabel.x')
+//   .text(chrNames[j])
+//   .attr('x', sxLabel(chrNames[j]))
+//   .attr('y', side-margin+15);
+//   bring_brush_to_front();
+// }
+
+
+
+function dehighlight_all(){
+  dehighlight_labels();
+  dehighlight_boxes();
+}
+
+function dehighlight_labels(){
   svg.selectAll('.chrNameLabel.y')
   .attr('opacity', 1);
-
   svg.select('.chrNameLabel.x')
   .text('');
 }
+
+function dehighlight_boxes(){
+  d3.selectAll('.box')
+  .attr('stroke-width', 0);
+}
+
+
+
+function bring_brush_to_front(){
+  svg.selectAll('.brush')
+  .each(function() {
+    this.parentNode.appendChild(this);
+  });
+}
+
 
 
 function genData(K){
