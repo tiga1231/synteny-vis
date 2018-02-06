@@ -33,34 +33,38 @@ function init(dataObj0, meta, kernel){
 
 
   interactionController = getController();
-  // interactionController.addListener('heatmap-hover', highlight_ij);
-  // interactionController.addListener('heatmap-dehover', dehighlight);
-  // 
+
   interactionController
-  .addListener('heatmap-brush', highlight_namePairs);
-  interactionController
+  .addListener('heatmap-label-hover', highlight_label_name)
+  .addListener('heatmap-label-dehover', dehighlight)
+  .addListener('heatmap-brush', highlight_namePairs)
   .addListener('heatmap-brush-stop', dehighlight);
   
 
   interactionController
-  .addListener('dimReductionPlot-hover', highlight_namePair);
-  interactionController
-  .addListener('dimReductionPlot-dehover', dehighlight);
-
-  interactionController
-  .addListener('dimReductionPlot-brush', highlight_dimReductionPlot_selection);
-  // interactionController
-  // .addListener('dimReductionPlot-brush-stop', black_cells);
-  interactionController
+  .addListener('dimReductionPlot-hover', highlight_namePair)
+  .addListener('dimReductionPlot-dehover', dehighlight)
+  .addListener('dimReductionPlot-brush', highlight_dimReductionPlot_selection)
   .addListener('dimReductionPlot-brush-empty',dehighlight);
-
 
 
 }
 
 
-function highlight_namePair(arg){
-  var name = arg.name;
+function highlight_label_name(name){
+  svg.selectAll('.chrNameLabel.y')
+  .filter( function(d){
+    return d != name;
+  })
+  .attr('opacity', 0.3);
+  // svg.select('.chrNameLabel.x')
+  // .text(chrNames[j])
+  // .attr('x', sxLabel(chrNames[j]))
+  // .attr('y', side-margin+15);
+}
+
+
+function highlight_namePair(name){
   var i = chrNames.indexOf(name);
   highlight_ii({i:i});
 }
@@ -287,15 +291,23 @@ function redraw(data, names){
     .text(d=>d);
 
 
+  chrNameLabelY.on('mouseover', function(d){
+    var name = d;
+    interactionController.notifyListeners('heatmap-label-hover', name);
+  })
+  .on('mouseout', function(d){
+    interactionController.notifyListeners('heatmap-label-dehover');
+  });
+
+
   boxes.on('mouseover', function(d){
     interactionController
     .notifyListeners('heatmap-hover', {
       i: d.rowIndex,
       j: d.colIndex
     });
-  });
-
-  boxes.on('mouseout',function(d){
+  })
+  .on('mouseout',function(d){
     interactionController
     .notifyListeners('heatmap-dehover', {
       i: d.rowIndex,

@@ -39,19 +39,18 @@ function init(dataObj0, meta, kernelObj){
   
   interactionController
   .addListener('dimReductionPlot-hover', showLabel_name)
+  .addListener('dimReductionPlot-hover', highlight_name)
   .addListener('dimReductionPlot-dehover', hideLabels)
-  .addListener('dimReductionPlot-dehover', dehighlight);
-
-  // interactionController.addListener('heatmap-hover', showLabel_ij);
-  // interactionController.addListener('heatmap-dehover', hideLabels);
-
-  //
-  interactionController
+  .addListener('dimReductionPlot-dehover', dehighlight)
   .addListener('dimReductionPlot-brush', highlight)
-  .addListener('dimReductionPlot-brush-empty', dehighlight);
+  .addListener('dimReductionPlot-brush-empty', dehighlight)
+  .addListener('dimReductionPlot-brush-options', changeBrushOption);
 
   interactionController
-  .addListener('dimReductionPlot-brush-options', changeBrushOption);
+  .addListener('heatmap-label-hover', showLabel_name)
+  .addListener('heatmap-label-hover', highlight_name)
+  .addListener('heatmap-label-dehover', hideLabels)
+  .addListener('heatmap-label-dehover', dehighlight);
 
 }
 
@@ -92,6 +91,10 @@ function removeChromosomeFilter(){
 
 
 
+function highlight_name(name){
+  highlight([name]);
+}
+
 
 function highlight(names){
   names = new Set(names);
@@ -105,6 +108,7 @@ function highlight(names){
   });
 }
 
+
 function dehighlight(){
   svg.selectAll('.dot')
   .attr('stroke-width', 0);
@@ -112,21 +116,12 @@ function dehighlight(){
 
 
 
-function showLabel_name(args){
-  var name = args.name;
+function showLabel_name(name){
+
   //change this dim reduction plot
   svg.selectAll('.label')
   .filter( (d,j) => d.name==name )
   .attr('opacity', 1);
-
-  svg.selectAll('.dot')
-  .attr('stroke-width', function(d,j){
-    if(d.name==name){
-      return 2;
-    }else{
-      return 0;
-    }
-  });
 }
 
 
@@ -284,7 +279,6 @@ function updateK(type, chrNames){
     }
   }
 
-  console.log(chrNames);
   dr(K, chrNames);
 
 }
@@ -443,7 +437,7 @@ function updatePlot(data, data0){
   // and show the label
   dots.on('mouseover', function(d,i){
     interactionController
-    .notifyListeners('dimReductionPlot-hover', {name: d.name});
+    .notifyListeners('dimReductionPlot-hover', d.name);
 
   });
 
