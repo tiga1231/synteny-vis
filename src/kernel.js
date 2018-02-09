@@ -43,16 +43,24 @@ function createKernel(dataObj, meta){
 
     //compute the kernel by cross filtered data
     var data = Kernel.getData();
-
+    var ks, row, col;
     for (var i = 0; i < data.length; i++) {
-      var ks = +data[i].ks;
-      var row = chrNamesIndices[ data[i].x_chromosome_id ];
-      var col = chrNamesIndices[ data[i].y_chromosome_id ];
-
-      K[row][col] += f(ks)
-                      /Math.sqrt(chromosomes[row].gene_count 
-                               * chromosomes[col].gene_count);
+      ks = +data[i].ks;
+      row = chrNamesIndices[ data[i].x_chromosome_id ];
+      col = chrNamesIndices[ data[i].y_chromosome_id ];
+      K[row][col] += f(ks);
+                      
     }
+
+    for (row = 0; row < size; row++) {
+      for (col = 0; col < size; col++) {
+        var c = Math.sqrt(chromosomes[row].gene_count
+                          *chromosomes[col].gene_count);
+        K[row][col] /= c;
+      }
+    }
+
+
 
 
     // //compute kernel based on current extent of histogram 
@@ -101,12 +109,13 @@ function createKernel(dataObj, meta){
     //   }
     // }
 
-
-
     for (i = 0; i < size; i++) {
-      K[i][i] = 1;
+      K[i][i] += 1;
     }
     Kernel.K = K;
+
+
+
   };
 
   Kernel.getK = function(){

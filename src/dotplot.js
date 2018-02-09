@@ -99,35 +99,38 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   let highlighted;
   const updateGeVOLink = function(x, y) {
-    const distance = d => {
-      const x_component = Math.pow(d.x_relative_offset - x, 2);
-      const y_component = Math.pow(d.y_relative_offset - y, 2);
-      return Math.sqrt(x_component + y_component);
-    };
-    const point = minBy(distance, dataObj.currentData().raw);
-    highlighted = point;
 
-    const ratio = (xScale.range()[1] - xScale.range()[0]) /
-      (xScale.domain()[1] - xScale.domain()[0]);
-    if (distance(point) * ratio < GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS) {
-      d3.select('#gevo-link')
-        .text('Compare in GEvo >>>')
-        .attr('onclick', () => {
-          const { x_feature_id, y_feature_id } = point;
-          const { gen_coge_seq_link } = meta;
-          const link = gen_coge_seq_link(x_feature_id, y_feature_id);
-          return `window.open('${link}')`;
-        });
-      getFeatureDescription(point.x_feature_id, point.y_feature_id)
-        .then(({x_name, y_name}) => {
-          d3.select('#gevo-link-xname')
-            .text(`${meta.x_name}: ${x_name}`);
-          d3.select('#gevo-link-yname')
-            .text(`${meta.y_name}: ${y_name}`);
-        });
-    }
+    
+    return;
+    // const distance = d => {
+    //   const x_component = Math.pow(d.x_relative_offset - x, 2);
+    //   const y_component = Math.pow(d.y_relative_offset - y, 2);
+    //   return Math.sqrt(x_component + y_component);
+    // };
+    // const point = minBy(distance, dataObj.currentData().raw);
+    // highlighted = point;
 
-    setSyntenyData();
+    // const ratio = (xScale.range()[1] - xScale.range()[0]) /
+    //   (xScale.domain()[1] - xScale.domain()[0]);
+    // if (distance(point) * ratio < GEVO_CLICK_PROXIMITY_THRESHOLD_PIXELS) {
+    //   d3.select('#gevo-link')
+    //     .text('Compare in GEvo >>>')
+    //     .attr('onclick', () => {
+    //       const { x_feature_id, y_feature_id } = point;
+    //       const { gen_coge_seq_link } = meta;
+    //       const link = gen_coge_seq_link(x_feature_id, y_feature_id);
+    //       return `window.open('${link}')`;
+    //     });
+    //   getFeatureDescription(point.x_feature_id, point.y_feature_id)
+    //     .then(({x_name, y_name}) => {
+    //       d3.select('#gevo-link-xname')
+    //         .text(`${meta.x_name}: ${x_name}`);
+    //       d3.select('#gevo-link-yname')
+    //         .text(`${meta.y_name}: ${y_name}`);
+    //     });
+    // }
+
+    // setSyntenyData();
   };
 
   const xLabelSize = offset =>
