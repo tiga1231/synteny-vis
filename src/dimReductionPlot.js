@@ -74,7 +74,7 @@ function changeBrushOption(option){
 function addChromosomeFilter(names){
   dataObj.addDimReductionPlotChromosomeFilter(
           names, 'dimReductionPlot-brush-stop');
-  updateK('dimReductionPlot-brush', names);
+  updateK('dimReductionPlot-brush-stop', names);
 
   //hide brush
   var epsilon = 0.01;
@@ -148,6 +148,7 @@ function dissimilarity(x1, x2){
 function procrustes(x1, x2){
   //orthogonal procrustes
   //// X2' X1 = U ∑ V'
+  
   var svd = numeric.svd(numeric.dot(numeric.transpose(x2), x1));
 
   //// Q = VU'
@@ -211,9 +212,11 @@ function drLocal(K, chrNames){
   var C = numeric.sub(identity, numeric.div(ones, K.length));
   K = numeric.dot(K, C);
   K = numeric.dot(C, K);
+  var svd;
+  svd = numeric.svd(K);
+  
 
-
-  var svd = numeric.svd(K);
+  //TODO 
   var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S.slice(0,2))));
 
   if(x0 === null){
@@ -280,7 +283,6 @@ function updateK(type, chrNames){
   }
 
   dr(K, chrNames);
-
 }
 
 
@@ -348,16 +350,14 @@ function updatePlot(data, data0){
     if(brushOption == 'subselect'){
       brushedChromosomes = chr;
     }
-
     interactionController
-      .notifyListeners('dimReductionPlot-brush', chr);
+    .notifyListeners('dimReductionPlot-brush', chr);
 
   })
   .on('brushend', function(){
     if(brush.empty()){
       interactionController
       .notifyListeners('dimReductionPlot-brush-empty');
-
     }else{
       interactionController
       .notifyListeners('dimReductionPlot-brush-stop', brushedChromosomes);

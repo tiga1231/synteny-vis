@@ -1,4 +1,4 @@
-import crossfilter from 'crossfilter';
+import crossfilter from 'crossfilter2';
 import d3 from 'd3';
 import { zipObject } from './utils';
 
@@ -89,14 +89,14 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
 
-  ret.addDimReductionPlotChromosomeFilter = function(chromosomeNames, typeHint){
+  ret.addDimReductionPlotChromosomeFilter = function(chromosomeNames){
     chromosomeNames = new Set(chromosomeNames);
     cross_chromosomePairs_dimReductionPlot.filterFunction(function(d){
       var namePair = d.split('_');
       return chromosomeNames.has(namePair[0]) 
         && chromosomeNames.has(namePair[1]);
     });
-    ret.notifyListeners(typeHint);
+    ret.notifyListeners('dimReductionPlot-filter-chromosomes-stop');
   };
 
   ret.removeDimReductionPlotChromosomeFilter = function(typeHint){

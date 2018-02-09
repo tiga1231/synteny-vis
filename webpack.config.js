@@ -13,12 +13,16 @@ module.exports = {
       }, { 
 				test: /\.css$/, 
 				loader: "style-loader!css-loader" 
-			}
+			}, {
+        // make all files ending in .json use the `json-loader`
+        test: /\.json$/,
+        loader: "json-loader"
+      }
 		]
   },
   resolve: {
     modulesDirectories: ['src', 'node_modules'],
-    extensions: ['', '.js']
+    extensions: ['', '.js', '.json']
   },
   devtool: 'sourcemap'
 };
