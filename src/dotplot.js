@@ -339,6 +339,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var xOffsetArray = new Float32Array(raw.map(e => e.x_relative_offset));
   var yOffsetArray = new Float32Array(raw.map(e => e.y_relative_offset));
   var logKsArray = new Float32Array(raw.map(e => e.logks));
+  var enabledArray = new Float32Array(raw.length);
+  for (var i=0; i<raw.length; ++i) {
+    enabledArray[i] = 0.0;
+  }
 
   var rb = Lux.renderBuffer({
     clearColor: [0,0,0,0],
@@ -359,6 +363,17 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     vertexArray: logKsArray,
     itemSize: 1
   }));
+  var eAttributeBuffer = Lux.attributeBuffer({
+    vertexArray: enabledArray,
+    itemSize: 1
+  });
+
+  for (i=0; i<raw.length; ++i) {
+    enabledArray[i] = 1.0;
+  }
+  eAttributeBuffer.set(enabledArray);
+
+  var eBuffer = Shade(eAttributeBuffer);
   var vExtent = d3.extent(logKsArray);
 
   var xMin = Shade.parameter('float'), xMax = Shade.parameter('float');
@@ -421,7 +436,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
         .and(yBuffer.ge(brushY.x()))
         .and(yBuffer.le(brushY.y()))
         .and(vBuffer.ge(brushV.x()))
-        .and(vBuffer.le(brushV.y())),
+        .and(vBuffer.le(brushV.y()))
+        .and(eBuffer.eq(1.0)),
       Shade.vec(Shade.exp(vBuffer), 0, 0, 1),
       unselected),
     strokeColor: unselected,
