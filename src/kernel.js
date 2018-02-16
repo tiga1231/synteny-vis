@@ -40,26 +40,22 @@ function createKernel(dataObj, meta){
   Kernel.computeK = function(){
 
     var K = math.zeros(size, size)._data;
+    var pairs = dataObj.getKernelPairs();
 
     //compute the kernel by cross filtered data
-    var data = Kernel.getData();
-    var ks, row, col;
-    for (var i = 0; i < data.length; i++) {
-      ks = +data[i].ks;
-      row = chrNamesIndices[ data[i].x_chromosome_id ];
-      col = chrNamesIndices[ data[i].y_chromosome_id ];
-      K[row][col] += f(ks);
+    for (var i = 0; i < pairs.length; i++) {
+      var key = pairs[i].key;
+      var ksSum = pairs[i].value;
+      var [chr1, chr2] = key.split('_');
+
+      var row = chrNamesIndices[ chr1 ];
+      var col = chrNamesIndices[ chr2 ];
+
+      var c = Math.sqrt(chromosomes[row].gene_count
+                          *chromosomes[col].gene_count);
+      K[row][col] = ksSum / c;
                       
     }
-
-    for (row = 0; row < size; row++) {
-      for (col = 0; col < size; col++) {
-        var c = Math.sqrt(chromosomes[row].gene_count
-                          *chromosomes[col].gene_count);
-        K[row][col] /= c;
-      }
-    }
-
 
 
 
@@ -191,5 +187,6 @@ function f(ks){
   return Math.exp(-Math.pow(ks*0.83/1.0,2));
 }
 
+exports.f = f;
 exports.createKernel = createKernel;
 

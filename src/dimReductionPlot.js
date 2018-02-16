@@ -18,8 +18,8 @@ var brushOption;
 var brushedChromosomes;
 
 function init(dataObj0, meta, kernelObj){
-  brushedChromosomes = null;
-  brushOption = null;
+  brushedChromosomes = [];
+  brushOption = 'highlight';
   brush = null;
   x0 = null;
   data0 = null;
@@ -45,7 +45,11 @@ function init(dataObj0, meta, kernelObj){
   .addListener('dimReductionPlot-brush', highlight)
   .addListener('dimReductionPlot-brush-empty', dehighlight)
   .addListener('dimReductionPlot-brush-options', changeBrushOption);
-
+  
+  interactionController
+  .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+  .addListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
+  
   interactionController
   .addListener('heatmap-label-hover', showLabel_name)
   .addListener('heatmap-label-hover', highlight_name)
@@ -57,34 +61,38 @@ function init(dataObj0, meta, kernelObj){
 
 function changeBrushOption(option){
   brushOption = option;
-  if(option=='highlight'){
-    interactionController
-    .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter)
-    .removeListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
+  // if(option=='highlight'){
+  // }else if(option == 'subselect'){
+  // }
 
-  }else if(option == 'subselect'){
-    interactionController
-    .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
-    .addListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
-  }
+  // interactionController
+  // .removeListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+  // .removeListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
+
+  // interactionController
+  // .addListener('dimReductionPlot-brush-stop', addChromosomeFilter)
+  // .addListener('dimReductionPlot-brush-empty', removeChromosomeFilter);
+
 }
 
 
 
 function addChromosomeFilter(names){
-  dataObj.addDimReductionPlotChromosomeFilter(
-          names, 'dimReductionPlot-brush-stop');
-  updateK('dimReductionPlot-brush-stop', names);
+  dataObj.addDimReductionPlotChromosomeFilter(names, 
+    'dimReductionPlot-filter-stop');
 
-  //hide brush
-  var epsilon = 0.01;
-  brush.extent([[-epsilon,-epsilon],[epsilon,epsilon]]);
-  svg.select('.brush').call(brush);
+  if(brushOption == 'subselect'){
+    // updateK('dimReductionPlot-brush-stop', names);
+    //hide brush
+    var epsilon = 0.01;
+    brush.extent([[-epsilon,-epsilon],[epsilon,epsilon]]);
+    svg.select('.brush').call(brush);
+  }
 }
 
 
 function removeChromosomeFilter(){
-  brushedChromosomes = null;
+  brushedChromosomes = [];
   dataObj
   .removeDimReductionPlotChromosomeFilter('dimReductionPlot-brush-stop');
 }
@@ -204,19 +212,18 @@ function drLocal(K, chrNames){
     chrNames = chromosomes.map(d=>d.name);
   }
 
-
-  //normalize K
+  //centralize K
   var ones = [ d3.range(K.length).map(d=>1) ];
   ones = numeric.dot(numeric.transpose(ones), ones);
   var identity = numeric.identity(K.length);
   var C = numeric.sub(identity, numeric.div(ones, K.length));
   K = numeric.dot(K, C);
   K = numeric.dot(C, K);
-  var svd;
-  svd = numeric.svd(K);
-  
 
-  //TODO 
+
+  var svd = numeric.svd(K);  
+
+  //TODO make it faster by explicit loop
   var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S.slice(0,2))));
 
   if(x0 === null){
@@ -232,8 +239,7 @@ function drLocal(K, chrNames){
   }
 
   x = procrustes(x, x0);
-  //x0 = x; //option2: this make procrustes on prev plot
-  
+  //   
   var data = x.map(function(d,i){
     return {
       x: d[0],
@@ -271,9 +277,12 @@ function drPOST(K){
 
 
 function updateK(type, chrNames){
+  console.log(type);
+
   var K = myKernel.getK();
   if(chrNames === undefined){
-    if(brushedChromosomes!==null && brushedChromosomes.length > 0){
+    if(brushedChromosomes!==null && 
+      brushedChromosomes.length > 0 ){
       chrNames = brushedChromosomes;
     }
   }else{
@@ -281,8 +290,12 @@ function updateK(type, chrNames){
       chrNames = chromosomes.map(d=>d.name);
     }
   }
-
-  dr(K, chrNames);
+  if(
+    type.indexOf('dimReductionPlot') === -1 ||
+    brushOption =='subselect'
+    ){
+    dr(K, chrNames);
+  }
 }
 
 
@@ -347,11 +360,17 @@ function updatePlot(data, data0){
       return (x0 <= d.x && d.x <= x1 && y0 <= d.y && d.y <= y1);
     }).map(d=>d.name);
 
-    if(brushOption == 'subselect'){
-      brushedChromosomes = chr;
-    }
+
     interactionController
     .notifyListeners('dimReductionPlot-brush', chr);
+
+    // if(brushOption == 'highlight' 
+    //   && brushedChromosomes.join('') == chr.join('') ){
+    //   interactionController
+    //   .notifyListeners('dimReductionPlot-brush-stop', brushedChromosomes);
+    // }
+
+    brushedChromosomes = chr;
 
   })
   .on('brushend', function(){

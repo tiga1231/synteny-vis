@@ -1,6 +1,7 @@
 import crossfilter from 'crossfilter2';
 import d3 from 'd3';
 import { zipObject } from './utils';
+import { f } from './kernel';
 
 
 function createDataObj(syntenyDots, xmapPair, ymapPair) {
@@ -10,15 +11,25 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   const ret = {};
 
   const cross = crossfilter(syntenyDots);
+
   const cross_all = cross.dimension(x => x.logks);
   const cross_x = cross.dimension(x => x.x_relative_offset);
   const cross_y = cross.dimension(x => x.y_relative_offset);
 
   const cross_chromosomePairs_heatmap = 
   cross.dimension(d => d.x_chromosome_id+'_'+d.y_chromosome_id);
-
   const cross_chromosomePairs_dimReductionPlot = 
   cross.dimension(d => d.x_chromosome_id+'_'+d.y_chromosome_id);
+
+  const cross_chromosomePairs = 
+  cross.dimension(d => d.x_chromosome_id+'_'+d.y_chromosome_id);
+
+  const g_chromosomePairs
+  = cross_chromosomePairs.group().reduceSum(d => f(+d.ks) );
+
+  ret.getKernelPairs = function(){
+    return g_chromosomePairs.all();
+  };
 
 
   const fields = ['logks', 'logkn', 'logknks'];
@@ -26,6 +37,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
     fields,
     fields.map(field => cross.dimension(x => x[field]))
   );
+
 
   ret.getXLineOffsets = () => Object.values(xmap).sort((a, b) => a - b);
 
@@ -89,14 +101,14 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
   };
 
 
-  ret.addDimReductionPlotChromosomeFilter = function(chromosomeNames){
+  ret.addDimReductionPlotChromosomeFilter = function(chromosomeNames, typeHint){
     chromosomeNames = new Set(chromosomeNames);
     cross_chromosomePairs_dimReductionPlot.filterFunction(function(d){
       var namePair = d.split('_');
       return chromosomeNames.has(namePair[0]) 
         && chromosomeNames.has(namePair[1]);
     });
-    ret.notifyListeners('dimReductionPlot-filter-chromosomes-stop');
+    ret.notifyListeners(typeHint || '');
   };
 
   ret.removeDimReductionPlotChromosomeFilter = function(typeHint){
