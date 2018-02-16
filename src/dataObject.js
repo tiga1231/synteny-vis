@@ -92,11 +92,15 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       xyChromosomePairs.map(pair=>pair[0]+'_'+pair[1])
     );
     cross_chromosomePairs_heatmap.filterFunction(d=>xyChromosomePairs.has(d));
+
+    filterDescription.heatmapChromosomes = xyChromosomePairs;
+
     ret.notifyListeners(typeHint);
   };
 
   ret.removeHeatmapChromosomeFilter = function(typeHint){
     cross_chromosomePairs_heatmap.filterAll();
+    filterDescription.heatmapChromosomes = null;
     ret.notifyListeners(typeHint);
   };
 
@@ -108,11 +112,14 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
       return chromosomeNames.has(namePair[0]) 
         && chromosomeNames.has(namePair[1]);
     });
+    filterDescription.drPlotChromosomes = chromosomeNames;
+
     ret.notifyListeners(typeHint || '');
   };
 
   ret.removeDimReductionPlotChromosomeFilter = function(typeHint){
     cross_chromosomePairs_dimReductionPlot.filterAll();
+    filterDescription.drPlotChromosomes = null;
     ret.notifyListeners(typeHint);
   };
 
@@ -121,6 +128,7 @@ function createDataObj(syntenyDots, xmapPair, ymapPair) {
 
   var filterDescription = {
   };
+
   ret.addSpatialFilter = function(extents, typeHint) {
     filterDescription.x = [extents[0][0], extents[1][0]];
     filterDescription.y = [extents[0][1], extents[1][1]];

@@ -4,6 +4,7 @@ import transform from 'svg-transform';
 import { getSingleFeatureDescription } from './coge-util';
 import { shortenString } from './label-utils';
 const { minBy, zipObject, zipWith } = utils;
+import { getController } from 'interactionController';
 
 import {
   SYNTENY_MARGIN,
@@ -99,8 +100,6 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   let highlighted;
   const updateGeVOLink = function(x, y) {
-
-    
     return;
     // const distance = d => {
     //   const x_component = Math.pow(d.x_relative_offset - x, 2);
@@ -341,7 +340,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var logKsArray = new Float32Array(raw.map(e => e.logks));
   var enabledArray = new Float32Array(raw.length);
   for (var i=0; i<raw.length; ++i) {
-    enabledArray[i] = 0.0;
+    enabledArray[i] = 1.0;
   }
 
   var rb = Lux.renderBuffer({
@@ -363,15 +362,14 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     vertexArray: logKsArray,
     itemSize: 1
   }));
+
+  //flag of whether a point is selected and shown 
   var eAttributeBuffer = Lux.attributeBuffer({
     vertexArray: enabledArray,
     itemSize: 1
   });
 
-  for (i=0; i<raw.length; ++i) {
-    enabledArray[i] = 1.0;
-  }
-  eAttributeBuffer.set(enabledArray);
+  
 
   var eBuffer = Shade(eAttributeBuffer);
   var vExtent = d3.extent(logKsArray);
@@ -606,6 +604,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   //   });
   // }
 
+
   const draw = (elapsedMS, initialColorScale, finalColorScale) => {
 
     const start = Date.now();
@@ -665,6 +664,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     }
   };
 
+
   function interpolateScales(a, b, t) {
     const aDomain = a.domain();
     const bDomain = b.domain();
@@ -686,19 +686,45 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     } else {
       brushX.set(vec.make(xScale.domain()));
     }
+
     if (desc.y) {
       brushY.set(vec.make(desc.y));
     } else {
       brushY.set(vec.make(yScale.domain()));
     }
+
     if (desc.logks) {
       brushV.set(vec.make(desc.logks));
     } else {
       brushV.set(vec.make(vExtent));
     }
+
+    var raw = dataObj.currentData().raw;
+
+    for (i=0; i<raw.length; ++i) {
+
+      enabledArray[i] = 1.0;
+      if ( desc.drPlotChromosomes
+        && !(desc.drPlotChromosomes.has(raw[i].x_chromosome_id) 
+              && desc.drPlotChromosomes.has(raw[i].y_chromosome_id)) ){
+
+        enabledArray[i] = 0.0;
+      }
+
+      if(desc.heatmapChromosomes &&
+        !desc.heatmapChromosomes
+        .has(raw[i].x_chromosome_id+'_'+raw[i].y_chromosome_id)){
+
+        enabledArray[i] = 0.0;
+      }
+    } 
+    
+    eAttributeBuffer.set(enabledArray);
+
     Lux.Scene.invalidate();
     draw(0, colorScale, colorScale);
   }
+
   dataObj.addListener(setSyntenyData);
   // drawBG();
   setSyntenyData();
