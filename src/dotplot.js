@@ -345,8 +345,8 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   var rb = Lux.renderBuffer({
     clearColor: [0,0,0,0],
-    width: getWidth() * window.devicePixelRatio,
-    height: getHeight() * window.devicePixelRatio,
+    width: getWidth() * dpr,
+    height: getHeight() * dpr,
     type: gl.FLOAT
   });
 
@@ -391,10 +391,10 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   var luxYScale = Shade.Scale.linear({ domain: [yMin, yMax],
                                        range: vec2.make(yScale.range()) });
   var canvasXScale = Shade.Scale.linear(
-    { domain: [0, backCanvas.node().width/2],
+    { domain: [0, backCanvas.node().width/dpr],
       range: [-1, 1] });
   var canvasYScale = Shade.Scale.linear(
-    { domain: [0, backCanvas.node().height/2],
+    { domain: [0, backCanvas.node().height/dpr],
       range: [1, -1] });
                                    
   var bgActor = Lux.Marks.dots({
@@ -403,7 +403,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
                         canvasYScale(luxYScale(yBuffer))),
     fillColor: Shade.color('#ccc'),
     strokeColor: Shade.color('#ccc', 0),
-    pointDiameter: 3,
+    pointDiameter: 5,
     strokeWidth: 0
   });
 
@@ -439,7 +439,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       Shade.vec(Shade.exp(vBuffer), 0, 0, 1),
       unselected),
     strokeColor: unselected,
-    pointDiameter: 3,
+    pointDiameter: 5,
     strokeWidth: 0
   });
 
