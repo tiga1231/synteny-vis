@@ -1,6 +1,7 @@
 /* Global rules */
 body{
   font-family: 'Oxygen', sans-serif;
+  /*font-size: 14pt;*/
 }
 
 
@@ -16,6 +17,7 @@ svg text {
         -ms-user-select: none;
             user-select: none;
                  cursor: default;
+    font-size: 0.9rem;
 }
 
 svg text::selection {
@@ -79,7 +81,6 @@ svg text::selection {
 
 #dimReductionPlot .label{
   pointer-events: none;
-  font-size: 0.8rem;
   dominant-baseline: mathematical;
   text-anchor: middle;
 }
@@ -121,7 +122,7 @@ svg text::selection {
 
 /* chromosome boundary lines in dotplot */
 ._synteny-dotplot-builder #dotplot .tick text {
-  font-family: monospace;
+/*  font-family: monospace;*/
 }
 
 
@@ -168,7 +169,9 @@ svg text::selection {
   height: 100%;
 }
 ._synteny-dotplot-builder .histogram .histogram-title {
-  font-size: 14pt;
+  /*font-size: 14pt;*/
+  font-size: 0.9rem;
+
 }
 /* axis ticks for histograms */
 ._synteny-dotplot-builder .histogram .tick line {
@@ -184,13 +187,15 @@ svg text::selection {
   right: 1%;
   width: 22.5%;
   height: auto;
-  font-size: 12pt;
+  /*font-size: 12pt;*/
+  font-size: 0.9rem;
 }
 ._synteny-dotplot-builder #form-wrapper-top {
   float: right;
   width: 100%;
   height: 10%;
-  font-size: 14pt;
+  /*font-size: 14pt;*/
+  font-size: 0.9rem;
 }
 
 #form-wrapper p.option-title{

@@ -103,6 +103,7 @@ function histogram(id, dataObj, field, colorScale) {
     selection.transition(); // cancel transition
     selection.attr('y', d => yPlotScale(d.y));
   };
+  
   const updateColors = function(selection) {
     selection.transition(); // cancel transition
     const extent =

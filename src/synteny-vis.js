@@ -152,28 +152,7 @@ function buildDiv(element_id, show_histograms) {
     .selectAll('input')
     .filter((d,i)=>i==checkIndex)
     .attr('checked', true);
-
-    // options.each(function(d,i){
-    //   this.parentNode.appendChild(this);//bring to the end
-    //   var label = navOptions.append('label')
-    //   .classed('form-check-label', true)
-    //   .attr('for', d[0])
-    //   .text(d[1]);
-    //   this.parentNode.appendChild(label.node());
-    // });
     
-
-
-    // options.forEach(function(selection) {
-    //   selection.forEach(function(element, i) {
-    //     const label = document.createElement('label');
-    //     label.textContent = elements[i][1];
-    //     label.setAttribute('class', 'form-check-label');
-    //     label.setAttribute('for', elements[i][0]);
-    //     // navForm.node().insertBefore(label, element);
-    //     navForm.node().appendChild(label, element);
-    //   });
-    // });
   }
 
 
@@ -512,6 +491,7 @@ function controller(ksData, element_id, meta) {
     const cs = histograms[activeField].getColorScale();
     histograms = setUpHistograms(cs);
     syntenyPlot = dotplot.synteny('#dotplot', dataObj, activeField, cs, meta);
+    dataObj.notifyListeners('initial');
 
     var myKernel = kernel.createKernel(dataObj, meta);
     dimReductionPlot.init(dataObj, meta, myKernel);

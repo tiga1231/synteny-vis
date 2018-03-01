@@ -178,7 +178,7 @@ def test_manyFile():
     names = names[start:stop]
     compress = (sys.argv[3] == 'True')
 
-    organismName = str(len(names)) + ' plasmodiums'
+    organismName = '' #str(len(names)) + ' plasmodia'
     
     print len(names)
     print names

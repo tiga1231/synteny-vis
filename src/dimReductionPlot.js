@@ -83,7 +83,7 @@ function addChromosomeFilter(names){
   dataObj.addDimReductionPlotChromosomeFilter(names, 
     'dimReductionPlot-filter-stop');
 
-  if(brushOption == 'subselect'){
+  if(brushOption === 'subselect'){
     // updateK('dimReductionPlot-brush-stop', names);
     //hide brush
     var epsilon = 0.01;
@@ -94,8 +94,12 @@ function addChromosomeFilter(names){
 
 
 function removeChromosomeFilter(){
-  x0 = null;
+  if(brushOption === 'subselect'){
+    x0 = null;
+  }
+  
   brushedChromosomes = [];
+  
   dataObj
   .removeDimReductionPlotChromosomeFilter('dimReductionPlot-brush-stop');
 }
@@ -161,9 +165,6 @@ function dissimilarity(x1, x2){
 function procrustes(x1, x2){
   //orthogonal procrustes
   //// X2' X1 = U ∑ V'
-  console.log(numeric.transpose(x2));
-  console.log(x1);
-  console.log(numeric.dot(numeric.transpose(x2), x1));
 
   var svd = numeric.svd(numeric.dot(numeric.transpose(x2), x1));
 
