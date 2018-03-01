@@ -19,6 +19,8 @@ build/lengths0/
 build/lengths/p.json
 build/lengths/*p.json
 
+*.log
+
 node_modules
 build/*.js
 build/*.js.map
@@ -26,3 +28,4 @@ gh-pages/
 release/
 coverage
 *~
+

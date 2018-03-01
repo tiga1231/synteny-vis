@@ -21,6 +21,8 @@ import {
   ROUNDING_FACTOR
 } from 'constants';
 
+var rawSeenByLux;
+
 function synteny(id, dataObj, field, initialColorScale, meta) {
   var xExtent = d3.extent(dataObj.getXLineOffsets());
   var yExtent = d3.extent(dataObj.getYLineOffsets());
@@ -334,6 +336,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
   const background = backCanvas.node().getContext('2d');
 
   var raw = dataObj.currentData().raw;
+  rawSeenByLux = raw;
   raw.sort((a, b) => b.logks - a.logks);
   var xOffsetArray = new Float32Array(raw.map(e => e.x_relative_offset));
   var yOffsetArray = new Float32Array(raw.map(e => e.y_relative_offset));
@@ -699,7 +702,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       brushV.set(vec.make(vExtent));
     }
 
-    var raw = dataObj.currentData().raw;
+    var raw = rawSeenByLux;
 
     for (i=0; i<raw.length; ++i) {
 

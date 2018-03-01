@@ -79,6 +79,9 @@ svg text::selection {
 
 #dimReductionPlot .label{
   pointer-events: none;
+  font-size: 0.8rem;
+  dominant-baseline: mathematical;
+  text-anchor: middle;
 }
 
 .secondRow #heatmap {

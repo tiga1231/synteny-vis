@@ -44,6 +44,8 @@ function init(dataObj0, meta, kernelObj){
   .addListener('dimReductionPlot-dehover', dehighlight)
   .addListener('dimReductionPlot-brush', highlight)
   .addListener('dimReductionPlot-brush-empty', dehighlight)
+  .addListener('dimReductionPlot-brush-empty', updateK)
+
   .addListener('dimReductionPlot-brush-options', changeBrushOption);
   
   interactionController
@@ -92,6 +94,7 @@ function addChromosomeFilter(names){
 
 
 function removeChromosomeFilter(){
+  x0 = null;
   brushedChromosomes = [];
   dataObj
   .removeDimReductionPlotChromosomeFilter('dimReductionPlot-brush-stop');
@@ -129,6 +132,7 @@ function showLabel_name(name){
   //change this dim reduction plot
   svg.selectAll('.label')
   .filter( (d,j) => d.name==name )
+  .text(d=> d.name)
   .attr('opacity', 1);
 }
 
@@ -136,7 +140,8 @@ function showLabel_name(name){
 function hideLabels(){
   //change this dim reduction plot
   svg.selectAll('.label')
-  .attr('opacity', 0);
+  .text(d=> d.shortName);
+  // .attr('opacity', 0);
 }
 
 
@@ -156,7 +161,10 @@ function dissimilarity(x1, x2){
 function procrustes(x1, x2){
   //orthogonal procrustes
   //// X2' X1 = U ∑ V'
-  
+  console.log(numeric.transpose(x2));
+  console.log(x1);
+  console.log(numeric.dot(numeric.transpose(x2), x1));
+
   var svd = numeric.svd(numeric.dot(numeric.transpose(x2), x1));
 
   //// Q = VU'
@@ -208,6 +216,8 @@ function drLocal(K, chrNames){
     var subIndices = d3.range(K.length)
     .filter((d,i)=>chrNamesSet.has(chromosomes[i].name));
     K = submatrix(K, subIndices);
+    //reset the procrustes reference
+    x0 = null;
   }else{
     chrNames = chromosomes.map(d=>d.name);
   }
@@ -233,18 +243,19 @@ function drLocal(K, chrNames){
         x: d[0],
         y: d[1],
         name: chrNames[i],
+        shortName: chrNames[i].split('P')[0],
         category: i
       };
     });
   }
 
   x = procrustes(x, x0);
-  //   
   var data = x.map(function(d,i){
     return {
       x: d[0],
       y: d[1],
       name: chrNames[i],
+      shortName: chrNames[i].split('P')[0],
       category: i//cat[i]
     };
   });
@@ -277,9 +288,11 @@ function drPOST(K){
 
 
 function updateK(type, chrNames){
+  type = type || '';
   console.log(type);
 
   var K = myKernel.getK();
+
   if(chrNames === undefined){
     if(brushedChromosomes!==null && 
       brushedChromosomes.length > 0 ){
@@ -290,10 +303,13 @@ function updateK(type, chrNames){
       chrNames = chromosomes.map(d=>d.name);
     }
   }
-  if(
-    type.indexOf('dimReductionPlot') === -1 ||
-    brushOption =='subselect'
-    ){
+
+  //draw all chromosome PCA if the call is not from itself
+  if(brushOption =='highlight'){
+    if(type.indexOf('dimReductionPlot') === -1){
+      dr(K);
+    }
+  }else if(brushOption =='subselect'){
     dr(K, chrNames);
   }
 }
@@ -377,6 +393,7 @@ function updatePlot(data, data0){
     if(brush.empty()){
       interactionController
       .notifyListeners('dimReductionPlot-brush-empty');
+      updateK();
     }else{
       interactionController
       .notifyListeners('dimReductionPlot-brush-stop', brushedChromosomes);
@@ -418,7 +435,7 @@ function updatePlot(data, data0){
   .enter()
   .append('text')
   .attr('class', 'label')
-  .attr('opacity', 0);
+  .attr('opacity', 1);
     
   // svg.selectAll('.trajectoryLine')
   // .data(zipWith((a,b)=>[a,b], data0, data), d=>d[0].name)
@@ -467,18 +484,25 @@ function updatePlot(data, data0){
 
 
   //update dot positions
-  dots.transition()
-    .duration(500)
-    .attr('cx', d=>sx(d.x) )
-    .attr('cy', d=>sy(d.y) );
+  dots
+  .transition()
+  .duration(500)
+  .attr('cx', d=>sx(d.x) )
+  .attr('cy', d=>sy(d.y) );
     
 
   //update label positions
   labels
-  .text(d=> d.name)
-  .attr('x', d=>sx(d.x)+10)
-  .attr('y', d=>sy(d.y) );
-
+  .transition()
+  .duration(500)
+  .text(d=> d.shortName)
+  .attr('')
+  .attr('x', function(d,i){
+    return sx(d.x)+10*Math.cos(i/chromosomes.length*2*Math.PI);
+  })
+  .attr('y', function(d,i){
+    return sy(d.y)+10*Math.sin(i/chromosomes.length*2*Math.PI);
+  });
   // trajectories
   // .transition()
   // .duration(100)
