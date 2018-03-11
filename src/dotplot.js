@@ -520,7 +520,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
 
   const makeLabelPair = full => ({
     full,
-    short: shortenString(full, MAX_SHORT_LABEL_LENGTH)
+    short: full //shortenString(full, MAX_SHORT_LABEL_LENGTH)
   });
 
   var xOffsets = dataObj.getXLineOffsets().filter(makeGapFilter());

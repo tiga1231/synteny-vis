@@ -8,7 +8,10 @@ import { getController } from 'interactionController';
 
 var chromosomes;
 var myKernel;
+
+var x0_full;
 var x0;
+
 var data0;
 var interactionController;
 var svg;
@@ -22,6 +25,7 @@ function init(dataObj0, meta, kernelObj){
   brushOption = 'highlight';
   brush = null;
   x0 = null;
+  x0_full = null;
   data0 = null;
 
   dataObj = dataObj0;
@@ -94,10 +98,6 @@ function addChromosomeFilter(names){
 
 
 function removeChromosomeFilter(){
-  if(brushOption === 'subselect'){
-    x0 = null;
-  }
-  
   brushedChromosomes = [];
   
   dataObj
@@ -211,6 +211,8 @@ function submatrix(K, subIndices){
 
 
 function drLocal(K, chrNames){
+
+
   //kernel PCA running on client(browser)
   if(chrNames !== undefined){
     var chrNamesSet = new Set(chrNames);
@@ -218,11 +220,13 @@ function drLocal(K, chrNames){
     .filter((d,i)=>chrNamesSet.has(chromosomes[i].name));
     K = submatrix(K, subIndices);
     //reset the procrustes reference
-    x0 = null;
+    x0 = x0_full.filter((d,i)=>(subIndices.indexOf(i)>-1));
   }else{
     chrNames = chromosomes.map(d=>d.name);
+    x0 = x0_full;
   }
 
+  
   //centralize K
   var ones = [ d3.range(K.length).map(d=>1) ];
   ones = numeric.dot(numeric.transpose(ones), ones);
@@ -236,6 +240,14 @@ function drLocal(K, chrNames){
 
   //TODO make it faster by explicit loop
   var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S.slice(0,2))));
+
+  console.log(chrNames);
+  console.log(x);
+  console.log(x0);
+
+  if(x0_full === null){
+    x0_full = x;
+  }
 
   if(x0 === null){
     x0 = x; //option1: this make procrustes against initial plot
@@ -358,8 +370,15 @@ function updatePlot(data, data0){
 
   var sc = d3.scale.category10();
 
-  var ax = d3.svg.axis().scale(sx).orient('bottom'); 
-  var ay = d3.svg.axis().scale(sy).orient('left');
+  var ax = d3.svg.axis()
+  .scale(sx)
+  .orient('bottom')
+  .ticks(3); 
+
+  var ay = d3.svg.axis()
+  .scale(sy)
+  .orient('left')
+  .ticks(3);
 
   // add brush
   if(brush === null){

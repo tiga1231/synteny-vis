@@ -1,6 +1,7 @@
 /* Global rules */
 body{
   font-family: 'Oxygen', sans-serif;
+  background-color: #eee;
   /*font-size: 14pt;*/
 }
 
@@ -41,7 +42,6 @@ svg text::selection {
 ._synteny-dotplot-builder #form-wrapper,
 .secondRow #dimReductionPlot,
 .secondRow #heatmap {
-  /* background-color: #F5F5F5;*/
   border: 1px solid #119911;
   border-radius: 0px;
   box-sizing: border-box;
@@ -73,7 +73,7 @@ svg text::selection {
 }
 
 .secondRow #dimReductionPlot {
-  background-color: #eee;
+  /*background-color: #eee;*/
   width: 31.5%;
   height: 45%;
   float: left;
@@ -86,7 +86,7 @@ svg text::selection {
 }
 
 .secondRow #heatmap {
-  background-color: #eef;
+  /*background-color: #eef;*/
   width: 44%;
   height: 45%;
   float: left;
