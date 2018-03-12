@@ -24,6 +24,7 @@ import {
 var rawSeenByLux;
 
 function synteny(id, dataObj, field, initialColorScale, meta) {
+
   var xExtent = d3.extent(dataObj.getXLineOffsets());
   var yExtent = d3.extent(dataObj.getYLineOffsets());
   var dataAspectRatio = yExtent[1] / xExtent[1];
@@ -406,7 +407,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
                         canvasYScale(luxYScale(yBuffer))),
     fillColor: Shade.color('#ccc'),
     strokeColor: Shade.color('#ccc', 0),
-    pointDiameter: 5,
+    pointDiameter: CIRCLE_RADIUS,
     strokeWidth: 0
   });
 
@@ -442,7 +443,7 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
       Shade.vec(Shade.exp(vBuffer), 0, 0, 1),
       unselected),
     strokeColor: unselected,
-    pointDiameter: 5,
+    pointDiameter: CIRCLE_RADIUS,
     strokeWidth: 0
   });
 
@@ -703,27 +704,22 @@ function synteny(id, dataObj, field, initialColorScale, meta) {
     }
 
     var raw = rawSeenByLux;
-
     for (i=0; i<raw.length; ++i) {
-
       enabledArray[i] = 1.0;
       if ( desc.drPlotChromosomes
         && !(desc.drPlotChromosomes.has(raw[i].x_chromosome_id) 
               && desc.drPlotChromosomes.has(raw[i].y_chromosome_id)) ){
-
         enabledArray[i] = 0.0;
       }
 
       if(desc.heatmapChromosomes &&
         !desc.heatmapChromosomes
         .has(raw[i].x_chromosome_id+'_'+raw[i].y_chromosome_id)){
-
         enabledArray[i] = 0.0;
       }
     } 
     
     eAttributeBuffer.set(enabledArray);
-
     Lux.Scene.invalidate();
     draw(0, colorScale, colorScale);
   }

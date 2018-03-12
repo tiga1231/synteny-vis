@@ -150,7 +150,7 @@ function hideLabels(){
 
 
 function dr(K, chrNames){
-  //dimReduction or "dr"
+  //dimReduction or 'dr'
   drLocal(K, chrNames);
 }
 
@@ -346,6 +346,7 @@ function makeLinks(data){
 var vmax = null;
 
 function updatePlot(data, data0){
+  console.log('updatePlot');
 
   var width = svg.style('width');
   var height = svg.style('height');
@@ -430,7 +431,6 @@ function updatePlot(data, data0){
   .call(brush);
 
 
-
   //remove additional visual elements
   svg.selectAll('.label')
   .data(data, d=>d.name)
@@ -442,10 +442,7 @@ function updatePlot(data, data0){
   // .exit()
   // .remove();
 
-  svg.selectAll('.dot')
-  .data(data, d=>d.name)
-  .exit()
-  .remove();
+  
 
 
 
@@ -466,10 +463,15 @@ function updatePlot(data, data0){
 
   svg.selectAll('.dot')
   .data(data, d=>d.name)
+  .exit()
+  .remove();
+
+  svg.selectAll('.dot')
+  .data(data, d=>d.name)
   .enter()
   .append('circle')
   .attr('class', 'dot')
-  .attr('r', 5)
+  .attr('r', 7)
   .attr('stroke', 'yellow')
   .attr('stroke-width', 0)
   .attr('fill', '#08519c')
@@ -477,8 +479,6 @@ function updatePlot(data, data0){
     this.parentNode.appendChild(this);//bring to front
   });
 
-
-  
   //select all
   var dots = svg.selectAll('.dot');
   var labels = svg.selectAll('.label');
@@ -509,20 +509,23 @@ function updatePlot(data, data0){
   .duration(500)
   .attr('cx', d=>sx(d.x) )
   .attr('cy', d=>sy(d.y) );
-    
 
-  //update label positions
+
   labels
   .transition()
   .duration(500)
   .text(d=> d.shortName)
-  .attr('')
   .attr('x', function(d,i){
-    return sx(d.x)+10*Math.cos(i/chromosomes.length*2*Math.PI);
+    d.x = data[i].x;
+    // return sx(d.x);
+    return sx(d.x)+15*Math.cos(i/chromosomes.length*2*Math.PI);
   })
   .attr('y', function(d,i){
-    return sy(d.y)+10*Math.sin(i/chromosomes.length*2*Math.PI);
+    d.y = data[i].y;
+    // return sy(d.y);
+    return sy(d.y)+15*Math.sin(i/chromosomes.length*2*Math.PI);
   });
+  
   // trajectories
   // .transition()
   // .duration(100)
