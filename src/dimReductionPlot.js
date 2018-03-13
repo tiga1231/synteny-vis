@@ -457,7 +457,9 @@ function updatePlot(data, data0){
   .enter()
   .append('text')
   .attr('class', 'label')
-  .attr('opacity', 1);
+  .attr('opacity', 1)
+  .attr('x', d=>d.x)
+  .attr('y', d=>d.y);
     
 
   // svg.selectAll('.trajectoryLine')
