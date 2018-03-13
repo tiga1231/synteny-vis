@@ -242,8 +242,6 @@ function drLocal(K, chrNames){
   var x = numeric.dot(svd.U, numeric.diag(numeric.sqrt(svd.S.slice(0,2))));
 
   console.log(chrNames);
-  console.log(x);
-  console.log(x0);
 
   if(x0_full === null){
     x0_full = x;
@@ -344,10 +342,9 @@ function makeLinks(data){
 
 
 var vmax = null;
-
+var force =  null;
 function updatePlot(data, data0){
   console.log('updatePlot');
-
   var width = svg.style('width');
   var height = svg.style('height');
   width = +width.substring(0,width.length-2);
@@ -397,16 +394,8 @@ function updatePlot(data, data0){
       return (x0 <= d.x && d.x <= x1 && y0 <= d.y && d.y <= y1);
     }).map(d=>d.name);
 
-
     interactionController
     .notifyListeners('dimReductionPlot-brush', chr);
-
-    // if(brushOption == 'highlight' 
-    //   && brushedChromosomes.join('') == chr.join('') ){
-    //   interactionController
-    //   .notifyListeners('dimReductionPlot-brush-stop', brushedChromosomes);
-    // }
-
     brushedChromosomes = chr;
 
   })
@@ -414,6 +403,7 @@ function updatePlot(data, data0){
     if(brush.empty()){
       interactionController
       .notifyListeners('dimReductionPlot-brush-empty');
+      console.log('empty');
       updateK();
     }else{
       interactionController
@@ -431,29 +421,50 @@ function updatePlot(data, data0){
   .call(brush);
 
 
+
+  var label_nodes = data.map(d=>({
+    x:sx(d.x), 
+    y:sy(d.y), 
+    name:d.name, 
+    shortName:d.shortName, 
+    type:'label'}));
+
+  label_nodes = label_nodes.concat( 
+    data.map((d,i)=>({
+      x: sx(d.x), 
+      y: sy(d.y),
+      i: i, 
+      name:d.name+'_a',
+      shortName: ' ',
+      type:'anchor'})) 
+  );
+
+  var label_links = data.map((d,i)=>({
+    source: i, 
+    target: i+data.length
+  }));
+
+
   //remove additional visual elements
   svg.selectAll('.label')
-  .data(data, d=>d.name)
+  .data(label_nodes, d=>d.name)
   .exit()
   .remove();
+
+  //append additional elements
+  svg.selectAll('.label')
+  .data(label_nodes, d=>d.name)
+  .enter()
+  .append('text')
+  .attr('class', 'label')
+  .attr('opacity', 1);
+    
 
   // svg.selectAll('.trajectoryLine')
   // .data(zipWith((a,b)=>[a,b], data0, data), d=>d[0].name)
   // .exit()
   // .remove();
 
-  
-
-
-
-  //append additional elements
-  svg.selectAll('.label')
-  .data(data, d=>d.name)
-  .enter()
-  .append('text')
-  .attr('class', 'label')
-  .attr('opacity', 1);
-    
   // svg.selectAll('.trajectoryLine')
   // .data(zipWith((a,b)=>[a,b], data0, data), d=>d[0].name)
   // .enter()
@@ -510,21 +521,53 @@ function updatePlot(data, data0){
   .attr('cx', d=>sx(d.x) )
   .attr('cy', d=>sy(d.y) );
 
+  if(force === null){
+    force = d3.layout.force()
+      .gravity(0.0)
+      .linkDistance(8)
+      .linkStrength(1)
+      .charge( -30 )
+      .chargeDistance(30)
+      .friction( 0.8 );
+  }
+ 
+  force.nodes(label_nodes)
+    .links(label_links)
+    .on('tick', (e)=>{
+      var k = e.alpha;
 
-  labels
-  .transition()
-  .duration(500)
-  .text(d=> d.shortName)
-  .attr('x', function(d,i){
-    d.x = data[i].x;
-    // return sx(d.x);
-    return sx(d.x)+15*Math.cos(i/chromosomes.length*2*Math.PI);
-  })
-  .attr('y', function(d,i){
-    d.y = data[i].y;
-    // return sy(d.y);
-    return sy(d.y)+15*Math.sin(i/chromosomes.length*2*Math.PI);
-  });
+      labels.each(d=>{
+        // reset postions of anchors
+        if(d.type == 'anchor'){
+          d.x = sx(data[d.i].x);
+          d.y = sy(data[d.i].y);
+        }else{
+          d.x += k;
+          d.y -= 2*k;
+        }
+      });
+      if(e.alpha < 0.09){
+        labels
+        .attr('x', d=>d.x)
+        .attr('y', d=>d.y);
+      }
+
+    }).start();
+
+
+  labels.text(d=> d.shortName);
+
+  // labels
+  // .transition()
+  // .duration(500)
+  // .attr('x', function(d,i){
+  //   // return sx(d.x);
+  //   return sx(d.x)+15*Math.cos(i/chromosomes.length*2*Math.PI);
+  // })
+  // .attr('y', function(d,i){
+  //   // return sy(d.y);
+  //   return sy(d.y)+15*Math.sin(i/chromosomes.length*2*Math.PI);
+  // });
   
   // trajectories
   // .transition()
